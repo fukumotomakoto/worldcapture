@@ -1,0 +1,67 @@
+name: WorldCapture
+options:
+  minimumXcodeGenVersion: 2.45.0
+  deploymentTarget:
+    macOS: "14.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    CLANG_ENABLE_MODULES: YES
+
+targets:
+  CaptureKit:
+    type: framework
+    platform: macOS
+    sources:
+      - path: macos/Sources/CaptureKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.capturekit
+        DEFINES_MODULE: YES
+        ENABLE_TESTABILITY: YES
+        GENERATE_INFOPLIST_FILE: YES
+
+  WorldCapture:
+    type: application
+    platform: macOS
+    sources:
+      - path: macos/Sources/WorldCaptureMac
+    dependencies:
+      - target: CaptureKit
+    info:
+      path: macos/App/Info.plist
+    entitlements:
+      path: macos/App/WorldCapture.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.app
+        PRODUCT_NAME: WorldCapture
+        MARKETING_VERSION: 0.1.0
+        CURRENT_PROJECT_VERSION: 1
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+
+  CaptureKitTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: macos/Tests/CaptureKitTests
+    dependencies:
+      - target: CaptureKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.capturekit-tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  WorldCapture:
+    build:
+      targets:
+        WorldCapture: all
+        CaptureKitTests: [test]
+    test:
+      targets:
+        - CaptureKitTests

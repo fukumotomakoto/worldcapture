@@ -19,6 +19,17 @@ swift test
 swift run WorldCaptureMac
 ```
 
+正式 `.app` 工程由 XcodeGen 生成：
+
+```bash
+xcodegen generate
+xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
+  -configuration Debug -derivedDataPath .derived-data \
+  CODE_SIGNING_ALLOWED=NO build
+```
+
+构建产物位于 `.derived-data/Build/Products/Debug/WorldCapture.app`。正式发布时改用 Apple Developer ID 签名并执行 notarization。
+
 首次截屏时，macOS 会请求屏幕录制权限。
 
 全局快捷键：`Command + Shift + 2` 启动区域截屏；应用内 `Command + Shift + C` 复制当前截图。
