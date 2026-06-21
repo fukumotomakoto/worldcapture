@@ -12,6 +12,8 @@ final class CaptureViewModel: ObservableObject {
     @Published var annotations: [CaptureAnnotation] = []
     @Published var annotationTool: AnnotationKind = .rectangle
     @Published var annotationText = "说明"
+    @Published var isRecording = false
+    @Published var lastRecordingURL: URL?
 
     var nextAnnotationNumber: Int {
         annotations.filter { $0.kind == .number }.count + 1
@@ -19,6 +21,7 @@ final class CaptureViewModel: ObservableObject {
 
     private let capturer: any ScreenCapturing
     private let regionSelector = RegionSelector()
+    private let screenRecorder = ScreenRecorder()
     private var globalHotKey: GlobalHotKey?
 
     init(capturer: any ScreenCapturing = ScreenCapturer()) {
@@ -110,6 +113,39 @@ final class CaptureViewModel: ObservableObject {
         annotations.removeAll()
     }
 
+    func toggleRecording() async {
+        if isRecording {
+            await stopRecording()
+        } else {
+            await startRecording()
+        }
+    }
+
+    private func startRecording() async {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.mpeg4Movie]
+        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).mp4"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            try await screenRecorder.startMainDisplayRecording(to: url)
+            lastRecordingURL = url
+            isRecording = true
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func stopRecording() async {
+        do {
+            try await screenRecorder.stopRecording()
+            isRecording = false
+        } catch {
+            isRecording = screenRecorder.isRecording
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func save() {
         guard let cgImage = renderedImage() else {
             return
@@ -155,6 +191,16 @@ struct CaptureView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Button {
+                    Task { await model.toggleRecording() }
+                } label: {
+                    Label(
+                        model.isRecording ? "停止录制" : "录制屏幕",
+                        systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
+                    )
+                    .foregroundStyle(model.isRecording ? .red : .primary)
+                }
+
                 Picker("窗口", selection: $model.selectedWindowID) {
                     Text("选择窗口").tag(CGWindowID?.none)
                     ForEach(model.windows) { window in
@@ -188,6 +234,20 @@ struct CaptureView: View {
                     .disabled(model.image == nil)
             }
             .padding(20)
+
+            if model.isRecording {
+                HStack(spacing: 8) {
+                    Circle().fill(.red).frame(width: 8, height: 8)
+                    Text("正在录制主屏幕与系统音频")
+                        .font(.callout.weight(.medium))
+                    Spacer()
+                    Text(model.lastRecordingURL?.lastPathComponent ?? "")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+            }
 
             if model.image != nil {
                 HStack(spacing: 10) {
