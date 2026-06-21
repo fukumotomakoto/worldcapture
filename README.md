@@ -2,7 +2,7 @@
 
 Windows 与 macOS 的本地优先截屏、标注和录屏工具。
 
-当前阶段：Phase 0，先验证 macOS 原生捕获链路与权限体验；随后接入共享编辑器、录屏管线和 Windows Graphics Capture。
+当前阶段：Phase 0。macOS 已具备主屏幕捕获、拖拽区域选择、Retina 原始分辨率输出、应用内预览与 PNG 保存；随后接入窗口识别、共享编辑器、录屏管线和 Windows Graphics Capture。
 
 ## 原则
 
@@ -23,9 +23,8 @@ swift run WorldCaptureMac
 
 ## 近期路线
 
-1. macOS 全屏捕获、预览与 PNG 保存。
-2. 区域选择、窗口识别、剪贴板和全局快捷键。
+1. macOS 全屏捕获、区域选择、预览与 PNG 保存。✅
+2. 窗口识别、剪贴板和全局快捷键。
 3. 非破坏标注模型与编辑器。
 4. ScreenCaptureKit 录屏、系统音频、麦克风和 MP4 导出。
 5. Windows Graphics Capture / WASAPI 后端。
-

@@ -9,6 +9,7 @@ final class CaptureViewModel: ObservableObject {
     @Published var errorMessage: String?
 
     private let capturer: any ScreenCapturing
+    private let regionSelector = RegionSelector()
 
     init(capturer: any ScreenCapturing = ScreenCapturer()) {
         self.capturer = capturer
@@ -21,6 +22,20 @@ final class CaptureViewModel: ObservableObject {
 
         do {
             let captured = try await capturer.captureMainDisplay()
+            image = NSImage(cgImage: captured, size: .zero)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func captureRegion() async {
+        guard let region = await regionSelector.selectRegion() else { return }
+        isCapturing = true
+        errorMessage = nil
+        defer { isCapturing = false }
+
+        do {
+            let captured = try await capturer.captureMainDisplay(region: region)
             image = NSImage(cgImage: captured, size: .zero)
         } catch {
             errorMessage = error.localizedDescription
@@ -64,6 +79,12 @@ struct CaptureView: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
+                Button("选择区域") {
+                    Task { await model.captureRegion() }
+                }
+                .keyboardShortcut("4", modifiers: [.command, .shift])
+                .disabled(model.isCapturing)
+
                 Button("截取主屏幕") {
                     Task { await model.capture() }
                 }
@@ -105,4 +126,3 @@ struct CaptureView: View {
         }
     }
 }
-

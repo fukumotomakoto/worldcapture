@@ -3,13 +3,19 @@ import CoreGraphics
 import ScreenCaptureKit
 
 public protocol ScreenCapturing: Sendable {
-    func captureMainDisplay() async throws -> CGImage
+    func captureMainDisplay(region: CaptureRegion?) async throws -> CGImage
+}
+
+public extension ScreenCapturing {
+    func captureMainDisplay() async throws -> CGImage {
+        try await captureMainDisplay(region: nil)
+    }
 }
 
 public struct ScreenCapturer: ScreenCapturing {
     public init() {}
 
-    public func captureMainDisplay() async throws -> CGImage {
+    public func captureMainDisplay(region: CaptureRegion? = nil) async throws -> CGImage {
         let content: SCShareableContent
         do {
             content = try await SCShareableContent.excludingDesktopWindows(
@@ -27,8 +33,14 @@ public struct ScreenCapturer: ScreenCapturing {
 
         let filter = SCContentFilter(display: display, excludingWindows: [])
         let configuration = SCStreamConfiguration()
-        configuration.width = display.width
-        configuration.height = display.height
+        if let region {
+            configuration.sourceRect = region.sourceRect
+            configuration.width = region.pixelWidth
+            configuration.height = region.pixelHeight
+        } else {
+            configuration.width = display.width
+            configuration.height = display.height
+        }
         configuration.showsCursor = true
         configuration.captureResolution = .best
 
@@ -38,4 +50,3 @@ public struct ScreenCapturer: ScreenCapturing {
         )
     }
 }
-
