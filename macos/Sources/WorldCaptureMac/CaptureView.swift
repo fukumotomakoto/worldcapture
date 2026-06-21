@@ -220,55 +220,75 @@ struct CaptureView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("WorldCapture")
-                        .font(.title2.bold())
-                    Text("本地优先的跨平台截屏与录屏工具")
+            VStack(spacing: 12) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("WorldCapture")
+                            .font(.title2.bold())
+                        Text("本地优先的跨平台截屏与录屏工具")
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button {
+                        Task { await model.toggleRecording() }
+                    } label: {
+                        Label(
+                            model.isRecording ? "停止录制" : "录制屏幕",
+                            systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
+                        )
+                        .foregroundStyle(model.isRecording ? .red : .primary)
+                    }
+
+                    Button("保存 PNG") { model.save() }
+                        .disabled(model.image == nil)
+
+                    Button("复制") { model.copyToClipboard() }
+                        .keyboardShortcut("c", modifiers: [.command, .shift])
+                        .disabled(model.image == nil)
+                }
+
+                HStack(spacing: 10) {
+                    Text("窗口")
+                        .font(.callout.weight(.medium))
+                    Picker("选择窗口", selection: $model.selectedWindowID) {
+                        Text(model.windows.isEmpty ? "没有可用窗口" : "选择窗口").tag(CGWindowID?.none)
+                        ForEach(model.windows) { window in
+                            Text(window.displayName).tag(Optional(window.id))
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(minWidth: 260, maxWidth: 380)
+
+                    Button {
+                        Task { await model.loadWindows() }
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    .help("刷新窗口列表")
+
+                    Button("截取窗口") {
+                        Task { await model.captureSelectedWindow() }
+                    }
+                    .disabled(model.isCapturing || model.selectedWindowID == nil)
+
+                    Divider().frame(height: 20)
+
+                    Button("选择区域") {
+                        Task { await model.captureRegion() }
+                    }
+                    .disabled(model.isCapturing)
+
+                    Button("截取主屏幕") {
+                        Task { await model.capture() }
+                    }
+                    .keyboardShortcut("2", modifiers: [.command, .shift])
+                    .disabled(model.isCapturing)
+
+                    Spacer()
+                    Text("⌘⇧2 区域截屏")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Spacer()
-                Button {
-                    Task { await model.toggleRecording() }
-                } label: {
-                    Label(
-                        model.isRecording ? "停止录制" : "录制屏幕",
-                        systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
-                    )
-                    .foregroundStyle(model.isRecording ? .red : .primary)
-                }
-
-                Picker("窗口", selection: $model.selectedWindowID) {
-                    Text("选择窗口").tag(CGWindowID?.none)
-                    ForEach(model.windows) { window in
-                        Text(window.displayName).tag(Optional(window.id))
-                    }
-                }
-                .labelsHidden()
-                .frame(maxWidth: 240)
-
-                Button("截取窗口") {
-                    Task { await model.captureSelectedWindow() }
-                }
-                .disabled(model.isCapturing || model.selectedWindowID == nil)
-
-                Button("选择区域") {
-                    Task { await model.captureRegion() }
-                }
-                .disabled(model.isCapturing)
-
-                Button("截取主屏幕") {
-                    Task { await model.capture() }
-                }
-                .keyboardShortcut("2", modifiers: [.command, .shift])
-                .disabled(model.isCapturing)
-
-                Button("保存 PNG") { model.save() }
-                    .disabled(model.image == nil)
-
-                Button("复制") { model.copyToClipboard() }
-                    .keyboardShortcut("c", modifiers: [.command, .shift])
-                    .disabled(model.image == nil)
             }
             .padding(20)
 

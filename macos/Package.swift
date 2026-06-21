@@ -4,7 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "WorldCaptureMac",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v15)],
     products: [
         .executable(name: "WorldCaptureMac", targets: ["WorldCaptureMac"]),
         .library(name: "CaptureKit", targets: ["CaptureKit"]),
@@ -15,4 +15,3 @@ let package = Package(
         .testTarget(name: "CaptureKitTests", dependencies: ["CaptureKit"]),
     ]
 )
-

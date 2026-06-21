@@ -4,17 +4,14 @@ import CoreVideo
 import Foundation
 import ScreenCaptureKit
 
-public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
-    private let videoQueue = DispatchQueue(label: "worldcapture.recording.video", qos: .userInitiated)
-    private let audioQueue = DispatchQueue(label: "worldcapture.recording.audio", qos: .userInitiated)
+public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutputDelegate, @unchecked Sendable {
     private let stateLock = NSLock()
 
     private var stream: SCStream?
-    private var writer: AVAssetWriter?
-    private var videoInput: AVAssetWriterInput?
-    private var audioInput: AVAssetWriterInput?
-    private var sessionStarted = false
+    private var recordingOutput: SCRecordingOutput?
     private var terminalError: Error?
+    private var didFinish = false
+    private var finishContinuations: [CheckedContinuation<Void, Never>] = []
 
     public var isRecording: Bool {
         stateLock.withLock { stream != nil }
@@ -47,72 +44,43 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
             filter = SCContentFilter(display: display, excludingWindows: [])
         }
 
-        let configuration = SCStreamConfiguration()
-        configuration.width = display.width
-        configuration.height = display.height
-        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
-        configuration.queueDepth = 6
-        configuration.pixelFormat = kCVPixelFormatType_32BGRA
-        configuration.showsCursor = true
-        configuration.capturesAudio = true
-        configuration.excludesCurrentProcessAudio = true
-        configuration.sampleRate = 48_000
-        configuration.channelCount = 2
+        let streamConfiguration = SCStreamConfiguration()
+        streamConfiguration.width = display.width
+        streamConfiguration.height = display.height
+        streamConfiguration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
+        streamConfiguration.queueDepth = 6
+        streamConfiguration.pixelFormat = kCVPixelFormatType_32BGRA
+        streamConfiguration.showsCursor = true
+        streamConfiguration.capturesAudio = true
+        streamConfiguration.excludesCurrentProcessAudio = true
+        streamConfiguration.sampleRate = 48_000
+        streamConfiguration.channelCount = 2
 
-        let writer: AVAssetWriter
+        let outputConfiguration = SCRecordingOutputConfiguration()
+        outputConfiguration.outputURL = outputURL
+        outputConfiguration.outputFileType = .mp4
+        outputConfiguration.videoCodecType = .h264
+
+        let recordingOutput = SCRecordingOutput(configuration: outputConfiguration, delegate: self)
+        let stream = SCStream(filter: filter, configuration: streamConfiguration, delegate: self)
         do {
-            writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
+            try stream.addRecordingOutput(recordingOutput)
         } catch {
             throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
 
-        let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: [
-            AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: configuration.width,
-            AVVideoHeightKey: configuration.height,
-            AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: max(6_000_000, configuration.width * configuration.height * 4),
-                AVVideoExpectedSourceFrameRateKey: 60,
-                AVVideoMaxKeyFrameIntervalKey: 120,
-            ],
-        ])
-        videoInput.expectsMediaDataInRealTime = true
-
-        let audioInput = AVAssetWriterInput(mediaType: .audio, outputSettings: [
-            AVFormatIDKey: kAudioFormatMPEG4AAC,
-            AVSampleRateKey: 48_000,
-            AVNumberOfChannelsKey: 2,
-            AVEncoderBitRateKey: 192_000,
-        ])
-        audioInput.expectsMediaDataInRealTime = true
-
-        guard writer.canAdd(videoInput), writer.canAdd(audioInput) else {
-            throw CaptureError.recordingFailed("编码器不支持当前音视频设置")
-        }
-        writer.add(videoInput)
-        writer.add(audioInput)
-        guard writer.startWriting() else {
-            throw CaptureError.recordingFailed(writer.error?.localizedDescription ?? "无法启动 MP4 编码器")
-        }
-
-        let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
-        try stream.addStreamOutput(self, type: .screen, sampleHandlerQueue: videoQueue)
-        try stream.addStreamOutput(self, type: .audio, sampleHandlerQueue: audioQueue)
-
         stateLock.withLock {
-            self.writer = writer
-            self.videoInput = videoInput
-            self.audioInput = audioInput
             self.stream = stream
-            self.sessionStarted = false
+            self.recordingOutput = recordingOutput
             self.terminalError = nil
+            self.didFinish = false
+            self.finishContinuations.removeAll()
         }
 
         do {
             try await stream.startCapture()
         } catch {
             resetState()
-            writer.cancelWriting()
             throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
     }
@@ -127,73 +95,58 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
             throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
 
-        let snapshot = stateLock.withLock { (writer, videoInput, audioInput, sessionStarted, terminalError) }
-        snapshot.1?.markAsFinished()
-        snapshot.2?.markAsFinished()
-
-        if let writer = snapshot.0 {
-            if snapshot.3 {
-                await withCheckedContinuation { continuation in
-                    writer.finishWriting { continuation.resume() }
-                }
-            } else {
-                writer.cancelWriting()
-            }
-        }
+        await waitForRecordingOutputToFinish()
+        let error = stateLock.withLock { terminalError }
         resetState()
 
-        if let error = snapshot.4 {
+        if let error {
             throw CaptureError.recordingFailed(Self.errorDetails(error))
-        }
-        if let error = snapshot.0?.error {
-            throw CaptureError.recordingFailed(Self.errorDetails(error))
-        }
-    }
-
-    public func stream(
-        _ stream: SCStream,
-        didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
-        of outputType: SCStreamOutputType
-    ) {
-        guard sampleBuffer.isValid, CMSampleBufferDataIsReady(sampleBuffer) else { return }
-
-        stateLock.withLock {
-            guard let writer else { return }
-            if !sessionStarted {
-                guard outputType == .screen else { return }
-                writer.startSession(atSourceTime: sampleBuffer.presentationTimeStamp)
-                sessionStarted = true
-            }
-
-            switch outputType {
-            case .screen:
-                if videoInput?.isReadyForMoreMediaData == true {
-                    videoInput?.append(sampleBuffer)
-                }
-            case .audio:
-                if audioInput?.isReadyForMoreMediaData == true {
-                    audioInput?.append(sampleBuffer)
-                }
-            case .microphone:
-                break
-            @unknown default:
-                break
-            }
         }
     }
 
     public func stream(_ stream: SCStream, didStopWithError error: Error) {
-        stateLock.withLock { terminalError = error }
+        completeRecording(with: error)
+    }
+
+    public func recordingOutputDidStartRecording(_ recordingOutput: SCRecordingOutput) {}
+
+    public func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
+        completeRecording(with: nil)
+    }
+
+    public func recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {
+        completeRecording(with: error)
+    }
+
+    private func waitForRecordingOutputToFinish() async {
+        await withCheckedContinuation { continuation in
+            let shouldResumeImmediately = stateLock.withLock {
+                if didFinish || terminalError != nil { return true }
+                finishContinuations.append(continuation)
+                return false
+            }
+            if shouldResumeImmediately { continuation.resume() }
+        }
+    }
+
+    private func completeRecording(with error: Error?) {
+        let continuations = stateLock.withLock {
+            if let error { terminalError = error }
+            didFinish = true
+            let pending = finishContinuations
+            finishContinuations.removeAll()
+            return pending
+        }
+        continuations.forEach { $0.resume() }
     }
 
     private func resetState() {
         stateLock.withLock {
             stream = nil
-            writer = nil
-            videoInput = nil
-            audioInput = nil
-            sessionStarted = false
+            recordingOutput = nil
             terminalError = nil
+            didFinish = false
+            finishContinuations.removeAll()
         }
     }
 

@@ -24,7 +24,7 @@ CoreAudio / WASAPI + hardware video encoders
 
 ## 录屏管线
 
-`SCStream` 分别在视频和音频队列输出采样，`AVAssetWriter` 实时写入 H.264/AAC MP4。编码会话以首个有效视频帧的时间戳开始，停止采集后依次结束输入并完成文件封装。应用自身画面与音频默认从主屏幕录制中过滤。
+macOS 15 及以上使用 `SCRecordingOutput` 直接封装 `SCStream` 的画面与系统音频，输出 H.264/AAC MP4。文件收尾由 ScreenCaptureKit 管理，停止操作等待录制输出 delegate 确认完成后才向 UI 报告成功。应用自身画面与音频默认从主屏幕录制中过滤。
 
 ## 首个垂直切片
 

@@ -2,7 +2,7 @@
 
 Windows 与 macOS 的本地优先截屏、标注和录屏工具。
 
-当前阶段：Phase 0。macOS 截图与非破坏标注首版已经完整。主屏幕录制与系统音频已接入 ScreenCaptureKit，并使用 H.264/AAC 输出 MP4；真实权限环境的短录制验收仍待执行。
+当前阶段：Phase 0。macOS 截图与非破坏标注首版已经完整。主屏幕录制与系统音频使用 ScreenCaptureKit 原生录制输出 H.264/AAC MP4，最低支持 macOS 15。
 
 ## 原则
 
@@ -38,5 +38,5 @@ xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
 1. macOS 全屏捕获、区域选择、预览与 PNG 保存。✅
 2. 窗口识别、剪贴板和全局快捷键。✅
 3. 非破坏标注模型与编辑器：矩形、箭头、文字、序号和马赛克。✅
-4. ScreenCaptureKit 主屏幕录制、系统音频和 MP4 导出已实现；麦克风与真实录制验收待完成。
+4. ScreenCaptureKit 主屏幕录制、系统音频和 MP4 导出已实现；麦克风待完成。
 5. Windows Graphics Capture / WASAPI 后端。
