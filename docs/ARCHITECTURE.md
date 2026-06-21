@@ -1,0 +1,26 @@
+# 架构
+
+WorldCapture 采用共享领域模型与平台原生采集后端分离的结构。
+
+```text
+UI / Editor
+    |
+Capture domain model + project format
+    |
+macOS ScreenCaptureKit | Windows Graphics Capture
+    |
+CoreAudio / WASAPI + hardware video encoders
+```
+
+## 边界
+
+- `macos/`：macOS 权限、屏幕/窗口枚举、像素捕获与录制。
+- `windows/`：Windows 捕获后端，Phase 4 建立。
+- `core/`：跨平台工程文件、标注、时间线与导出语义，Phase 2 建立。
+
+视频与截图不经过云服务。未来的分享服务必须保持可选，并与采集进程隔离。
+
+## 首个垂直切片
+
+应用列出主显示器，通过 ScreenCaptureKit 捕获一帧，在应用内预览，并允许用户保存 PNG。该切片用于验证权限、色彩空间、Retina 尺寸和错误处理。
+
