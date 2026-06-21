@@ -2,6 +2,8 @@
 
 Windows 与 macOS 的本地优先截屏、标注和录屏工具。
 
+开发、构建、测试、权限、发布和故障排查请参阅 [完整开发文档](docs/DEVELOPMENT.md)。
+
 当前阶段：Phase 0。macOS 截图与非破坏标注首版已经完整。主屏幕录制与系统音频使用 ScreenCaptureKit 原生录制输出 H.264/AAC MP4，最低支持 macOS 15。
 
 ## 原则
