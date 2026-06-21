@@ -3,7 +3,7 @@ import Testing
 
 @Test func captureErrorsHaveUserFacingDescriptions() {
     #expect(CaptureError.noDisplayAvailable.errorDescription?.isEmpty == false)
+    #expect(CaptureError.windowUnavailable.errorDescription?.contains("窗口") == true)
     #expect(CaptureError.permissionDenied.errorDescription?.contains("权限") == true)
     #expect(CaptureError.imageEncodingFailed.errorDescription?.contains("PNG") == true)
 }
-
