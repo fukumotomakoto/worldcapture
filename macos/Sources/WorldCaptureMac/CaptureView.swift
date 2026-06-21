@@ -14,6 +14,7 @@ final class CaptureViewModel: ObservableObject {
     @Published var annotationText = "说明"
     @Published var isRecording = false
     @Published var lastRecordingURL: URL?
+    @Published var recordingDuration: TimeInterval = 0
 
     var nextAnnotationNumber: Int {
         annotations.filter { $0.kind == .number }.count + 1
@@ -23,6 +24,13 @@ final class CaptureViewModel: ObservableObject {
     private let regionSelector = RegionSelector()
     private let screenRecorder = ScreenRecorder()
     private var globalHotKey: GlobalHotKey?
+    private var recordingTimer: Timer?
+    private var recordingStartedAt: Date?
+
+    var recordingDurationText: String {
+        let totalSeconds = max(0, Int(recordingDuration))
+        return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
 
     init(capturer: any ScreenCapturing = ScreenCapturer()) {
         self.capturer = capturer
@@ -131,6 +139,7 @@ final class CaptureViewModel: ObservableObject {
             try await screenRecorder.startMainDisplayRecording(to: url)
             lastRecordingURL = url
             isRecording = true
+            startRecordingTimer()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -140,10 +149,17 @@ final class CaptureViewModel: ObservableObject {
         do {
             try await screenRecorder.stopRecording()
             isRecording = false
+            stopRecordingTimer()
         } catch {
             isRecording = screenRecorder.isRecording
+            if !isRecording { stopRecordingTimer() }
             errorMessage = error.localizedDescription
         }
+    }
+
+    func revealLastRecording() {
+        guard let lastRecordingURL else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([lastRecordingURL])
     }
 
     func save() {
@@ -175,6 +191,27 @@ final class CaptureViewModel: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd-HHmmss"
         return formatter.string(from: Date())
+    }
+
+    private func startRecordingTimer() {
+        recordingDuration = 0
+        recordingStartedAt = Date()
+        recordingTimer?.invalidate()
+        recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let recordingStartedAt = self.recordingStartedAt else { return }
+                self.recordingDuration = Date().timeIntervalSince(recordingStartedAt)
+            }
+        }
+    }
+
+    private func stopRecordingTimer() {
+        if let recordingStartedAt {
+            recordingDuration = Date().timeIntervalSince(recordingStartedAt)
+        }
+        recordingStartedAt = nil
+        recordingTimer?.invalidate()
+        recordingTimer = nil
     }
 }
 
@@ -240,10 +277,26 @@ struct CaptureView: View {
                     Circle().fill(.red).frame(width: 8, height: 8)
                     Text("正在录制主屏幕与系统音频")
                         .font(.callout.weight(.medium))
+                    Text(model.recordingDurationText)
+                        .font(.system(.callout, design: .monospaced).weight(.semibold))
                     Spacer()
                     Text(model.lastRecordingURL?.lastPathComponent ?? "")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 10)
+            } else if let recordingURL = model.lastRecordingURL {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("录制已保存：\(recordingURL.lastPathComponent)")
+                        .font(.callout)
+                        .lineLimit(1)
+                    Text(model.recordingDurationText)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("在 Finder 中显示") { model.revealLastRecording() }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 10)
@@ -310,7 +363,7 @@ struct CaptureView: View {
                 }
             }
         }
-        .alert("截屏失败", isPresented: Binding(
+        .alert("操作失败", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
         )) {
