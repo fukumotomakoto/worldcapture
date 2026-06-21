@@ -9,6 +9,8 @@ final class CaptureViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var windows: [CaptureWindow] = []
     @Published var selectedWindowID: CGWindowID?
+    @Published var annotations: [CaptureAnnotation] = []
+    @Published var annotationTool: AnnotationKind = .rectangle
 
     private let capturer: any ScreenCapturing
     private let regionSelector = RegionSelector()
@@ -26,6 +28,7 @@ final class CaptureViewModel: ObservableObject {
         do {
             let captured = try await capturer.captureMainDisplay()
             image = NSImage(cgImage: captured, size: .zero)
+            annotations = []
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -40,6 +43,7 @@ final class CaptureViewModel: ObservableObject {
         do {
             let captured = try await capturer.captureMainDisplay(region: region)
             image = NSImage(cgImage: captured, size: .zero)
+            annotations = []
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -65,6 +69,7 @@ final class CaptureViewModel: ObservableObject {
         do {
             let captured = try await capturer.captureWindow(id: selectedWindowID)
             image = NSImage(cgImage: captured, size: .zero)
+            annotations = []
             await loadWindows()
         } catch {
             errorMessage = error.localizedDescription
@@ -72,7 +77,7 @@ final class CaptureViewModel: ObservableObject {
     }
 
     func copyToClipboard() {
-        guard let image, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let cgImage = renderedImage() else {
             return
         }
         do {
@@ -92,8 +97,16 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
+    func undoAnnotation() {
+        if !annotations.isEmpty { annotations.removeLast() }
+    }
+
+    func clearAnnotations() {
+        annotations.removeAll()
+    }
+
     func save() {
-        guard let image, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+        guard let cgImage = renderedImage() else {
             return
         }
 
@@ -107,6 +120,14 @@ final class CaptureViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func renderedImage() -> CGImage? {
+        guard let image, let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            return nil
+        }
+        guard !annotations.isEmpty else { return original }
+        return AnnotationRenderer.render(image: original, annotations: annotations)
     }
 
     private static func timestamp() -> String {
@@ -163,15 +184,45 @@ struct CaptureView: View {
             }
             .padding(20)
 
+            if model.image != nil {
+                HStack(spacing: 10) {
+                    Picker("标注工具", selection: $model.annotationTool) {
+                        Text("矩形").tag(AnnotationKind.rectangle)
+                        Text("箭头").tag(AnnotationKind.arrow)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 180)
+
+                    Button("撤销") { model.undoAnnotation() }
+                        .keyboardShortcut("z", modifiers: .command)
+                        .disabled(model.annotations.isEmpty)
+                    Button("清空标注") { model.clearAnnotations() }
+                        .disabled(model.annotations.isEmpty)
+                    Spacer()
+                    Text("非破坏编辑：保存或复制时才渲染")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+            }
+
             Divider()
 
             ZStack {
                 Color(nsColor: .windowBackgroundColor)
                 if let image = model.image {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .padding(24)
+                    ZStack {
+                        Image(nsImage: image)
+                            .resizable()
+                            .scaledToFit()
+                        AnnotationCanvas(
+                            imageSize: image.size,
+                            annotations: $model.annotations,
+                            tool: model.annotationTool
+                        )
+                    }
+                    .padding(24)
                 } else if model.isCapturing {
                     ProgressView("正在捕获…")
                 } else {
