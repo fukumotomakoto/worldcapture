@@ -24,8 +24,7 @@ swift run WorldCaptureMac
 ```bash
 xcodegen generate
 xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
-  -configuration Debug -derivedDataPath .derived-data \
-  CODE_SIGNING_ALLOWED=NO build
+  -configuration Debug -derivedDataPath .derived-data build
 ```
 
 构建产物位于 `.derived-data/Build/Products/Debug/WorldCapture.app`。正式发布时改用 Apple Developer ID 签名并执行 notarization。

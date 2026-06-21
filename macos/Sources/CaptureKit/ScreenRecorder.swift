@@ -63,7 +63,7 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
         do {
             writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
         } catch {
-            throw CaptureError.recordingFailed(error.localizedDescription)
+            throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
 
         let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: [
@@ -113,7 +113,7 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
         } catch {
             resetState()
             writer.cancelWriting()
-            throw CaptureError.recordingFailed(error.localizedDescription)
+            throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
     }
 
@@ -124,7 +124,7 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
         do {
             try await activeStream.stopCapture()
         } catch {
-            throw CaptureError.recordingFailed(error.localizedDescription)
+            throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
 
         let snapshot = stateLock.withLock { (writer, videoInput, audioInput, sessionStarted, terminalError) }
@@ -143,10 +143,10 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
         resetState()
 
         if let error = snapshot.4 {
-            throw CaptureError.recordingFailed(error.localizedDescription)
+            throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
         if let error = snapshot.0?.error {
-            throw CaptureError.recordingFailed(error.localizedDescription)
+            throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
     }
 
@@ -195,5 +195,17 @@ public final class ScreenRecorder: NSObject, SCStreamOutput, SCStreamDelegate, @
             sessionStarted = false
             terminalError = nil
         }
+    }
+
+    private static func errorDetails(_ error: Error) -> String {
+        let nsError = error as NSError
+        var parts = ["\(nsError.domain) (\(nsError.code)): \(nsError.localizedDescription)"]
+        if let reason = nsError.localizedFailureReason, !reason.isEmpty {
+            parts.append(reason)
+        }
+        if let suggestion = nsError.localizedRecoverySuggestion, !suggestion.isEmpty {
+            parts.append(suggestion)
+        }
+        return parts.joined(separator: " — ")
     }
 }

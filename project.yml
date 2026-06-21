@@ -10,6 +10,8 @@ settings:
     SWIFT_VERSION: "6.0"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     CLANG_ENABLE_MODULES: YES
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
 
 targets:
   CaptureKit:
@@ -33,15 +35,23 @@ targets:
       - target: CaptureKit
     info:
       path: macos/App/Info.plist
+      properties:
+        CFBundleDisplayName: WorldCapture
+        LSApplicationCategoryType: public.app-category.productivity
+        NSAudioCaptureUsageDescription: WorldCapture 需要访问系统音频，以便将电脑声音录入屏幕录像。
+        NSMicrophoneUsageDescription: WorldCapture 需要访问麦克风，以便在屏幕录像中加入讲解声音。
+        NSHighResolutionCapable: true
+        NSSupportsAutomaticGraphicsSwitching: true
     entitlements:
       path: macos/App/WorldCapture.entitlements
+      properties:
+        com.apple.security.device.audio-input: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.app
         PRODUCT_NAME: WorldCapture
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
-        CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
 
   CaptureKitTests:
