@@ -18,7 +18,7 @@ CoreAudio / WASAPI + hardware video encoders
 - `windows/`：Windows 捕获后端，Phase 4 建立。
 - `core/`：跨平台工程文件、标注、时间线与导出语义，Phase 2 建立。
 
-当前标注模型使用归一化坐标保存，与截图像素尺寸和 UI 缩放无关。预览时由 SwiftUI Canvas 绘制，保存或复制时由 Core Graphics 合成到原始分辨率；原图始终不被改写。
+当前标注模型使用归一化坐标保存，与截图像素尺寸和 UI 缩放无关。预览时由 SwiftUI Canvas 绘制，保存或复制时由 Core Graphics 合成到原始分辨率；原图始终不被改写。文字和序号作为结构化标注保存，马赛克在导出时对选区执行降采样再无插值放大。
 
 视频与截图不经过云服务。未来的分享服务必须保持可选，并与采集进程隔离。
 

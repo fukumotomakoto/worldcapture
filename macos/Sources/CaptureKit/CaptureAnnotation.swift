@@ -4,6 +4,9 @@ import Foundation
 public enum AnnotationKind: String, Codable, CaseIterable, Sendable {
     case rectangle
     case arrow
+    case text
+    case number
+    case mosaic
 }
 
 public struct NormalizedPoint: Codable, Equatable, Sendable {
@@ -21,16 +24,19 @@ public struct CaptureAnnotation: Codable, Equatable, Identifiable, Sendable {
     public let kind: AnnotationKind
     public let start: NormalizedPoint
     public let end: NormalizedPoint
+    public let label: String?
 
     public init(
         id: UUID = UUID(),
         kind: AnnotationKind,
         start: NormalizedPoint,
-        end: NormalizedPoint
+        end: NormalizedPoint,
+        label: String? = nil
     ) {
         self.id = id
         self.kind = kind
         self.start = start
         self.end = end
+        self.label = label
     }
 }

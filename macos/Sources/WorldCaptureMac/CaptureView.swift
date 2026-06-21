@@ -11,6 +11,11 @@ final class CaptureViewModel: ObservableObject {
     @Published var selectedWindowID: CGWindowID?
     @Published var annotations: [CaptureAnnotation] = []
     @Published var annotationTool: AnnotationKind = .rectangle
+    @Published var annotationText = "说明"
+
+    var nextAnnotationNumber: Int {
+        annotations.filter { $0.kind == .number }.count + 1
+    }
 
     private let capturer: any ScreenCapturing
     private let regionSelector = RegionSelector()
@@ -189,9 +194,18 @@ struct CaptureView: View {
                     Picker("标注工具", selection: $model.annotationTool) {
                         Text("矩形").tag(AnnotationKind.rectangle)
                         Text("箭头").tag(AnnotationKind.arrow)
+                        Text("文字").tag(AnnotationKind.text)
+                        Text("序号").tag(AnnotationKind.number)
+                        Text("马赛克").tag(AnnotationKind.mosaic)
                     }
                     .pickerStyle(.segmented)
-                    .frame(width: 180)
+                    .frame(width: 360)
+
+                    if model.annotationTool == .text {
+                        TextField("标注文字", text: $model.annotationText)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 160)
+                    }
 
                     Button("撤销") { model.undoAnnotation() }
                         .keyboardShortcut("z", modifiers: .command)
@@ -219,7 +233,9 @@ struct CaptureView: View {
                         AnnotationCanvas(
                             imageSize: image.size,
                             annotations: $model.annotations,
-                            tool: model.annotationTool
+                            tool: model.annotationTool,
+                            textLabel: model.annotationText,
+                            nextNumber: model.nextAnnotationNumber
                         )
                     }
                     .padding(24)

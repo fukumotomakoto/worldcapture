@@ -18,6 +18,19 @@ import Testing
     #expect(NormalizedPoint(x: -1, y: 2) == NormalizedPoint(x: 0, y: 1))
 }
 
+@Test func textAnnotationPersistsItsLabel() throws {
+    let annotation = CaptureAnnotation(
+        kind: .text,
+        start: NormalizedPoint(x: 0.2, y: 0.3),
+        end: NormalizedPoint(x: 0.2, y: 0.3),
+        label: "重点"
+    )
+    let data = try JSONEncoder().encode(annotation)
+    let decoded = try JSONDecoder().decode(CaptureAnnotation.self, from: data)
+    #expect(decoded.label == "重点")
+    #expect(decoded.kind == .text)
+}
+
 @Test func rendererPreservesImageDimensions() throws {
     let context = try #require(CGContext(
         data: nil,
@@ -41,3 +54,33 @@ import Testing
     #expect(rendered.height == image.height)
 }
 
+@Test func mosaicChangesPixelsWithoutChangingCanvasSize() throws {
+    let context = try #require(CGContext(
+        data: nil,
+        width: 140,
+        height: 80,
+        bitsPerComponent: 8,
+        bytesPerRow: 0,
+        space: CGColorSpaceCreateDeviceRGB(),
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ))
+    for x in 0..<140 {
+        context.setFillColor(gray: CGFloat(x) / 139, alpha: 1)
+        context.fill(CGRect(x: x, y: 0, width: 1, height: 80))
+    }
+    let image = try #require(context.makeImage())
+    let rendered = try #require(AnnotationRenderer.render(
+        image: image,
+        annotations: [CaptureAnnotation(
+            kind: .mosaic,
+            start: NormalizedPoint(x: 0, y: 0),
+            end: NormalizedPoint(x: 1, y: 1)
+        )]
+    ))
+    let originalData = try #require(image.dataProvider?.data)
+    let renderedData = try #require(rendered.dataProvider?.data)
+
+    #expect(rendered.width == image.width)
+    #expect(rendered.height == image.height)
+    #expect(!CFEqual(originalData, renderedData))
+}

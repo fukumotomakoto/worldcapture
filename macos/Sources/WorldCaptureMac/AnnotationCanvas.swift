@@ -5,6 +5,8 @@ struct AnnotationCanvas: View {
     let imageSize: CGSize
     @Binding var annotations: [CaptureAnnotation]
     let tool: AnnotationKind
+    let textLabel: String
+    let nextNumber: Int
 
     @State private var draft: CaptureAnnotation?
 
@@ -21,13 +23,14 @@ struct AnnotationCanvas: View {
             }
             .contentShape(Rectangle())
             .gesture(
-                DragGesture(minimumDistance: 2)
+                DragGesture(minimumDistance: 0)
                     .onChanged { value in
                         guard imageRect.contains(value.startLocation) else { return }
                         draft = CaptureAnnotation(
                             kind: tool,
                             start: normalized(value.startLocation, in: imageRect),
-                            end: normalized(clamped(value.location, to: imageRect), in: imageRect)
+                            end: normalized(clamped(value.location, to: imageRect), in: imageRect),
+                            label: labelForCurrentTool
                         )
                     }
                     .onEnded { _ in
@@ -66,12 +69,46 @@ struct AnnotationCanvas: View {
                 x: end.x - length * cos(angle + spread),
                 y: end.y - length * sin(angle + spread)
             ))
+        case .text:
+            context.draw(
+                Text(annotation.label ?? "说明")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.red),
+                at: start,
+                anchor: .topLeading
+            )
+        case .number:
+            let circle = CGRect(x: start.x - 14, y: start.y - 14, width: 28, height: 28)
+            context.fill(Path(ellipseIn: circle), with: .color(.red))
+            context.draw(
+                Text(annotation.label ?? "1").font(.system(size: 15, weight: .bold)).foregroundStyle(.white),
+                at: start,
+                anchor: .center
+            )
+        case .mosaic:
+            let rect = CGRect(
+                x: min(start.x, end.x),
+                y: min(start.y, end.y),
+                width: abs(end.x - start.x),
+                height: abs(end.y - start.y)
+            )
+            context.fill(Path(rect), with: .color(.gray.opacity(0.55)))
         }
-        context.stroke(
-            path,
-            with: .color(.red),
-            style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
-        )
+        if annotation.kind == .rectangle || annotation.kind == .arrow {
+            context.stroke(
+                path,
+                with: .color(.red),
+                style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+            )
+        }
+    }
+
+    private var labelForCurrentTool: String? {
+        switch tool {
+        case .text: textLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "说明" : textLabel
+        case .number: String(nextNumber)
+        default: nil
+        }
     }
 
     private func aspectFitRect(content: CGSize, container: CGSize) -> CGRect {
@@ -107,4 +144,3 @@ struct AnnotationCanvas: View {
         )
     }
 }
-

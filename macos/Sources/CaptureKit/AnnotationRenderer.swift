@@ -1,5 +1,6 @@
 import AppKit
 import CoreGraphics
+import CoreText
 
 public enum AnnotationRenderer {
     public static func render(
@@ -19,6 +20,11 @@ public enum AnnotationRenderer {
 
         let canvas = CGRect(x: 0, y: 0, width: image.width, height: image.height)
         context.draw(image, in: canvas)
+
+        for annotation in annotations where annotation.kind == .mosaic {
+            drawMosaic(image: image, annotation: annotation, in: context)
+        }
+
         context.setStrokeColor(color.cgColor)
         context.setLineCap(.round)
         context.setLineJoin(.round)
@@ -37,6 +43,18 @@ public enum AnnotationRenderer {
                 ))
             case .arrow:
                 drawArrow(in: context, start: start, end: end)
+            case .text:
+                drawText(
+                    annotation.label?.isEmpty == false ? annotation.label! : "说明",
+                    at: start,
+                    in: context,
+                    image: image,
+                    color: color.cgColor
+                )
+            case .number:
+                drawNumber(annotation.label ?? "1", at: start, in: context, image: image, color: color.cgColor)
+            case .mosaic:
+                break
             }
         }
         return context.makeImage()
@@ -69,5 +87,84 @@ public enum AnnotationRenderer {
         ))
         context.strokePath()
     }
-}
 
+    private static func drawMosaic(
+        image: CGImage,
+        annotation: CaptureAnnotation,
+        in context: CGContext
+    ) {
+        let start = point(annotation.start, image: image)
+        let end = point(annotation.end, image: image)
+        let rect = CGRect(
+            x: min(start.x, end.x),
+            y: min(start.y, end.y),
+            width: abs(end.x - start.x),
+            height: abs(end.y - start.y)
+        ).integral.intersection(CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        guard rect.width >= 2, rect.height >= 2,
+              let crop = image.cropping(to: rect) else { return }
+
+        let blockSize: CGFloat = 14
+        let lowWidth = max(1, Int((rect.width / blockSize).rounded(.up)))
+        let lowHeight = max(1, Int((rect.height / blockSize).rounded(.up)))
+        guard let lowContext = CGContext(
+            data: nil,
+            width: lowWidth,
+            height: lowHeight,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return }
+        lowContext.interpolationQuality = .low
+        lowContext.draw(crop, in: CGRect(x: 0, y: 0, width: lowWidth, height: lowHeight))
+        guard let pixelated = lowContext.makeImage() else { return }
+        context.saveGState()
+        context.interpolationQuality = .none
+        context.draw(pixelated, in: rect)
+        context.restoreGState()
+    }
+
+    private static func drawText(
+        _ text: String,
+        at point: CGPoint,
+        in context: CGContext,
+        image: CGImage,
+        color: CGColor
+    ) {
+        let fontSize = max(18, CGFloat(min(image.width, image.height)) * 0.04)
+        let attributed = NSAttributedString(string: text, attributes: [
+            .font: CTFontCreateWithName("Helvetica-Bold" as CFString, fontSize, nil),
+            .foregroundColor: color,
+            .strokeColor: NSColor.white.cgColor,
+            .strokeWidth: -2.5,
+        ])
+        let line = CTLineCreateWithAttributedString(attributed)
+        context.textPosition = point
+        CTLineDraw(line, context)
+    }
+
+    private static func drawNumber(
+        _ text: String,
+        at point: CGPoint,
+        in context: CGContext,
+        image: CGImage,
+        color: CGColor
+    ) {
+        let radius = max(14, CGFloat(min(image.width, image.height)) * 0.027)
+        context.setFillColor(color)
+        context.fillEllipse(in: CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2))
+
+        let font = CTFontCreateWithName("Helvetica-Bold" as CFString, radius * 1.25, nil)
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: [
+            .font: font,
+            .foregroundColor: NSColor.white.cgColor,
+        ]))
+        let bounds = CTLineGetBoundsWithOptions(line, [.useGlyphPathBounds])
+        context.textPosition = CGPoint(
+            x: point.x - bounds.width / 2 - bounds.minX,
+            y: point.y - bounds.height / 2 - bounds.minY
+        )
+        CTLineDraw(line, context)
+    }
+}
