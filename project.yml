@@ -12,9 +12,15 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "15.0"
     CLANG_ENABLE_MODULES: YES
     CODE_SIGN_STYLE: Manual
-    CODE_SIGN_IDENTITY: "Apple Development"
     DEVELOPMENT_TEAM: 43M5KN7MPD
     PROVISIONING_PROFILE_SPECIFIER: ""
+  configs:
+    # Debug：Apple Development 本地开发签名（TCC 授权跨重建稳定）
+    Debug:
+      CODE_SIGN_IDENTITY: "Apple Development"
+    # Release：Developer ID Application 分发签名（需付费会员证书，配合公证）
+    Release:
+      CODE_SIGN_IDENTITY: "Developer ID Application"
 
 targets:
   CaptureKit:

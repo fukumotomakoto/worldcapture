@@ -707,28 +707,39 @@ CURRENT_PROJECT_VERSION: 1
 - 本文档头部状态；
 - changelog（尚未建立）。
 
-### 21.2 Release 构建
+### 21.2 签名分发（Developer ID + 公证）
 
-本机 Debug 开发签名（Apple Development）不能分发。正式发布需要：
+分发走 **Developer ID + 公证**（非 App Store），原因见 §22 与产品定位（纯本地免费工具，滚动截屏依赖合成事件与辅助功能权限，无法在 App Store 沙盒中存活）。
 
-- Apple Developer Program；
-- Developer ID Application 证书；
-- hardened runtime；
-- notarization；
-- stapling。
+`project.yml` 已按配置区分签名身份：
 
-建议先建立 Archive：
+- **Debug** → `Apple Development`（本地开发，TCC 授权跨重建稳定）；
+- **Release** → `Developer ID Application`（分发签名，配合 hardened runtime 与公证）。
+
+#### 一次性准备（由发布负责人提供，不入库）
+
+1. 加入 Apple Developer Program（付费），在钥匙串安装 **Developer ID Application** 证书
+   （Xcode → Settings → Accounts → Manage Certificates → `+` → Developer ID Application）。
+2. 存储公证凭据为一个 keychain profile：
+
+   ```bash
+   xcrun notarytool store-credentials <profile> \
+     --apple-id <你的 Apple ID> \
+     --team-id 43M5KN7MPD \
+     --password <App 专用密码>
+   ```
+
+   （App 专用密码在 appleid.apple.com 生成；也可改用 App Store Connect API 密钥。）
+
+#### 一键发布
 
 ```bash
-xcodegen generate
-xcodebuild archive \
-  -project WorldCapture.xcodeproj \
-  -scheme WorldCapture \
-  -configuration Release \
-  -archivePath build/WorldCapture.xcarchive
+scripts/release.sh <profile>
 ```
 
-证书、Team ID、导出配置和 notarization 凭据必须由发布负责人提供，不得写入仓库。
+脚本依次执行：生成工程 → `Release` 归档 → 按 `scripts/ExportOptions.plist`（`developer-id`）导出 → 打包 zip → `notarytool submit --wait` 公证 → `stapler staple` 装订 → `codesign`/`spctl` 验证，产出 `build/WorldCapture-notarized.zip`。
+
+证书与公证凭据必须由发布负责人提供，**不得写入仓库**。
 
 ## 22. 隐私与安全要求
 
