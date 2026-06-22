@@ -37,7 +37,8 @@ final class CaptureViewModel: ObservableObject {
     @Published var recordingDuration: TimeInterval = 0
     @Published var hasScreenPermission = true
     @Published var hasAccessibilityPermission = true
-    @Published var isWindowPickerPresented = false
+    /// 是否在主界面内容区内嵌显示缩略图捕获目标选择器。
+    @Published var showSourcePicker = false
 
     var nextAnnotationNumber: Int {
         annotations.filter { $0.kind == .number }.count + 1
@@ -214,6 +215,18 @@ final class CaptureViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// 截取 WorldCapture 自身主窗口（含工具栏界面），用于做软件本身的演示截图。
+    func captureOwnWindow() async {
+        let candidate = NSApp.mainWindow
+            ?? NSApp.keyWindow
+            ?? NSApp.windows.first(where: { $0.isVisible && !($0 is NSPanel) })
+        guard let window = candidate, window.windowNumber > 0 else {
+            errorMessage = "找不到可截取的本应用窗口。"
+            return
+        }
+        await captureWindow(id: CGWindowID(window.windowNumber))
     }
 
     /// 捕获指定显示器整屏（供可视化选择器的“整个屏幕”使用）。
@@ -432,90 +445,10 @@ struct CaptureView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("WorldCapture")
-                            .font(.title2.bold())
-                        Text("本地优先的跨平台截屏与录屏工具")
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button {
-                        Task { await model.toggleRecording() }
-                    } label: {
-                        Label(
-                            model.isRecording ? "停止录制" : "录制屏幕",
-                            systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
-                        )
-                        .foregroundStyle(model.isRecording ? .red : .primary)
-                    }
-
-                    Button("钉屏") { model.pinCurrentImage() }
-                        .disabled(model.image == nil)
-                        .help("把当前截图钉为置顶悬浮窗")
-
-                    Button("保存 PNG") { model.save() }
-                        .disabled(model.image == nil)
-
-                    Button("复制") { model.copyToClipboard() }
-                        .keyboardShortcut("c", modifiers: [.command, .shift])
-                        .disabled(model.image == nil)
-                }
-
-                HStack(spacing: 10) {
-                    Text("窗口")
-                        .font(.callout.weight(.medium))
-                    Picker("选择窗口", selection: $model.selectedWindowID) {
-                        Text(model.windows.isEmpty ? "没有可用窗口" : "选择窗口").tag(CGWindowID?.none)
-                        ForEach(model.windows) { window in
-                            Text(window.displayName).tag(Optional(window.id))
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(minWidth: 260, maxWidth: 380)
-
-                    Button {
-                        Task { await model.loadWindows() }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .help("刷新窗口列表")
-
-                    Button("截取窗口") {
-                        Task { await model.captureSelectedWindow() }
-                    }
-                    .disabled(model.isCapturing || model.selectedWindowID == nil)
-
-                    Button("窗口预览…") { model.isWindowPickerPresented = true }
-                        .disabled(model.isCapturing)
-                        .help("以缩略图选择窗口或整个屏幕")
-
-                    Divider().frame(height: 20)
-
-                    Button("选择区域") {
-                        Task { await model.captureRegion() }
-                    }
-                    .disabled(model.isCapturing)
-
-                    Button("截取主屏幕") {
-                        Task { await model.capture() }
-                    }
-                    .disabled(model.isCapturing)
-
-                    Button("滚动截屏") {
-                        Task { await model.captureScrolling() }
-                    }
-                    .disabled(model.isCapturing)
-                    .help("选择区域后自动滚动并拼接成长截图")
-
-                    Spacer()
-                    Text("⌘⇧2 区域截屏")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(20)
+            headerBar
+            Divider()
+            captureBar
+            Divider()
 
             if !model.hasScreenPermission {
                 HStack(spacing: 10) {
@@ -587,109 +520,13 @@ struct CaptureView: View {
                 .padding(.bottom, 10)
             }
 
-            if model.image != nil {
-                HStack(spacing: 10) {
-                    Picker("标注工具", selection: $model.annotationTool) {
-                        Text("矩形").tag(AnnotationKind.rectangle)
-                        Text("箭头").tag(AnnotationKind.arrow)
-                        Text("文字").tag(AnnotationKind.text)
-                        Text("序号").tag(AnnotationKind.number)
-                        Text("马赛克").tag(AnnotationKind.mosaic)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 360)
-
-                    HStack(spacing: 6) {
-                        ForEach(CaptureViewModel.palette, id: \.self) { hex in
-                            let isSelected = model.annotationColorHex == hex
-                            Circle()
-                                .fill(Self.swatchColor(hex))
-                                .frame(width: 18, height: 18)
-                                .overlay(
-                                    Circle().stroke(
-                                        isSelected ? Color.accentColor : Color.primary.opacity(0.25),
-                                        lineWidth: isSelected ? 2.5 : 1
-                                    )
-                                )
-                                .onTapGesture { model.setAnnotationColor(hex) }
-                        }
-                    }
-                    .help("标注颜色")
-
-                    Picker("线宽", selection: Binding(
-                        get: { model.annotationLineWidth },
-                        set: { model.setAnnotationLineWidth($0) }
-                    )) {
-                        ForEach(CaptureViewModel.lineWidthPresets, id: \.value) { preset in
-                            Text(preset.name).tag(preset.value)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .frame(width: 120)
-                    .help("线宽")
-
-                    if model.isTextSelected {
-                        TextField("编辑文字", text: Binding(
-                            get: { model.selectedAnnotation?.label ?? "" },
-                            set: { model.updateSelectedLabel($0) }
-                        ))
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 160)
-                    } else if model.annotationTool == .text {
-                        TextField("标注文字", text: $model.annotationText)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 160)
-                    }
-
-                    Button("删除选中") { model.deleteSelectedAnnotation() }
-                        .keyboardShortcut(.delete, modifiers: [])
-                        .disabled(!model.hasSelection)
-                    Button("撤销") { model.undoAnnotation() }
-                        .keyboardShortcut("z", modifiers: .command)
-                        .disabled(model.annotations.isEmpty)
-                    Button("清空标注") { model.clearAnnotations() }
-                        .disabled(model.annotations.isEmpty)
-                    Spacer()
-                    Text("点选可拖动/缩放，Shift 点选多选并批量改色改线宽或删除；保存/复制时才渲染")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+            if model.image != nil && !model.showSourcePicker {
+                annotationToolArea
+                annotationOperationArea
+                Divider()
             }
 
-            Divider()
-
-            ZStack {
-                Color(nsColor: .windowBackgroundColor)
-                if let image = model.image {
-                    ZStack {
-                        Image(nsImage: image)
-                            .resizable()
-                            .scaledToFit()
-                        AnnotationCanvas(
-                            imageSize: image.size,
-                            annotations: $model.annotations,
-                            selectedIDs: $model.selectedAnnotationIDs,
-                            tool: model.annotationTool,
-                            textLabel: model.annotationText,
-                            nextNumber: model.nextAnnotationNumber,
-                            colorHex: model.annotationColorHex,
-                            lineWidth: model.annotationLineWidth
-                        )
-                    }
-                    .padding(24)
-                } else if model.isCapturing {
-                    ProgressView("正在捕获…")
-                } else {
-                    ContentUnavailableView(
-                        "尚无截屏",
-                        systemImage: "rectangle.dashed",
-                        description: Text("点击“截取主屏幕”验证原生捕获链路。")
-                    )
-                }
-            }
+            contentArea
         }
         .alert("操作失败", isPresented: Binding(
             get: { model.errorMessage != nil },
@@ -699,16 +536,309 @@ struct CaptureView: View {
         } message: {
             Text(model.errorMessage ?? "未知错误")
         }
-        .sheet(isPresented: $model.isWindowPickerPresented) {
-            WindowPickerSheet(
-                onPickWindow: { id in Task { await model.captureWindow(id: id) } },
-                onPickDisplay: { id in Task { await model.captureDisplayFull(id: id) } }
-            )
-        }
         .task {
             model.installGlobalHotKey()
             model.refreshScreenPermission(requestIfNeeded: true)
             await model.loadWindows()
+        }
+    }
+
+    // MARK: - 顶部标题与全局动作
+
+    private var headerBar: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("WorldCapture")
+                    .font(.title2.bold())
+                Text("本地优先的跨平台截屏与录屏工具")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 24)
+            HStack(spacing: 10) {
+                Button {
+                    Task { await model.toggleRecording() }
+                } label: {
+                    Label(
+                        model.isRecording ? "停止录制" : "录制屏幕",
+                        systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
+                    )
+                }
+                .tint(model.isRecording ? Color.red : nil)
+
+                Button {
+                    model.pinCurrentImage()
+                } label: {
+                    Label("钉屏", systemImage: "pin")
+                }
+                .disabled(model.image == nil)
+                .help("把当前截图钉为置顶悬浮窗")
+
+                Button {
+                    model.save()
+                } label: {
+                    Label("保存", systemImage: "square.and.arrow.down")
+                }
+                .disabled(model.image == nil)
+
+                Button {
+                    model.copyToClipboard()
+                } label: {
+                    Label("复制", systemImage: "doc.on.doc")
+                }
+                .keyboardShortcut("c", modifiers: [.command, .shift])
+                .disabled(model.image == nil)
+            }
+            .labelStyle(.titleAndIcon)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+    }
+
+    // MARK: - 捕获来源工具栏
+
+    private var captureBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                Task { await model.captureRegion() }
+            } label: {
+                Label("区域", systemImage: "selection.pin.in.out")
+            }
+            .disabled(model.isCapturing)
+
+            Button {
+                Task { await model.capture() }
+            } label: {
+                Label("主屏幕", systemImage: "display")
+            }
+            .disabled(model.isCapturing)
+
+            Button {
+                Task { await model.captureScrolling() }
+            } label: {
+                Label("滚动长图", systemImage: "arrow.down.doc")
+            }
+            .disabled(model.isCapturing)
+            .help("选择区域后自动滚动并拼接成长截图")
+
+            Button {
+                Task { await model.captureOwnWindow() }
+            } label: {
+                Label("本窗口", systemImage: "macwindow.on.rectangle")
+            }
+            .disabled(model.isCapturing)
+            .help("截取 WorldCapture 自身窗口")
+
+            Divider().frame(height: 22)
+
+            Menu {
+                if model.windows.isEmpty {
+                    Text("没有可用窗口")
+                } else {
+                    ForEach(model.windows) { window in
+                        Button(window.displayName) {
+                            Task { await model.captureWindow(id: window.id) }
+                        }
+                    }
+                }
+                Divider()
+                Button("刷新列表") { Task { await model.loadWindows() } }
+            } label: {
+                Label("窗口", systemImage: "macwindow")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(model.isCapturing)
+            .help("直接截取某个窗口")
+
+            Button {
+                model.showSourcePicker.toggle()
+            } label: {
+                Label("缩略图选择", systemImage: "square.grid.2x2")
+            }
+            .disabled(model.isCapturing)
+            .help("以缩略图选择窗口或整个屏幕")
+
+            Spacer(minLength: 12)
+            Text("⌘⇧2")
+                .font(.callout.monospaced())
+                .foregroundStyle(.secondary)
+                .help("区域截屏快捷键")
+        }
+        .labelStyle(.titleAndIcon)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - 标注：工具区（绘制工具 / 颜色 / 线宽）
+
+    private var annotationToolArea: some View {
+        HStack(spacing: 14) {
+            Picker("标注工具", selection: $model.annotationTool) {
+                Text("矩形").tag(AnnotationKind.rectangle)
+                Text("箭头").tag(AnnotationKind.arrow)
+                Text("文字").tag(AnnotationKind.text)
+                Text("序号").tag(AnnotationKind.number)
+                Text("马赛克").tag(AnnotationKind.mosaic)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(width: 320)
+
+            Divider().frame(height: 20)
+
+            HStack(spacing: 6) {
+                ForEach(CaptureViewModel.palette, id: \.self) { hex in
+                    let isSelected = model.annotationColorHex == hex
+                    Circle()
+                        .fill(Self.swatchColor(hex))
+                        .frame(width: 18, height: 18)
+                        .overlay(
+                            Circle().stroke(
+                                isSelected ? Color.accentColor : Color.primary.opacity(0.25),
+                                lineWidth: isSelected ? 2.5 : 1
+                            )
+                        )
+                        .onTapGesture { model.setAnnotationColor(hex) }
+                }
+            }
+            .help("标注颜色")
+
+            Divider().frame(height: 20)
+
+            Picker("线宽", selection: Binding(
+                get: { model.annotationLineWidth },
+                set: { model.setAnnotationLineWidth($0) }
+            )) {
+                ForEach(CaptureViewModel.lineWidthPresets, id: \.value) { preset in
+                    Text(preset.name).tag(preset.value)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(width: 130)
+            .help("线宽")
+
+            Spacer()
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 12)
+        .padding(.bottom, 6)
+    }
+
+    // MARK: - 标注：操作区（文字输入 / 删除 / 撤销 / 清空）
+
+    private var annotationOperationArea: some View {
+        HStack(spacing: 12) {
+            TextField(textFieldPrompt, text: textFieldBinding)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 220)
+                .disabled(!isTextFieldEditable)
+
+            Button {
+                model.deleteSelectedAnnotation()
+            } label: {
+                Label("删除", systemImage: "trash")
+            }
+            .keyboardShortcut(.delete, modifiers: [])
+            .disabled(!model.hasSelection)
+
+            Button {
+                model.undoAnnotation()
+            } label: {
+                Label("撤销", systemImage: "arrow.uturn.backward")
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            .disabled(model.annotations.isEmpty)
+
+            Button {
+                model.clearAnnotations()
+            } label: {
+                Label("清空", systemImage: "xmark")
+            }
+            .disabled(model.annotations.isEmpty)
+
+            Spacer()
+            Text("点选拖动/缩放 · Shift 多选批量改色改线宽 · 保存或复制时才渲染")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+        }
+        .labelStyle(.titleAndIcon)
+        .padding(.horizontal, 24)
+        .padding(.top, 6)
+        .padding(.bottom, 12)
+    }
+
+    private var isTextFieldEditable: Bool {
+        model.isTextSelected || model.annotationTool == .text
+    }
+
+    private var textFieldPrompt: String {
+        if model.isTextSelected {
+            return "编辑选中文字"
+        } else if model.annotationTool == .text {
+            return "标注文字"
+        } else {
+            return "选择“文字”工具以输入"
+        }
+    }
+
+    private var textFieldBinding: Binding<String> {
+        if model.isTextSelected {
+            return Binding(
+                get: { model.selectedAnnotation?.label ?? "" },
+                set: { model.updateSelectedLabel($0) }
+            )
+        } else {
+            return $model.annotationText
+        }
+    }
+
+    // MARK: - 内容区（缩略图选择器 / 预览 / 空态）
+
+    private var contentArea: some View {
+        ZStack {
+            Color(nsColor: .windowBackgroundColor)
+            if model.showSourcePicker {
+                CaptureSourcePicker(
+                    onPickWindow: { id in
+                        model.showSourcePicker = false
+                        Task { await model.captureWindow(id: id) }
+                    },
+                    onPickDisplay: { id in
+                        model.showSourcePicker = false
+                        Task { await model.captureDisplayFull(id: id) }
+                    },
+                    onClose: { model.showSourcePicker = false }
+                )
+            } else if let image = model.image {
+                ZStack {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                    AnnotationCanvas(
+                        imageSize: image.size,
+                        annotations: $model.annotations,
+                        selectedIDs: $model.selectedAnnotationIDs,
+                        tool: model.annotationTool,
+                        textLabel: model.annotationText,
+                        nextNumber: model.nextAnnotationNumber,
+                        colorHex: model.annotationColorHex,
+                        lineWidth: model.annotationLineWidth
+                    )
+                }
+                .padding(24)
+            } else if model.isCapturing {
+                ProgressView("正在捕获…")
+            } else {
+                ContentUnavailableView(
+                    "尚无截屏",
+                    systemImage: "rectangle.dashed",
+                    description: Text("点击“截取主屏幕”验证原生捕获链路。")
+                )
+            }
         }
     }
 }
