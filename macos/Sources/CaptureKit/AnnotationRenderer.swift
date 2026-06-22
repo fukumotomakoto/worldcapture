@@ -25,14 +25,16 @@ public enum AnnotationRenderer {
             drawMosaic(image: image, annotation: annotation, in: context)
         }
 
-        context.setStrokeColor(color.cgColor)
         context.setLineCap(.round)
         context.setLineJoin(.round)
-        context.setLineWidth(max(3, CGFloat(min(image.width, image.height)) * 0.006))
+        let baseLineWidth = max(3, CGFloat(min(image.width, image.height)) * 0.006)
 
         for annotation in annotations {
             let start = point(annotation.start, image: image)
             let end = point(annotation.end, image: image)
+            let strokeColor = annotation.colorHex.map { RGBAColor(hex: $0).cgColor } ?? color.cgColor
+            context.setStrokeColor(strokeColor)
+            context.setLineWidth(baseLineWidth * CGFloat(annotation.resolvedLineWidth))
             switch annotation.kind {
             case .rectangle:
                 context.stroke(CGRect(
@@ -49,10 +51,10 @@ public enum AnnotationRenderer {
                     at: start,
                     in: context,
                     image: image,
-                    color: color.cgColor
+                    color: strokeColor
                 )
             case .number:
-                drawNumber(annotation.label ?? "1", at: start, in: context, image: image, color: color.cgColor)
+                drawNumber(annotation.label ?? "1", at: start, in: context, image: image, color: strokeColor)
             case .mosaic:
                 break
             }
@@ -133,14 +135,17 @@ public enum AnnotationRenderer {
         color: CGColor
     ) {
         let fontSize = max(18, CGFloat(min(image.width, image.height)) * 0.04)
+        let font = CTFontCreateWithName("Helvetica-Bold" as CFString, fontSize, nil)
         let attributed = NSAttributedString(string: text, attributes: [
-            .font: CTFontCreateWithName("Helvetica-Bold" as CFString, fontSize, nil),
+            .font: font,
             .foregroundColor: color,
             .strokeColor: NSColor.white.cgColor,
             .strokeWidth: -2.5,
         ])
         let line = CTLineCreateWithAttributedString(attributed)
-        context.textPosition = point
+        // `point` marks the top-leading corner (matching the editor preview). CTLine draws from
+        // the baseline, so drop it by the font ascent to align the rendered text with the preview.
+        context.textPosition = CGPoint(x: point.x, y: point.y - CTFontGetAscent(font))
         CTLineDraw(line, context)
     }
 
