@@ -39,6 +39,17 @@ final class CaptureViewModel: ObservableObject {
     @Published var hasAccessibilityPermission = true
     /// 是否在主界面内容区内嵌显示缩略图捕获目标选择器。
     @Published var showSourcePicker = false
+    /// 可录制的显示器（多屏时供选择，单屏时直接录主屏）。
+    @Published var availableDisplays: [DisplayOption] = []
+    /// 最近保存的截图（最多 5 条，供“保存”旁的下拉快速打开）。
+    @Published var recentSaves: [URL] = []
+
+    struct DisplayOption: Identifiable, Hashable {
+        let id: CGDirectDisplayID
+        let name: String
+    }
+
+    private static let maxRecentSaves = 5
 
     var nextAnnotationNumber: Int {
         annotations.filter { $0.kind == .number }.count + 1
@@ -324,22 +335,38 @@ final class CaptureViewModel: ObservableObject {
         annotations[index].label = text
     }
 
+    /// 枚举所有可录制显示器（主屏标注“（主）”，附原生像素尺寸）。
+    func loadDisplays() {
+        let mainID = CGMainDisplayID()
+        availableDisplays = NSScreen.screens.enumerated().compactMap { index, screen in
+            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+                return nil
+            }
+            let pixelWidth = Int((screen.frame.width * screen.backingScaleFactor).rounded())
+            let pixelHeight = Int((screen.frame.height * screen.backingScaleFactor).rounded())
+            let name = "屏幕 \(index + 1)\(id == mainID ? "（主）" : "") · \(pixelWidth)×\(pixelHeight)"
+            return DisplayOption(id: id, name: name)
+        }
+    }
+
     func toggleRecording() async {
         if isRecording {
             await stopRecording()
         } else {
-            await startRecording()
+            await beginRecording(displayID: CGMainDisplayID())
         }
     }
 
-    private func startRecording() async {
+    /// 录制指定显示器：先选输出路径，再开始录制。
+    func beginRecording(displayID: CGDirectDisplayID) async {
+        guard !isRecording else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.mpeg4Movie]
         panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).mp4"
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
-            try await screenRecorder.startMainDisplayRecording(to: url)
+            try await screenRecorder.startRecording(displayID: displayID, to: url)
             lastRecordingURL = url
             isRecording = true
             startRecordingTimer()
@@ -394,9 +421,41 @@ final class CaptureViewModel: ObservableObject {
 
         do {
             try PNGEncoder.encode(cgImage).write(to: url, options: .atomic)
+            recordRecentSave(url)
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func recordRecentSave(_ url: URL) {
+        recentSaves.removeAll { $0 == url }
+        recentSaves.insert(url, at: 0)
+        if recentSaves.count > Self.maxRecentSaves {
+            recentSaves = Array(recentSaves.prefix(Self.maxRecentSaves))
+        }
+    }
+
+    /// 在默认应用中打开文件（如预览）。
+    func openSavedFile(_ url: URL) {
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 在 Finder 中定位文件。
+    func revealInFinder(_ url: URL) {
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
+
+    /// 复位到初始界面：清空当前截图、标注与录制提示（录制中不允许）。
+    func reset() {
+        guard !isRecording else { return }
+        image = nil
+        annotations = []
+        selectedAnnotationIDs = []
+        errorMessage = nil
+        lastRecordingURL = nil
+        recordingDuration = 0
+        showSourcePicker = false
+        annotationTool = .rectangle
     }
 
     private func renderedImage() -> CGImage? {
@@ -437,6 +496,7 @@ final class CaptureViewModel: ObservableObject {
 
 struct CaptureView: View {
     @ObservedObject var model: CaptureViewModel
+    @State private var showRecentSaves = false
 
     static func swatchColor(_ hex: String) -> Color {
         let c = RGBAColor(hex: hex)
@@ -505,19 +565,31 @@ struct CaptureView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 10)
             } else if let recordingURL = model.lastRecordingURL {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
                     Text("录制已保存：\(recordingURL.lastPathComponent)")
-                        .font(.callout)
+                        .font(.callout.weight(.medium))
                         .lineLimit(1)
+                        .truncationMode(.middle)
                     Text(model.recordingDurationText)
                         .font(.system(.caption, design: .monospaced))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("在 Finder 中显示") { model.revealLastRecording() }
+                    Button {
+                        model.revealLastRecording()
+                    } label: {
+                        Label("在 Finder 中显示", systemImage: "folder")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.green)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(Color.green.opacity(0.12))
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(Color.green.opacity(0.45)).frame(height: 1)
+                }
             }
 
             if model.image != nil && !model.showSourcePicker {
@@ -539,6 +611,7 @@ struct CaptureView: View {
         .task {
             model.installGlobalHotKey()
             model.refreshScreenPermission(requestIfNeeded: true)
+            model.loadDisplays()
             await model.loadWindows()
         }
     }
@@ -557,14 +630,14 @@ struct CaptureView: View {
             Spacer(minLength: 24)
             HStack(spacing: 10) {
                 Button {
-                    Task { await model.toggleRecording() }
+                    model.reset()
                 } label: {
-                    Label(
-                        model.isRecording ? "停止录制" : "录制屏幕",
-                        systemImage: model.isRecording ? "stop.circle.fill" : "record.circle"
-                    )
+                    Label("复位", systemImage: "arrow.counterclockwise")
                 }
-                .tint(model.isRecording ? Color.red : nil)
+                .disabled(model.isRecording || (model.image == nil && model.lastRecordingURL == nil))
+                .help("清空当前截图与标注，回到初始界面")
+
+                recordingControl
 
                 Button {
                     model.pinCurrentImage()
@@ -574,12 +647,7 @@ struct CaptureView: View {
                 .disabled(model.image == nil)
                 .help("把当前截图钉为置顶悬浮窗")
 
-                Button {
-                    model.save()
-                } label: {
-                    Label("保存", systemImage: "square.and.arrow.down")
-                }
-                .disabled(model.image == nil)
+                saveControl
 
                 Button {
                     model.copyToClipboard()
@@ -593,6 +661,66 @@ struct CaptureView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
+    }
+
+    /// 录制控件：录制中显示停止；多屏时用菜单选屏；单屏直接录主屏。
+    @ViewBuilder
+    private var recordingControl: some View {
+        if model.isRecording {
+            Button {
+                Task { await model.toggleRecording() }
+            } label: {
+                Label("停止录制", systemImage: "stop.circle.fill")
+            }
+            .tint(Color.red)
+        } else if model.availableDisplays.count > 1 {
+            Menu {
+                ForEach(model.availableDisplays) { display in
+                    Button(display.name) {
+                        Task { await model.beginRecording(displayID: display.id) }
+                    }
+                }
+            } label: {
+                Label("录制屏幕", systemImage: "record.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .help("选择要录制的显示器")
+        } else {
+            Button {
+                Task { await model.toggleRecording() }
+            } label: {
+                Label("录制屏幕", systemImage: "record.circle")
+            }
+        }
+    }
+
+    /// 保存控件：主按钮保存；右侧下拉列出最近保存记录。
+    private var saveControl: some View {
+        HStack(spacing: 2) {
+            Button {
+                model.save()
+            } label: {
+                Label("保存", systemImage: "square.and.arrow.down")
+            }
+            .disabled(model.image == nil)
+
+            Button {
+                showRecentSaves.toggle()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
+            }
+            .disabled(model.recentSaves.isEmpty)
+            .help("最近保存的截图")
+            .popover(isPresented: $showRecentSaves, arrowEdge: .bottom) {
+                RecentSavesList(
+                    urls: model.recentSaves,
+                    onOpenFile: { model.openSavedFile($0) },
+                    onRevealFolder: { model.revealInFinder($0) }
+                )
+            }
+        }
     }
 
     // MARK: - 捕获来源工具栏
@@ -840,5 +968,55 @@ struct CaptureView: View {
                 )
             }
         }
+    }
+}
+
+/// “保存”旁下拉的最近保存列表：点文件名打开图片，悬停显示文件夹图标可定位到 Finder。
+private struct RecentSavesList: View {
+    let urls: [URL]
+    let onOpenFile: (URL) -> Void
+    let onRevealFolder: (URL) -> Void
+
+    @State private var hovered: URL?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("最近保存")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 2)
+
+            ForEach(urls, id: \.self) { url in
+                HStack(spacing: 8) {
+                    Image(systemName: "photo")
+                        .foregroundStyle(.secondary)
+                    Text(url.lastPathComponent)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Spacer(minLength: 12)
+                    Button {
+                        onRevealFolder(url)
+                    } label: {
+                        Image(systemName: "folder")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .opacity(hovered == url ? 1 : 0)
+                    .help("在 Finder 中显示")
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
+                .background(hovered == url ? Color.accentColor.opacity(0.12) : Color.clear)
+                .onHover { hovering in
+                    hovered = hovering ? url : (hovered == url ? nil : hovered)
+                }
+                .onTapGesture { onOpenFile(url) }
+            }
+        }
+        .frame(width: 340)
+        .padding(.bottom, 8)
     }
 }

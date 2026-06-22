@@ -21,7 +21,13 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         super.init()
     }
 
+    /// 录制主显示器（兼容旧调用）。
     public func startMainDisplayRecording(to outputURL: URL) async throws {
+        try await startRecording(displayID: CGMainDisplayID(), to: outputURL)
+    }
+
+    /// 录制指定显示器；找不到该 ID 时回退到主显示器或第一块可用显示器。
+    public func startRecording(displayID: CGDirectDisplayID, to outputURL: URL) async throws {
         guard !isRecording else { throw CaptureError.recordingAlreadyActive }
 
         let content: SCShareableContent
@@ -30,7 +36,8 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         } catch {
             throw CaptureError.permissionDenied
         }
-        guard let display = content.displays.first(where: { $0.displayID == CGMainDisplayID() })
+        guard let display = content.displays.first(where: { $0.displayID == displayID })
+                ?? content.displays.first(where: { $0.displayID == CGMainDisplayID() })
                 ?? content.displays.first else {
             throw CaptureError.noDisplayAvailable
         }
