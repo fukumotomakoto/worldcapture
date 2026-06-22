@@ -26,6 +26,7 @@ WorldCapture 是一款本地优先的截屏、标注与录屏工具，目标平�
 | 主屏幕截图 | 已实现 | 未开始 | 保留 Retina 原始像素 |
 | 区域截图 | 已实现 | 未开始 | `Command + Shift + 2` |
 | 独立窗口截图 | 已实现 | 未开始 | 支持窗口刷新与选择 |
+| 窗口/屏幕缩略图选择器 | 已实现 | 未开始 | 网格缩略图挑选窗口或整屏（类浏览器分享选择器）|
 | PNG 保存 | 已实现 | 未开始 | 原子写入 |
 | 剪贴板复制 | 已实现 | 未开始 | PNG 数据 |
 | 矩形标注 | 已实现 | 未开始 | 非破坏 |
@@ -34,6 +35,15 @@ WorldCapture 是一款本地优先的截屏、标注与录屏工具，目标平�
 | 自动序号 | 已实现 | 未开始 | 依照当前序号标注数量递增 |
 | 马赛克 | 已实现 | 未开始 | 导出时像素化 |
 | 撤销/清空 | 已实现 | 未开始 | 当前为线性末项撤销 |
+| 标注选中/移动/缩放/删除 | 已实现 | 未开始 | 点选后拖动移动、手柄缩放、Delete 删除 |
+| 标注颜色（预设色板）| 已实现 | 未开始 | 每标注独立，`#RRGGBB` 存储于工程模型 |
+| 标注线宽（细/中/粗）| 已实现 | 未开始 | 倍率存于模型，作用于矩形/箭头 |
+| 文字标注就地改写 | 已实现 | 未开始 | 选中后工具栏编辑文案 |
+| 多选与批量编辑 | 已实现 | 未开始 | Shift 加选、组移动、批量改色/线宽/删除 |
+| 菜单栏常驻入口 | 已实现 | 未开始 | `MenuBarExtra`：区域/主屏/窗口截屏、录屏、显示主窗口 |
+| 钉屏（置顶悬浮）| 已实现 | 未开始 | 多个可拖动浮窗，渲染含标注 |
+| 捕获后悬浮预览 | 已实现 | 未开始 | 角落缩略图卡片，快捷复制/保存/钉屏/编辑，悬停暂停自动消失 |
+| 屏幕录制权限自检 | 已实现 | 未开始 | `CGPreflightScreenCaptureAccess` + 设置深链横幅 |
 | 主屏幕录制 | 已实现 | 未开始 | macOS 15+ `SCRecordingOutput` |
 | 系统音频 | 已实现 | 未开始 | 48 kHz、双声道配置 |
 | MP4 导出 | 已实现 | 未开始 | H.264/AAC |
@@ -42,7 +52,7 @@ WorldCapture 是一款本地优先的截屏、标注与录屏工具，目标平�
 | 摄像头画中画 | 未实现 | 未开始 | 后续阶段 |
 | GIF 导出 | 未实现 | 未开始 | 后续阶段 |
 | OCR | 未实现 | 未开始 | 后续阶段 |
-| 滚动截屏 | 未实现 | 未开始 | 后续阶段 |
+| 滚动截屏 | 已实现 | 未开始 | 选区→程序化滚动→逐屏拼接长图；需辅助功能权限 |
 | 截图历史库 | 未实现 | 未开始 | 后续阶段 |
 
 ## 3. 已验证开发环境
@@ -118,7 +128,9 @@ xcodebuild \
 open .derived-data/Build/Products/Debug/WorldCapture.app
 ```
 
-当前 Debug 工程使用 `Sign to Run Locally` ad-hoc 签名，签入权限和资源，适合本机开发。它不是发布签名。
+当前 Debug 工程使用**手动签名 + Apple Development 证书**（`project.yml` 中 `CODE_SIGN_STYLE: Manual`、`CODE_SIGN_IDENTITY: "Apple Development"`、`DEVELOPMENT_TEAM: 43M5KN7MPD`，不使用 provisioning profile）。改用真实开发者证书而非 ad-hoc，是为了让代码签名的 designated requirement 跨重建保持稳定，从而**屏幕录制等 TCC 权限授权一次后不会因每次重建 cdhash 变化而失效**。它仍不是发布签名。
+
+> 注意：`DEVELOPMENT_TEAM` 取证书 subject 的 **OU 字段**（此处 `43M5KN7MPD`），不是 CN 括号里的 `BKD92Y6PRD`。可用 `security find-certificate -c "Apple Development: <名字>" -p | openssl x509 -noout -subject -nameopt sep_multiline` 查看 OU。
 
 ### 5.2 Swift Package 快速运行
 
@@ -209,6 +221,10 @@ ScreenCaptureKit + CoreGraphics/CoreText
 | `CaptureAnnotation.swift` | Codable 非破坏标注模型 |
 | `AnnotationRenderer.swift` | 原始分辨率标注合成与马赛克 |
 | `PNGEncoder.swift` | `CGImage` 到 PNG `Data` |
+| `RGBAColor.swift` | 与平台解耦的标注颜色（十六进制解析、CGColor）|
+| `ScrollStitcher.swift` | 滚动截屏：灰度纵向对齐与多帧长图拼接（纯逻辑）|
+| `ScrollCaptureEngine.swift` | 滚动截屏编排：截帧→拼接→滚动循环与到底判定（注入式，可测）|
+| `ScreenCapturePermission.swift` | 屏幕录制权限检测与申请 |
 | `CaptureError.swift` | 用户可读错误模型 |
 
 ### 8.2 WorldCaptureMac
@@ -220,6 +236,11 @@ ScreenCaptureKit + CoreGraphics/CoreText
 | `RegionSelector.swift` | 全屏透明 AppKit 区域选择层 |
 | `AnnotationCanvas.swift` | 标注预览与拖拽手势 |
 | `GlobalHotKey.swift` | Carbon 全局快捷键注册与释放 |
+| `MenuBarCommands.swift` | 菜单栏常驻入口（`MenuBarExtra` 命令）|
+| `PinnedImage.swift` | 钉屏：置顶悬浮、可拖动的截图浮窗 |
+| `WindowPickerSheet.swift` | 窗口/屏幕缩略图选择器（网格挑选捕获目标）|
+| `CapturePreview.swift` | 捕获后角落悬浮预览卡片与快捷动作 |
+| `ScrollInput.swift` | 辅助功能权限检测与合成滚轮事件（滚动捕获驱动）|
 
 ## 9. 静态截图流程
 
@@ -238,6 +259,8 @@ ScreenCaptureKit + CoreGraphics/CoreText
 
 主显示器通过 `CGMainDisplayID()` 匹配；匹配失败时回退到第一块可用显示器。
 
+截图过滤器以 `excludingApplications` 排除 WorldCapture 自身全部窗口（主窗口、区域选择遮罩、钉屏浮窗），因此区域/全屏截图不会把暗色选择遮罩或本应用界面拍进去。区域选择遮罩在弹出前会 `NSApp.activate(ignoringOtherApps:)`，确保经全局热键在其他应用前台触发时也能获得焦点并正常关闭。
+
 ### 9.2 窗口截图
 
 窗口列表只保留：
@@ -251,13 +274,15 @@ ScreenCaptureKit + CoreGraphics/CoreText
 
 ### 9.3 区域截图
 
-`RegionSelector` 创建覆盖主屏幕的透明无边框 `NSPanel`：
+`RegionSelector` 在**每块显示器**上各创建一个透明无边框 `NSPanel`（支持跨屏：在任意屏框选，按该屏的 `CGDirectDisplayID` 截图）：
 
 - 鼠标按下记录起点；
 - 拖动更新选择框；
 - 鼠标释放返回区域；
 - Esc 取消；
 - 小于 2×2 points 的选择视为无效。
+
+发起区域截屏前（按钮或全局热键），先 `orderOut` 隐藏 WorldCapture 自身全部可见窗口，使待截内容完全可见、便于精确框选；截屏完成或取消后再 `orderFront` 恢复并弹出捕获后悬浮预览。
 
 ## 10. 坐标与 Retina 处理
 
@@ -276,7 +301,7 @@ pixelWidth  = selection.width  × displayPixelWidth  / displayPointWidth
 pixelHeight = selection.height × displayPixelHeight / displayPointHeight
 ```
 
-主屏幕和窗口直接使用 `SCContentFilter.pointPixelScale`。区域选择优先使用 `CGDisplayMode.pixelWidth/pixelHeight`，以避免缩放模式下 `CGDisplayPixelsWide/High` 返回逻辑尺寸。
+主屏幕、窗口与区域截图的输出像素尺寸**统一以 `SCContentFilter.pointPixelScale` × 点尺寸**计算，确保与 ScreenCaptureKit 原生分辨率 1:1、不被重采样而发虚。区域选择面板仍用 `CGDisplayMode.pixelWidth/pixelHeight` 求归一化所需的显示器原生像素（避免缩放模式下 `CGDisplayPixelsWide/High` 的逻辑尺寸），但最终截图分辨率由 `pointPixelScale` 决定。
 
 任何坐标逻辑改动都必须运行 `CaptureRegionTests`。
 
@@ -447,6 +472,8 @@ WorldCapture-yyyyMMdd-HHmmss.mp4
 - `com.apple.security.device.audio-input`
 
 屏幕录制权限由 macOS TCC 在第一次调用 ScreenCaptureKit 时处理。授权后系统可能要求重启应用。
+
+滚动截屏额外需要**辅助功能（Accessibility）权限**：合成滚轮事件驱动目标内容滚动受 `kTCCServiceAccessibility` 管控。首次点击「滚动截屏」时通过 `AXIsProcessTrustedWithOptions` 弹出系统提示，并在工具栏显示引导横幅；该权限无对应 Info.plist 用途说明键，重置用 `tccutil reset Accessibility io.worldcapture.app`。
 
 ### 16.2 重置开发权限
 
@@ -667,7 +694,7 @@ CURRENT_PROJECT_VERSION: 1
 
 ### 21.2 Release 构建
 
-本机 Debug ad-hoc 签名不能分发。正式发布需要：
+本机 Debug 开发签名（Apple Development）不能分发。正式发布需要：
 
 - Apple Developer Program；
 - Developer ID Application 证书；
@@ -701,16 +728,17 @@ xcodebuild archive \
 ## 23. 已知限制
 
 - 录屏仅支持主显示器。
-- 区域选择当前基于 `NSScreen.main`，多显示器区域流程未完成。
+- 区域截屏与滚动截屏支持多显示器：选择遮罩铺设到所有屏幕，按选区所在显示器截图；但「截取主屏幕」全屏仍只取主显示器（暂无显示器选择器）。
 - 录屏不含麦克风和摄像头。
 - 录屏没有暂停/继续。
 - 未捕获鼠标点击特效、按键显示和独立鼠标轨迹。
-- 标注颜色和线宽不可配置。
-- 已有标注不能选中、移动、缩放或单独删除。
-- 文字标注没有多行、字体和字号控制。
+- 标注颜色可从预设色板选择、线宽可选细/中/粗（均每标注独立、可改选中项）；暂无自定义取色器与无级线宽。
+- 文字标注创建后可选中并在工具栏就地改写文案；尚不支持多行、字体与字号。
+- 标注支持单选/Shift 多选、移动（含多选组移动）、缩放、批量改色改线宽与删除；尚不支持框选、对齐与图层顺序调整。
 - 没有截图历史、项目保存和崩溃恢复。
 - 全局快捷键固定，未提供冲突检测。
-- 没有滚动截屏、OCR、GIF 和云分享。
+- 没有 OCR、GIF 和云分享。
+- 滚动截屏依赖程序化滚轮与图像拼接，对自定义滚动容器或惯性滚动较强的应用可能对齐不稳。
 - Windows 后端尚未建立。
 
 ## 24. Windows 实现计划
@@ -754,7 +782,7 @@ Windows 开始前必须先形成跨平台 schema 文档，避免直接复制 Swi
 
 ### Phase 2：编辑与项目格式
 
-- [ ] 标注选择/移动/调整
+- [x] 标注选择/移动/缩放/删除
 - [ ] 工程文件与自动恢复
 - [ ] 时间线、裁剪和片段合并
 - [ ] 自动缩放、鼠标平滑
@@ -772,7 +800,7 @@ Windows 开始前必须先形成跨平台 schema 文档，避免直接复制 Swi
 ### Phase 4：高级能力
 
 - [ ] OCR
-- [ ] 滚动截屏
+- [x] 滚动截屏（选区滚动拼接，需辅助功能权限）
 - [ ] 历史素材库
 - [ ] 可选本地 AI 能力
 - [ ] 可选云分享
