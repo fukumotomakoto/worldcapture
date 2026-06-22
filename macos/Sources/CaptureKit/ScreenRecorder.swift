@@ -44,9 +44,12 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
             filter = SCContentFilter(display: display, excludingWindows: [])
         }
 
+        // SCDisplay.width/height are in points; SCStreamConfiguration expects pixels.
+        // Scale by pointPixelScale so the recording keeps native Retina resolution.
+        let scale = CGFloat(filter.pointPixelScale)
         let streamConfiguration = SCStreamConfiguration()
-        streamConfiguration.width = display.width
-        streamConfiguration.height = display.height
+        streamConfiguration.width = max(1, Int((filter.contentRect.width * scale).rounded()))
+        streamConfiguration.height = max(1, Int((filter.contentRect.height * scale).rounded()))
         streamConfiguration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
         streamConfiguration.queueDepth = 6
         streamConfiguration.pixelFormat = kCVPixelFormatType_32BGRA
