@@ -496,7 +496,9 @@ final class CaptureViewModel: ObservableObject {
 
 struct CaptureView: View {
     @ObservedObject var model: CaptureViewModel
+    @StateObject private var preview = PreviewGestureController()
     @State private var showRecentSaves = false
+    @State private var panActive = false
 
     static func swatchColor(_ hex: String) -> Color {
         let c = RGBAColor(hex: hex)
@@ -614,6 +616,8 @@ struct CaptureView: View {
             model.loadDisplays()
             await model.loadWindows()
         }
+        .onAppear { preview.start() }
+        .onDisappear { preview.stop() }
     }
 
     // MARK: - 顶部标题与全局动作
@@ -887,7 +891,7 @@ struct CaptureView: View {
             .disabled(model.annotations.isEmpty)
 
             Spacer()
-            Text("点选拖动/缩放 · Shift 多选批量改色改线宽 · 保存或复制时才渲染")
+            Text("点选拖动/缩放 · Shift 多选 · 滚轮缩放图片 · 空格+拖动平移 · 保存或复制时才渲染")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -942,22 +946,7 @@ struct CaptureView: View {
                     onClose: { model.showSourcePicker = false }
                 )
             } else if let image = model.image {
-                ZStack {
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                    AnnotationCanvas(
-                        imageSize: image.size,
-                        annotations: $model.annotations,
-                        selectedIDs: $model.selectedAnnotationIDs,
-                        tool: model.annotationTool,
-                        textLabel: model.annotationText,
-                        nextNumber: model.nextAnnotationNumber,
-                        colorHex: model.annotationColorHex,
-                        lineWidth: model.annotationLineWidth
-                    )
-                }
-                .padding(24)
+                imagePreview(image)
             } else if model.isCapturing {
                 ProgressView("正在捕获…")
             } else {
@@ -967,6 +956,100 @@ struct CaptureView: View {
                     description: Text("点击“截取主屏幕”验证原生捕获链路。")
                 )
             }
+        }
+    }
+
+    /// 截图预览：支持滚轮缩放与空格+拖动平移，便于精准打码与查看清晰度。
+    @ViewBuilder
+    private func imagePreview(_ image: NSImage) -> some View {
+        GeometryReader { proxy in
+            ZStack {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+                AnnotationCanvas(
+                    imageSize: image.size,
+                    annotations: $model.annotations,
+                    selectedIDs: $model.selectedAnnotationIDs,
+                    tool: model.annotationTool,
+                    textLabel: model.annotationText,
+                    nextNumber: model.nextAnnotationNumber,
+                    colorHex: model.annotationColorHex,
+                    lineWidth: model.annotationLineWidth
+                )
+                .allowsHitTesting(!preview.isSpaceDown)
+            }
+            .scaleEffect(preview.zoom)
+            .offset(preview.pan)
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .contentShape(Rectangle())
+            .gesture(panGesture, including: preview.isSpaceDown ? .gesture : .subviews)
+            .onAppear { preview.previewFrame = proxy.frame(in: .global) }
+            .onChange(of: proxy.frame(in: .global)) { _, newValue in
+                preview.previewFrame = newValue
+            }
+        }
+        .padding(24)
+        .clipped()
+        .overlay(alignment: .bottomTrailing) { zoomControls }
+        .overlay(alignment: .top) { panHint }
+        .onChange(of: model.image.map(ObjectIdentifier.init)) { _, _ in
+            preview.reset()
+            panActive = false
+        }
+    }
+
+    private var panGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                guard preview.isSpaceDown else { return }
+                if !panActive {
+                    panActive = true
+                    preview.beginPan()
+                }
+                preview.updatePan(translation: value.translation)
+            }
+            .onEnded { _ in panActive = false }
+    }
+
+    private var zoomControls: some View {
+        HStack(spacing: 8) {
+            Button { preview.setZoom(preview.zoom / 1.25) } label: {
+                Image(systemName: "minus.magnifyingglass")
+            }
+            .disabled(preview.zoom <= PreviewGestureController.minZoom)
+
+            Text("\(Int(preview.zoom * 100))%")
+                .font(.caption.monospaced())
+                .frame(width: 46)
+
+            Button { preview.setZoom(preview.zoom * 1.25) } label: {
+                Image(systemName: "plus.magnifyingglass")
+            }
+            .disabled(preview.zoom >= PreviewGestureController.maxZoom)
+
+            Button { preview.reset() } label: {
+                Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+            }
+            .help("适应窗口")
+            .disabled(preview.zoom == PreviewGestureController.minZoom && preview.pan == .zero)
+        }
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
+        .background(.thinMaterial, in: Capsule())
+        .padding(16)
+    }
+
+    @ViewBuilder
+    private var panHint: some View {
+        if preview.isSpaceDown {
+            Label("平移模式：拖动移动画面", systemImage: "hand.draw")
+                .font(.caption.weight(.medium))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(.thinMaterial, in: Capsule())
+                .padding(.top, 16)
         }
     }
 }

@@ -38,6 +38,7 @@
 		EDF26B7D76743D8A96AE4483 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
 		EFC53582C0C473D9C12596D9 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
 		F2B8CE2C040D94C79A339D12 /* CaptureKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		F362F7572BA279F663AC7C14 /* PreviewZoomPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8173312EBBDE59245C770E71 /* PreviewZoomPan.swift */; };
 		FC53C384E29BDC28F00C7033 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195AE13EE4566D20BF379F2A /* ScreenCapturer.swift */; };
 /* End PBXBuildFile section */
 
@@ -94,6 +95,7 @@
 		6B1F00B673C0655BB96F749A /* WorldCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		71B867592A3751A22E86A6CD /* CaptureError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureError.swift; sourceTree = "<group>"; };
 		7DA42433A6EC09BD1F8F8C78 /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
+		8173312EBBDE59245C770E71 /* PreviewZoomPan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewZoomPan.swift; sourceTree = "<group>"; };
 		89BB00424BA8B71E1698E2EF /* CaptureWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureWindowTests.swift; sourceTree = "<group>"; };
 		8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedImage.swift; sourceTree = "<group>"; };
 		91B58CE6C6CABEACE35900FD /* ScrollCaptureEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCaptureEngineTests.swift; sourceTree = "<group>"; };
@@ -147,6 +149,7 @@
 				E863C6E6B8504C26DAFB5CB0 /* GlobalHotKey.swift */,
 				E00803A9BEEDA5A8F9C3CDBF /* MenuBarCommands.swift */,
 				8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */,
+				8173312EBBDE59245C770E71 /* PreviewZoomPan.swift */,
 				9A0C30C2E0AB62ABB9783DFD /* RegionSelector.swift */,
 				C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */,
 				E2845AE5CC079FED4DDD3C70 /* WorldCaptureApp.swift */,
@@ -357,6 +360,7 @@
 				57E9B8F43455AB5103816886 /* GlobalHotKey.swift in Sources */,
 				0E00F2BDFA1DA8974182EB1D /* MenuBarCommands.swift in Sources */,
 				79DE76B7B5234692966DBBB2 /* PinnedImage.swift in Sources */,
+				F362F7572BA279F663AC7C14 /* PreviewZoomPan.swift in Sources */,
 				7B59E7239113A61E1E6B97A8 /* RegionSelector.swift in Sources */,
 				BE15E0C542E55282F5B3C9FF /* ScrollInput.swift in Sources */,
 				A4B637C35E604FD1BC37F780 /* WorldCaptureApp.swift in Sources */,
