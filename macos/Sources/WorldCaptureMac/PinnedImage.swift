@@ -73,7 +73,7 @@ private struct PinnedImageView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(6)
-                    .help("取消钉屏")
+                    .help(Loc.s("pin.remove"))
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: 8))

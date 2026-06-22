@@ -1,0 +1,113 @@
+/* WorldCapture — 简体中文（基准语言） */
+
+"app.subtitle" = "本地优先的跨平台截屏与录屏工具";
+
+/* 顶部全局操作 */
+"action.reset" = "复位";
+"action.reset.help" = "清空当前截图与标注，回到初始界面";
+"action.pin" = "钉屏";
+"action.pin.help" = "把当前截图钉为置顶悬浮窗";
+"action.save" = "保存";
+"action.copy" = "复制";
+"recent.title" = "最近保存";
+"recent.help" = "最近保存的截图";
+"reveal.finder" = "在 Finder 中显示";
+
+/* 录制 */
+"record.screen" = "录制屏幕";
+"record.stop" = "停止录制";
+"record.pick.help" = "选择要录制的显示器";
+"record.active" = "正在录制屏幕与系统音频";
+"record.saved" = "录制已保存：%@";
+
+/* 捕获来源 */
+"capture.region" = "区域";
+"capture.main" = "主屏幕";
+"capture.scroll" = "滚动长图";
+"capture.scroll.help" = "选择区域后自动滚动并拼接成长截图";
+"capture.self" = "本窗口";
+"capture.self.help" = "截取 WorldCapture 自身窗口";
+"window.menu" = "窗口";
+"window.menu.help" = "直接截取某个窗口";
+"window.refresh" = "刷新列表";
+"window.none" = "没有可用窗口";
+"thumbnail.picker" = "缩略图选择";
+"thumbnail.picker.help" = "以缩略图选择窗口或整个屏幕";
+"region.shortcut.help" = "区域截屏快捷键";
+
+/* 权限横幅 */
+"perm.screen.title" = "需要屏幕录制权限";
+"perm.screen.desc" = "请在系统设置中允许 WorldCapture，授权后请重新启动应用。";
+"perm.open.settings" = "打开系统设置";
+"perm.recheck" = "重新检查";
+"perm.ax.title" = "滚动截屏需要辅助功能权限";
+"perm.ax.desc" = "请在系统设置中允许 WorldCapture 控制电脑（辅助功能），授权后重试。";
+
+/* 标注 */
+"anno.rect" = "矩形";
+"anno.arrow" = "箭头";
+"anno.text" = "文字";
+"anno.number" = "序号";
+"anno.mosaic" = "马赛克";
+"anno.color.help" = "标注颜色";
+"anno.width.help" = "线宽";
+"width.thin" = "细";
+"width.mid" = "中";
+"width.thick" = "粗";
+"anno.text.editSelected" = "编辑选中文字";
+"anno.text.placeholder" = "标注文字";
+"anno.text.hintSelect" = "选择“文字”工具以输入";
+"anno.delete" = "删除";
+"anno.undo" = "撤销";
+"anno.clear" = "清空";
+"anno.hint" = "点选拖动/缩放 · Shift 多选 · 滚轮缩放图片 · 空格+拖动平移 · 保存或复制时才渲染";
+
+/* 空态与进度 */
+"empty.title" = "尚无截屏";
+"empty.desc" = "点击“截取主屏幕”验证原生捕获链路。";
+"capturing" = "正在捕获…";
+
+/* 预览缩放/平移 */
+"pan.mode.hint" = "平移模式：拖动移动画面";
+"zoom.fit.help" = "适应窗口";
+
+/* 缩略图选择器 */
+"picker.title" = "选择要捕获的内容";
+"picker.tab.windows" = "窗口";
+"picker.tab.screens" = "整个屏幕";
+"picker.loading" = "正在载入…";
+"picker.refresh" = "刷新";
+"picker.close" = "关闭选择器";
+"screen.index" = "屏幕 %d";
+"display.main" = "（主）";
+
+/* 错误 */
+"error.title" = "操作失败";
+"error.ok" = "好";
+"error.unknown" = "未知错误";
+"error.scrollEmpty" = "滚动截屏未获取到内容。";
+"error.noOwnWindow" = "找不到可截取的本应用窗口。";
+
+/* 菜单栏 */
+"menu.region" = "区域截屏";
+"menu.main" = "截取主屏幕";
+"menu.window" = "截取窗口";
+"menu.showMain" = "显示主窗口";
+"menu.quit" = "退出 WorldCapture";
+
+/* 设置 */
+"settings.title" = "设置";
+"settings.section.general" = "通用";
+"settings.language" = "界面语言";
+"settings.language.system" = "跟随系统";
+"settings.language.restartNote" = "切换语言后需重新启动应用才会生效。";
+"settings.savePath" = "默认保存位置";
+"settings.savePath.ask" = "每次询问";
+"settings.shortcuts" = "快捷键";
+"settings.shortcuts.note" = "当前：⌘⇧2 区域截屏（暂不可自定义）。";
+
+/* 其它 */
+"action.edit" = "编辑";
+"action.close" = "关闭";
+"anno.text.default" = "说明";
+"pin.remove" = "取消钉屏";

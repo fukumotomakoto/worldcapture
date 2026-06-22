@@ -12,12 +12,12 @@ final class CaptureViewModel: ObservableObject {
     @Published var annotations: [CaptureAnnotation] = []
     @Published var selectedAnnotationIDs: Set<UUID> = []
     @Published var annotationTool: AnnotationKind = .rectangle
-    @Published var annotationText = "说明"
+    @Published var annotationText = Loc.s("anno.text.default")
     @Published var annotationColorHex = CaptureAnnotation.defaultColorHex
     @Published var annotationLineWidth: Double = 1
 
     static let palette = ["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#007AFF", "#FFFFFF", "#000000"]
-    static let lineWidthPresets: [(name: String, value: Double)] = [("细", 0.6), ("中", 1.0), ("粗", 1.8)]
+    static let lineWidthPresets: [(nameKey: String, value: Double)] = [("width.thin", 0.6), ("width.mid", 1.0), ("width.thick", 1.8)]
 
     /// 仅当恰好选中一个标注时返回它（用于文字就地改写等单项操作）。
     var selectedAnnotation: CaptureAnnotation? {
@@ -147,7 +147,7 @@ final class CaptureViewModel: ObservableObject {
             restoreWindows()
             isCapturing = false
             guard let stitched = result.image else {
-                errorMessage = "滚动截屏未获取到内容。"
+                errorMessage = Loc.s("error.scrollEmpty")
                 return
             }
             image = NSImage(cgImage: stitched, size: .zero)
@@ -234,7 +234,7 @@ final class CaptureViewModel: ObservableObject {
             ?? NSApp.keyWindow
             ?? NSApp.windows.first(where: { $0.isVisible && !($0 is NSPanel) })
         guard let window = candidate, window.windowNumber > 0 else {
-            errorMessage = "找不到可截取的本应用窗口。"
+            errorMessage = Loc.s("error.noOwnWindow")
             return
         }
         await captureWindow(id: CGWindowID(window.windowNumber))
@@ -344,7 +344,9 @@ final class CaptureViewModel: ObservableObject {
             }
             let pixelWidth = Int((screen.frame.width * screen.backingScaleFactor).rounded())
             let pixelHeight = Int((screen.frame.height * screen.backingScaleFactor).rounded())
-            let name = "屏幕 \(index + 1)\(id == mainID ? "（主）" : "") · \(pixelWidth)×\(pixelHeight)"
+            let name = Loc.s("screen.index", index + 1)
+                + (id == mainID ? Loc.s("display.main") : "")
+                + " · \(pixelWidth)×\(pixelHeight)"
             return DisplayOption(id: id, name: name)
         }
     }
@@ -517,15 +519,15 @@ struct CaptureView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("需要屏幕录制权限")
+                        Text(Loc.s("perm.screen.title"))
                             .font(.callout.weight(.semibold))
-                        Text("请在系统设置中允许 WorldCapture，授权后请重新启动应用。")
+                        Text(Loc.s("perm.screen.desc"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("打开系统设置") { model.openScreenRecordingSettings() }
-                    Button("重新检查") { model.refreshScreenPermission() }
+                    Button(Loc.s("perm.open.settings")) { model.openScreenRecordingSettings() }
+                    Button(Loc.s("perm.recheck")) { model.refreshScreenPermission() }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
@@ -537,15 +539,15 @@ struct CaptureView: View {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("滚动截屏需要辅助功能权限")
+                        Text(Loc.s("perm.ax.title"))
                             .font(.callout.weight(.semibold))
-                        Text("请在系统设置中允许 WorldCapture 控制电脑（辅助功能），授权后重试。")
+                        Text(Loc.s("perm.ax.desc"))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("打开系统设置") { model.openAccessibilitySettings() }
-                    Button("重新检查") { model.refreshAccessibilityPermission() }
+                    Button(Loc.s("perm.open.settings")) { model.openAccessibilitySettings() }
+                    Button(Loc.s("perm.recheck")) { model.refreshAccessibilityPermission() }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
@@ -555,7 +557,7 @@ struct CaptureView: View {
             if model.isRecording {
                 HStack(spacing: 8) {
                     Circle().fill(.red).frame(width: 8, height: 8)
-                    Text("正在录制主屏幕与系统音频")
+                    Text(Loc.s("record.active"))
                         .font(.callout.weight(.medium))
                     Text(model.recordingDurationText)
                         .font(.system(.callout, design: .monospaced).weight(.semibold))
@@ -570,7 +572,7 @@ struct CaptureView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    Text("录制已保存：\(recordingURL.lastPathComponent)")
+                    Text(Loc.s("record.saved", recordingURL.lastPathComponent))
                         .font(.callout.weight(.medium))
                         .lineLimit(1)
                         .truncationMode(.middle)
@@ -581,7 +583,7 @@ struct CaptureView: View {
                     Button {
                         model.revealLastRecording()
                     } label: {
-                        Label("在 Finder 中显示", systemImage: "folder")
+                        Label(Loc.s("reveal.finder"), systemImage: "folder")
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.green)
@@ -602,13 +604,13 @@ struct CaptureView: View {
 
             contentArea
         }
-        .alert("操作失败", isPresented: Binding(
+        .alert(Loc.s("error.title"), isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
         )) {
-            Button("好", role: .cancel) {}
+            Button(Loc.s("error.ok"), role: .cancel) {}
         } message: {
-            Text(model.errorMessage ?? "未知错误")
+            Text(model.errorMessage ?? Loc.s("error.unknown"))
         }
         .task {
             model.installGlobalHotKey()
@@ -627,7 +629,7 @@ struct CaptureView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("WorldCapture")
                     .font(.title2.bold())
-                Text("本地优先的跨平台截屏与录屏工具")
+                Text(Loc.s("app.subtitle"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -636,27 +638,27 @@ struct CaptureView: View {
                 Button {
                     model.reset()
                 } label: {
-                    Label("复位", systemImage: "arrow.counterclockwise")
+                    Label(Loc.s("action.reset"), systemImage: "arrow.counterclockwise")
                 }
                 .disabled(model.isRecording || (model.image == nil && model.lastRecordingURL == nil))
-                .help("清空当前截图与标注，回到初始界面")
+                .help(Loc.s("action.reset.help"))
 
                 recordingControl
 
                 Button {
                     model.pinCurrentImage()
                 } label: {
-                    Label("钉屏", systemImage: "pin")
+                    Label(Loc.s("action.pin"), systemImage: "pin")
                 }
                 .disabled(model.image == nil)
-                .help("把当前截图钉为置顶悬浮窗")
+                .help(Loc.s("action.pin.help"))
 
                 saveControl
 
                 Button {
                     model.copyToClipboard()
                 } label: {
-                    Label("复制", systemImage: "doc.on.doc")
+                    Label(Loc.s("action.copy"), systemImage: "doc.on.doc")
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(model.image == nil)
@@ -674,7 +676,7 @@ struct CaptureView: View {
             Button {
                 Task { await model.toggleRecording() }
             } label: {
-                Label("停止录制", systemImage: "stop.circle.fill")
+                Label(Loc.s("record.stop"), systemImage: "stop.circle.fill")
             }
             .tint(Color.red)
         } else if model.availableDisplays.count > 1 {
@@ -685,16 +687,16 @@ struct CaptureView: View {
                     }
                 }
             } label: {
-                Label("录制屏幕", systemImage: "record.circle")
+                Label(Loc.s("record.screen"), systemImage: "record.circle")
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
-            .help("选择要录制的显示器")
+            .help(Loc.s("record.pick.help"))
         } else {
             Button {
                 Task { await model.toggleRecording() }
             } label: {
-                Label("录制屏幕", systemImage: "record.circle")
+                Label(Loc.s("record.screen"), systemImage: "record.circle")
             }
         }
     }
@@ -705,7 +707,7 @@ struct CaptureView: View {
             Button {
                 model.save()
             } label: {
-                Label("保存", systemImage: "square.and.arrow.down")
+                Label(Loc.s("action.save"), systemImage: "square.and.arrow.down")
             }
             .disabled(model.image == nil)
 
@@ -716,7 +718,7 @@ struct CaptureView: View {
                     .font(.caption.weight(.semibold))
             }
             .disabled(model.recentSaves.isEmpty)
-            .help("最近保存的截图")
+            .help(Loc.s("recent.help"))
             .popover(isPresented: $showRecentSaves, arrowEdge: .bottom) {
                 RecentSavesList(
                     urls: model.recentSaves,
@@ -734,38 +736,38 @@ struct CaptureView: View {
             Button {
                 Task { await model.captureRegion() }
             } label: {
-                Label("区域", systemImage: "selection.pin.in.out")
+                Label(Loc.s("capture.region"), systemImage: "selection.pin.in.out")
             }
             .disabled(model.isCapturing)
 
             Button {
                 Task { await model.capture() }
             } label: {
-                Label("主屏幕", systemImage: "display")
+                Label(Loc.s("capture.main"), systemImage: "display")
             }
             .disabled(model.isCapturing)
 
             Button {
                 Task { await model.captureScrolling() }
             } label: {
-                Label("滚动长图", systemImage: "arrow.down.doc")
+                Label(Loc.s("capture.scroll"), systemImage: "arrow.down.doc")
             }
             .disabled(model.isCapturing)
-            .help("选择区域后自动滚动并拼接成长截图")
+            .help(Loc.s("capture.scroll.help"))
 
             Button {
                 Task { await model.captureOwnWindow() }
             } label: {
-                Label("本窗口", systemImage: "macwindow.on.rectangle")
+                Label(Loc.s("capture.self"), systemImage: "macwindow.on.rectangle")
             }
             .disabled(model.isCapturing)
-            .help("截取 WorldCapture 自身窗口")
+            .help(Loc.s("capture.self.help"))
 
             Divider().frame(height: 22)
 
             Menu {
                 if model.windows.isEmpty {
-                    Text("没有可用窗口")
+                    Text(Loc.s("window.none"))
                 } else {
                     ForEach(model.windows) { window in
                         Button(window.displayName) {
@@ -774,28 +776,28 @@ struct CaptureView: View {
                     }
                 }
                 Divider()
-                Button("刷新列表") { Task { await model.loadWindows() } }
+                Button(Loc.s("window.refresh")) { Task { await model.loadWindows() } }
             } label: {
-                Label("窗口", systemImage: "macwindow")
+                Label(Loc.s("window.menu"), systemImage: "macwindow")
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
             .disabled(model.isCapturing)
-            .help("直接截取某个窗口")
+            .help(Loc.s("window.menu.help"))
 
             Button {
                 model.showSourcePicker.toggle()
             } label: {
-                Label("缩略图选择", systemImage: "square.grid.2x2")
+                Label(Loc.s("thumbnail.picker"), systemImage: "square.grid.2x2")
             }
             .disabled(model.isCapturing)
-            .help("以缩略图选择窗口或整个屏幕")
+            .help(Loc.s("thumbnail.picker.help"))
 
             Spacer(minLength: 12)
             Text("⌘⇧2")
                 .font(.callout.monospaced())
                 .foregroundStyle(.secondary)
-                .help("区域截屏快捷键")
+                .help(Loc.s("region.shortcut.help"))
         }
         .labelStyle(.titleAndIcon)
         .padding(.horizontal, 24)
@@ -806,12 +808,12 @@ struct CaptureView: View {
 
     private var annotationToolArea: some View {
         HStack(spacing: 14) {
-            Picker("标注工具", selection: $model.annotationTool) {
-                Text("矩形").tag(AnnotationKind.rectangle)
-                Text("箭头").tag(AnnotationKind.arrow)
-                Text("文字").tag(AnnotationKind.text)
-                Text("序号").tag(AnnotationKind.number)
-                Text("马赛克").tag(AnnotationKind.mosaic)
+            Picker("", selection: $model.annotationTool) {
+                Text(Loc.s("anno.rect")).tag(AnnotationKind.rectangle)
+                Text(Loc.s("anno.arrow")).tag(AnnotationKind.arrow)
+                Text(Loc.s("anno.text")).tag(AnnotationKind.text)
+                Text(Loc.s("anno.number")).tag(AnnotationKind.number)
+                Text(Loc.s("anno.mosaic")).tag(AnnotationKind.mosaic)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -834,22 +836,22 @@ struct CaptureView: View {
                         .onTapGesture { model.setAnnotationColor(hex) }
                 }
             }
-            .help("标注颜色")
+            .help(Loc.s("anno.color.help"))
 
             Divider().frame(height: 20)
 
-            Picker("线宽", selection: Binding(
+            Picker("", selection: Binding(
                 get: { model.annotationLineWidth },
                 set: { model.setAnnotationLineWidth($0) }
             )) {
                 ForEach(CaptureViewModel.lineWidthPresets, id: \.value) { preset in
-                    Text(preset.name).tag(preset.value)
+                    Text(Loc.s(preset.nameKey)).tag(preset.value)
                 }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(width: 130)
-            .help("线宽")
+            .help(Loc.s("anno.width.help"))
 
             Spacer()
         }
@@ -870,7 +872,7 @@ struct CaptureView: View {
             Button {
                 model.deleteSelectedAnnotation()
             } label: {
-                Label("删除", systemImage: "trash")
+                Label(Loc.s("anno.delete"), systemImage: "trash")
             }
             .keyboardShortcut(.delete, modifiers: [])
             .disabled(!model.hasSelection)
@@ -878,7 +880,7 @@ struct CaptureView: View {
             Button {
                 model.undoAnnotation()
             } label: {
-                Label("撤销", systemImage: "arrow.uturn.backward")
+                Label(Loc.s("anno.undo"), systemImage: "arrow.uturn.backward")
             }
             .keyboardShortcut("z", modifiers: .command)
             .disabled(model.annotations.isEmpty)
@@ -886,12 +888,12 @@ struct CaptureView: View {
             Button {
                 model.clearAnnotations()
             } label: {
-                Label("清空", systemImage: "xmark")
+                Label(Loc.s("anno.clear"), systemImage: "xmark")
             }
             .disabled(model.annotations.isEmpty)
 
             Spacer()
-            Text("点选拖动/缩放 · Shift 多选 · 滚轮缩放图片 · 空格+拖动平移 · 保存或复制时才渲染")
+            Text(Loc.s("anno.hint"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -909,11 +911,11 @@ struct CaptureView: View {
 
     private var textFieldPrompt: String {
         if model.isTextSelected {
-            return "编辑选中文字"
+            return Loc.s("anno.text.editSelected")
         } else if model.annotationTool == .text {
-            return "标注文字"
+            return Loc.s("anno.text.placeholder")
         } else {
-            return "选择“文字”工具以输入"
+            return Loc.s("anno.text.hintSelect")
         }
     }
 
@@ -948,12 +950,12 @@ struct CaptureView: View {
             } else if let image = model.image {
                 imagePreview(image)
             } else if model.isCapturing {
-                ProgressView("正在捕获…")
+                ProgressView(Loc.s("capturing"))
             } else {
                 ContentUnavailableView(
-                    "尚无截屏",
+                    Loc.s("empty.title"),
                     systemImage: "rectangle.dashed",
-                    description: Text("点击“截取主屏幕”验证原生捕获链路。")
+                    description: Text(Loc.s("empty.desc"))
                 )
             }
         }
@@ -1031,7 +1033,7 @@ struct CaptureView: View {
             Button { preview.reset() } label: {
                 Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
             }
-            .help("适应窗口")
+            .help(Loc.s("zoom.fit.help"))
             .disabled(preview.zoom == PreviewGestureController.minZoom && preview.pan == .zero)
         }
         .buttonStyle(.borderless)
@@ -1044,7 +1046,7 @@ struct CaptureView: View {
     @ViewBuilder
     private var panHint: some View {
         if preview.isSpaceDown {
-            Label("平移模式：拖动移动画面", systemImage: "hand.draw")
+            Label(Loc.s("pan.mode.hint"), systemImage: "hand.draw")
                 .font(.caption.weight(.medium))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -1064,7 +1066,7 @@ private struct RecentSavesList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("最近保存")
+            Text(Loc.s("recent.title"))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
@@ -1087,7 +1089,7 @@ private struct RecentSavesList: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                     .opacity(hovered == url ? 1 : 0)
-                    .help("在 Finder 中显示")
+                    .help(Loc.s("reveal.finder"))
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)

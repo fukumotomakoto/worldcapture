@@ -15,9 +15,12 @@ struct CaptureSourcePicker: View {
     @State private var isLoading = true
 
     private enum Tab: String, CaseIterable, Identifiable {
-        case windows = "窗口"
-        case screens = "整个屏幕"
+        case windows
+        case screens
         var id: String { rawValue }
+        var title: String {
+            self == .windows ? Loc.s("picker.tab.windows") : Loc.s("picker.tab.screens")
+        }
     }
 
     private struct DisplayInfo: Identifiable {
@@ -30,11 +33,11 @@ struct CaptureSourcePicker: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text("选择要捕获的内容")
+                Text(Loc.s("picker.title"))
                     .font(.headline)
                 Spacer()
                 Picker("", selection: $tab) {
-                    ForEach(Tab.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(Tab.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -44,7 +47,7 @@ struct CaptureSourcePicker: View {
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
-                .help("刷新")
+                .help(Loc.s("picker.refresh"))
                 Button {
                     onClose()
                 } label: {
@@ -52,7 +55,7 @@ struct CaptureSourcePicker: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
-                .help("关闭选择器")
+                .help(Loc.s("picker.close"))
             }
             .padding(20)
 
@@ -60,7 +63,7 @@ struct CaptureSourcePicker: View {
 
             ScrollView {
                 if isLoading {
-                    ProgressView("正在载入…").padding(40)
+                    ProgressView(Loc.s("picker.loading")).padding(40)
                 } else {
                     LazyVGrid(columns: columns, spacing: 16) {
                         if tab == .windows {
@@ -93,7 +96,7 @@ struct CaptureSourcePicker: View {
             guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
                 return nil
             }
-            return DisplayInfo(id: id, name: "屏幕 \(index + 1)")
+            return DisplayInfo(id: id, name: Loc.s("screen.index", index + 1))
         }
         isLoading = false
     }

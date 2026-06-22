@@ -96,16 +96,16 @@ private struct CapturePreviewView: View {
             Divider()
 
             HStack(spacing: 14) {
-                action("doc.on.doc", "复制") { actions.copy() }
-                action("square.and.arrow.down", "保存") { actions.save() }
-                action("pin", "钉屏") { actions.pin() }
-                action("pencil", "编辑") { actions.edit() }
+                action("doc.on.doc", Loc.s("action.copy")) { actions.copy() }
+                action("square.and.arrow.down", Loc.s("action.save")) { actions.save() }
+                action("pin", Loc.s("action.pin")) { actions.pin() }
+                action("pencil", Loc.s("action.edit")) { actions.edit() }
                 Spacer()
                 Button(action: onClose) {
                     Image(systemName: "xmark").font(.callout)
                 }
                 .buttonStyle(.borderless)
-                .help("关闭")
+                .help(Loc.s("action.close"))
             }
             .padding(.horizontal, 12)
             .frame(height: 44)

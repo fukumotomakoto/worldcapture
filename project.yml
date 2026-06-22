@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     macOS: "15.0"
   generateEmptyDirectories: true
+  developmentLanguage: zh-Hans
 
 settings:
   base:
@@ -39,6 +40,8 @@ targets:
       path: macos/App/Info.plist
       properties:
         CFBundleDisplayName: WorldCapture
+        CFBundleDevelopmentRegion: zh-Hans
+        CFBundleLocalizations: [zh-Hans, en, ja]
         LSApplicationCategoryType: public.app-category.productivity
         NSAudioCaptureUsageDescription: WorldCapture 需要访问系统音频，以便将电脑声音录入屏幕录像。
         NSMicrophoneUsageDescription: WorldCapture 需要访问麦克风，以便在屏幕录像中加入讲解声音。

@@ -6,22 +6,22 @@ struct MenuBarCommands: View {
     @ObservedObject var model: CaptureViewModel
 
     var body: some View {
-        Button("区域截屏") { run { await model.captureRegion() } }
+        Button(Loc.s("menu.region")) { run { await model.captureRegion() } }
             .keyboardShortcut("2", modifiers: [.command, .shift])
-        Button("截取主屏幕") { activateThen { await model.capture() } }
-        Button("截取窗口") { activateThen { await model.captureSelectedWindow() } }
+        Button(Loc.s("menu.main")) { activateThen { await model.capture() } }
+        Button(Loc.s("menu.window")) { activateThen { await model.captureSelectedWindow() } }
             .disabled(model.selectedWindowID == nil)
 
         Divider()
 
-        Button(model.isRecording ? "停止录制" : "录制屏幕") {
+        Button(model.isRecording ? Loc.s("record.stop") : Loc.s("record.screen")) {
             Task { await model.toggleRecording() }
         }
 
         Divider()
 
-        Button("显示主窗口") { NSApp.activate(ignoringOtherApps: true) }
-        Button("退出 WorldCapture") { NSApp.terminate(nil) }
+        Button(Loc.s("menu.showMain")) { NSApp.activate(ignoringOtherApps: true) }
+        Button(Loc.s("menu.quit")) { NSApp.terminate(nil) }
             .keyboardShortcut("q", modifiers: .command)
     }
 

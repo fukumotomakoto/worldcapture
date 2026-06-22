@@ -1,0 +1,113 @@
+/* WorldCapture — 日本語 */
+
+"app.subtitle" = "ローカル優先のクロスプラットフォーム・キャプチャ＆録画";
+
+/* 上部のグローバル操作 */
+"action.reset" = "リセット";
+"action.reset.help" = "現在のスクショと注釈を消去して初期状態に戻す";
+"action.pin" = "ピン留め";
+"action.pin.help" = "スクショを最前面のフローティング窓に固定";
+"action.save" = "保存";
+"action.copy" = "コピー";
+"recent.title" = "最近の保存";
+"recent.help" = "最近保存したスクショ";
+"reveal.finder" = "Finder で表示";
+
+/* 録画 */
+"record.screen" = "画面録画";
+"record.stop" = "停止";
+"record.pick.help" = "録画するディスプレイを選択";
+"record.active" = "画面とシステム音声を録画中";
+"record.saved" = "録画を保存：%@";
+
+/* キャプチャ対象 */
+"capture.region" = "範囲";
+"capture.main" = "メイン画面";
+"capture.scroll" = "スクロール長尺";
+"capture.scroll.help" = "範囲を選ぶと自動スクロールして長尺画像に連結";
+"capture.self" = "本ウィンドウ";
+"capture.self.help" = "WorldCapture 自身のウィンドウを取得";
+"window.menu" = "ウィンドウ";
+"window.menu.help" = "特定のウィンドウを取得";
+"window.refresh" = "一覧を更新";
+"window.none" = "利用可能なウィンドウなし";
+"thumbnail.picker" = "サムネイル選択";
+"thumbnail.picker.help" = "サムネイルでウィンドウや画面全体を選択";
+"region.shortcut.help" = "範囲キャプチャのショートカット";
+
+/* 権限バナー */
+"perm.screen.title" = "画面収録の許可が必要です";
+"perm.screen.desc" = "システム設定で WorldCapture を許可し、アプリを再起動してください。";
+"perm.open.settings" = "システム設定を開く";
+"perm.recheck" = "再確認";
+"perm.ax.title" = "スクロール撮影にはアクセシビリティ許可が必要";
+"perm.ax.desc" = "システム設定のアクセシビリティで WorldCapture を許可して再試行してください。";
+
+/* 注釈 */
+"anno.rect" = "矩形";
+"anno.arrow" = "矢印";
+"anno.text" = "テキスト";
+"anno.number" = "番号";
+"anno.mosaic" = "モザイク";
+"anno.color.help" = "注釈の色";
+"anno.width.help" = "線の太さ";
+"width.thin" = "細";
+"width.mid" = "中";
+"width.thick" = "太";
+"anno.text.editSelected" = "選択テキストを編集";
+"anno.text.placeholder" = "注釈テキスト";
+"anno.text.hintSelect" = "「テキスト」ツールを選んで入力";
+"anno.delete" = "削除";
+"anno.undo" = "取り消し";
+"anno.clear" = "クリア";
+"anno.hint" = "クリックで移動/拡縮 · Shift で複数選択 · ホイールで拡縮 · スペース+ドラッグで移動 · 保存/コピー時に描画";
+
+/* 空状態と進捗 */
+"empty.title" = "スクショはまだありません";
+"empty.desc" = "「メイン画面」を押してネイティブ撮影を確認。";
+"capturing" = "キャプチャ中…";
+
+/* プレビューの拡縮/移動 */
+"pan.mode.hint" = "パンモード：ドラッグで画面を移動";
+"zoom.fit.help" = "ウィンドウに合わせる";
+
+/* ソースピッカー */
+"picker.title" = "キャプチャ対象を選択";
+"picker.tab.windows" = "ウィンドウ";
+"picker.tab.screens" = "画面全体";
+"picker.loading" = "読み込み中…";
+"picker.refresh" = "更新";
+"picker.close" = "ピッカーを閉じる";
+"screen.index" = "画面 %d";
+"display.main" = "（メイン）";
+
+/* エラー */
+"error.title" = "操作に失敗しました";
+"error.ok" = "OK";
+"error.unknown" = "不明なエラー";
+"error.scrollEmpty" = "スクロール撮影で内容を取得できませんでした。";
+"error.noOwnWindow" = "キャプチャできる本アプリのウィンドウが見つかりません。";
+
+/* メニューバー */
+"menu.region" = "範囲を撮影";
+"menu.main" = "メイン画面を撮影";
+"menu.window" = "ウィンドウを撮影";
+"menu.showMain" = "メインウィンドウを表示";
+"menu.quit" = "WorldCapture を終了";
+
+/* 設定 */
+"settings.title" = "設定";
+"settings.section.general" = "一般";
+"settings.language" = "表示言語";
+"settings.language.system" = "システムに従う";
+"settings.language.restartNote" = "言語の変更はアプリを再起動すると反映されます。";
+"settings.savePath" = "既定の保存先";
+"settings.savePath.ask" = "毎回確認";
+"settings.shortcuts" = "ショートカット";
+"settings.shortcuts.note" = "現在：⌘⇧2 範囲撮影（カスタマイズ未対応）。";
+
+/* その他 */
+"action.edit" = "編集";
+"action.close" = "閉じる";
+"anno.text.default" = "テキスト";
+"pin.remove" = "ピンを解除";

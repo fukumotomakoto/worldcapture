@@ -237,7 +237,7 @@ struct AnnotationCanvas: View {
             ))
         case .text:
             context.draw(
-                Text(annotation.label ?? "说明")
+                Text(annotation.label ?? Loc.s("anno.text.default"))
                     .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(color),
                 at: start,
@@ -299,7 +299,7 @@ struct AnnotationCanvas: View {
 
     private var labelForCurrentTool: String? {
         switch tool {
-        case .text: textLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "说明" : textLabel
+        case .text: textLabel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Loc.s("anno.text.default") : textLabel
         case .number: String(nextNumber)
         default: nil
         }

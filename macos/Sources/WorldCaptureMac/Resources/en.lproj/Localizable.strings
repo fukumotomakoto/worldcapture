@@ -1,0 +1,113 @@
+/* WorldCapture — English */
+
+"app.subtitle" = "Local-first cross-platform capture & recording";
+
+/* Top-level global actions */
+"action.reset" = "Reset";
+"action.reset.help" = "Clear the current screenshot and annotations";
+"action.pin" = "Pin";
+"action.pin.help" = "Pin the screenshot as an always-on-top window";
+"action.save" = "Save";
+"action.copy" = "Copy";
+"recent.title" = "Recent saves";
+"recent.help" = "Recently saved screenshots";
+"reveal.finder" = "Show in Finder";
+
+/* Recording */
+"record.screen" = "Record";
+"record.stop" = "Stop";
+"record.pick.help" = "Choose a display to record";
+"record.active" = "Recording screen and system audio";
+"record.saved" = "Recording saved: %@";
+
+/* Capture sources */
+"capture.region" = "Region";
+"capture.main" = "Main screen";
+"capture.scroll" = "Scrolling";
+"capture.scroll.help" = "Select a region, then auto-scroll and stitch a long screenshot";
+"capture.self" = "This window";
+"capture.self.help" = "Capture WorldCapture's own window";
+"window.menu" = "Window";
+"window.menu.help" = "Capture a specific window";
+"window.refresh" = "Refresh list";
+"window.none" = "No windows available";
+"thumbnail.picker" = "Thumbnails";
+"thumbnail.picker.help" = "Pick a window or whole screen by thumbnail";
+"region.shortcut.help" = "Region capture shortcut";
+
+/* Permission banners */
+"perm.screen.title" = "Screen recording permission needed";
+"perm.screen.desc" = "Allow WorldCapture in System Settings, then relaunch the app.";
+"perm.open.settings" = "Open System Settings";
+"perm.recheck" = "Re-check";
+"perm.ax.title" = "Scrolling capture needs Accessibility";
+"perm.ax.desc" = "Allow WorldCapture under Accessibility in System Settings, then retry.";
+
+/* Annotation */
+"anno.rect" = "Rectangle";
+"anno.arrow" = "Arrow";
+"anno.text" = "Text";
+"anno.number" = "Number";
+"anno.mosaic" = "Mosaic";
+"anno.color.help" = "Annotation color";
+"anno.width.help" = "Line width";
+"width.thin" = "Thin";
+"width.mid" = "Medium";
+"width.thick" = "Thick";
+"anno.text.editSelected" = "Edit selected text";
+"anno.text.placeholder" = "Annotation text";
+"anno.text.hintSelect" = "Pick the Text tool to type";
+"anno.delete" = "Delete";
+"anno.undo" = "Undo";
+"anno.clear" = "Clear";
+"anno.hint" = "Click to move/resize · Shift to multi-select · Scroll to zoom · Space+drag to pan · renders on save/copy";
+
+/* Empty state & progress */
+"empty.title" = "No screenshot yet";
+"empty.desc" = "Click “Main screen” to verify the native capture path.";
+"capturing" = "Capturing…";
+
+/* Preview zoom/pan */
+"pan.mode.hint" = "Pan mode: drag to move the image";
+"zoom.fit.help" = "Fit to window";
+
+/* Source picker */
+"picker.title" = "Choose what to capture";
+"picker.tab.windows" = "Windows";
+"picker.tab.screens" = "Screens";
+"picker.loading" = "Loading…";
+"picker.refresh" = "Refresh";
+"picker.close" = "Close picker";
+"screen.index" = "Screen %d";
+"display.main" = " (Main)";
+
+/* Errors */
+"error.title" = "Operation failed";
+"error.ok" = "OK";
+"error.unknown" = "Unknown error";
+"error.scrollEmpty" = "Scrolling capture returned no content.";
+"error.noOwnWindow" = "Couldn't find this app's window to capture.";
+
+/* Menu bar */
+"menu.region" = "Capture region";
+"menu.main" = "Capture main screen";
+"menu.window" = "Capture window";
+"menu.showMain" = "Show main window";
+"menu.quit" = "Quit WorldCapture";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.section.general" = "General";
+"settings.language" = "Language";
+"settings.language.system" = "System default";
+"settings.language.restartNote" = "Relaunch the app for the language change to take effect.";
+"settings.savePath" = "Default save location";
+"settings.savePath.ask" = "Ask every time";
+"settings.shortcuts" = "Shortcuts";
+"settings.shortcuts.note" = "Current: ⌘⇧2 region capture (not yet customizable).";
+
+/* Misc */
+"action.edit" = "Edit";
+"action.close" = "Close";
+"anno.text.default" = "Text";
+"pin.remove" = "Remove pin";

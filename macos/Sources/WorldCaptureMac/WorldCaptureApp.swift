@@ -11,6 +11,10 @@ struct WorldCaptureApp: App {
         }
         .windowStyle(.hiddenTitleBar)
 
+        Settings {
+            SettingsView()
+        }
+
         MenuBarExtra("WorldCapture", systemImage: "camera.viewfinder") {
             MenuBarCommands(model: model)
         }

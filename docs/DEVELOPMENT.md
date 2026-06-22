@@ -51,6 +51,8 @@ WorldCapture 是一款本地优先的截屏、标注与录屏工具，目标平�
 | 录制完成高亮提示 | 已实现 | 未开始 | 绿色高亮条 + 醒目“在 Finder 中显示” |
 | 最近保存快捷打开 | 已实现 | 未开始 | “保存”旁下拉列最近 5 条，点开文件 / 悬停定位 Finder |
 | 复位回到初始界面 | 已实现 | 未开始 | 清空当前截图、标注与提示 |
+| 界面国际化 | 已实现 | 未开始 | 中/英/日，默认跟随系统，设置内可切换（重启生效）|
+| 设置页 | 已实现 | 未开始 | `Settings` 场景（⌘,）：语言、默认保存位置、快捷键说明 |
 | 系统音频 | 已实现 | 未开始 | 48 kHz、双声道配置 |
 | MP4 导出 | 已实现 | 未开始 | H.264/AAC |
 | 录制计时 | 已实现 | 未开始 | 0.25 秒刷新 |
@@ -248,6 +250,8 @@ ScreenCaptureKit + CoreGraphics/CoreText
 | `CapturePreview.swift` | 捕获后角落悬浮预览卡片与快捷动作 |
 | `ScrollInput.swift` | 辅助功能权限检测与合成滚轮事件（滚动捕获驱动）|
 | `PreviewZoomPan.swift` | 预览缩放/平移控制器（滚轮缩放与空格平移的 NSEvent 监视）|
+| `Localization.swift` | 本地化封装 `Loc` 与界面语言偏好 `AppLanguage`（zh/en/ja）|
+| `SettingsView.swift` | 偏好设置界面（语言、默认保存位置、快捷键说明）|
 
 ## 9. 静态截图流程
 
@@ -879,6 +883,14 @@ macOS 15+ 使用 `SCRecordingOutput`。废弃手工 AVAssetWriter 双队列方�
 ### ADR-005：XcodeGen 唯一事实源
 
 权限、entitlement、Bundle ID 和 target 配置放在 `project.yml`。生成的 plist 与 Xcode 工程可提交，但不能成为手工维护的第二事实源。
+
+### ADR-006：界面国际化与双轨资源 bundle
+
+界面文案用 `Localizable.strings`，基准语言 `zh-Hans`，另含 `en` 与 `ja`，放在 `macos/Sources/WorldCaptureMac/Resources/<lang>.lproj/`。
+
+由于同一份源码既被 SwiftPM 编译（资源在 `Bundle.module`）又被 Xcode 应用编译（资源在 `Bundle.main`），`Loc`（`Localization.swift`）用 `#if SWIFT_PACKAGE` 选择正确的 bundle。所有界面文案必须走 `Loc.s("key")`，并在三个 `.strings` 中同步添加同名 key（语言名如“简体中文/English/日本語”用本族名，不翻译）。
+
+界面语言默认跟随系统；设置页（⌘,）写入 `AppleLanguages` 覆盖，**重启应用后生效**（macOS 标准做法，避免运行时切换 bundle 的复杂度）。`project.yml` 设 `developmentLanguage: zh-Hans` 并在 Info.plist 声明 `CFBundleLocalizations`；`Package.swift` 设 `defaultLocalization` 与 `resources: [.process("Resources")]`。
 
 ## 29. 官方技术参考
 
