@@ -46,7 +46,8 @@ public struct ScreenCapturer: ScreenCapturing {
             configuration.width = max(1, Int((filter.contentRect.width * scale).rounded()))
             configuration.height = max(1, Int((filter.contentRect.height * scale).rounded()))
         }
-        configuration.showsCursor = true
+        // 静态截图（主屏/区域/滚动）不画鼠标光标，避免长图拼接时把箭头拍进画面。
+        configuration.showsCursor = false
         configuration.captureResolution = .best
 
         return try await SCScreenshotManager.captureImage(
