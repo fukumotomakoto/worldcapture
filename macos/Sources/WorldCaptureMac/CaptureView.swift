@@ -37,19 +37,23 @@ final class CaptureViewModel: ObservableObject {
     @Published var recordingDuration: TimeInterval = 0
     @Published var hasScreenPermission = true
     @Published var hasAccessibilityPermission = true
-    /// 是否在主界面内容区内嵌显示缩略图捕获目标选择器。
-    @Published var showSourcePicker = false
+    /// 主界面内容区内嵌的缩略图选择器当前模式；nil 表示不显示。
+    /// 全窗口/全屏幕/录制屏幕都统一用这个内嵌网格选择，不再用下拉菜单。
+    @Published var sourcePicker: SourcePickerMode?
     /// 可录制的显示器（多屏时供选择，单屏时直接录主屏）。
     @Published var availableDisplays: [DisplayOption] = []
-    /// 最近保存的截图（最多 5 条，供“保存”旁的下拉快速打开）。
-    @Published var recentSaves: [URL] = []
+
+    /// 内嵌选择器的用途：选窗口、选屏幕截图、选屏幕录制。
+    enum SourcePickerMode {
+        case window
+        case captureScreen
+        case recordScreen
+    }
 
     struct DisplayOption: Identifiable, Hashable {
         let id: CGDirectDisplayID
         let name: String
     }
-
-    private static let maxRecentSaves = 5
 
     var nextAnnotationNumber: Int {
         annotations.filter { $0.kind == .number }.count + 1
@@ -72,6 +76,7 @@ final class CaptureViewModel: ObservableObject {
     }
 
     func capture() async {
+        sourcePicker = nil
         isCapturing = true
         errorMessage = nil
         defer { isCapturing = false }
@@ -88,6 +93,7 @@ final class CaptureViewModel: ObservableObject {
     }
 
     func captureRegion() async {
+        sourcePicker = nil
         // 区域选择期间隐藏本应用窗口，使待截内容完全可见、便于精确框选。
         let restoreWindows = hideOwnWindows()
         guard let selection = await regionSelector.selectRegion() else {
@@ -120,6 +126,7 @@ final class CaptureViewModel: ObservableObject {
         }
         hasAccessibilityPermission = true
 
+        sourcePicker = nil
         let restoreWindows = hideOwnWindows()
         guard let selection = await regionSelector.selectRegion() else {
             restoreWindows()
@@ -141,7 +148,7 @@ final class CaptureViewModel: ObservableObject {
                 capture: { try await capturer.captureDisplay(id: displayID, region: region) },
                 scroll: {
                     ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
-                    try? await Task.sleep(nanoseconds: 350_000_000) // 等待界面滚动渲染稳定
+                    try? await Task.sleep(nanoseconds: 500_000_000) // 等待界面滚动渲染稳定（含懒加载内容）
                 }
             )
             restoreWindows()
@@ -213,6 +220,7 @@ final class CaptureViewModel: ObservableObject {
 
     /// 捕获指定窗口（供可视化窗口选择器调用）。
     func captureWindow(id: CGWindowID) async {
+        sourcePicker = nil
         isCapturing = true
         errorMessage = nil
         defer { isCapturing = false }
@@ -242,6 +250,7 @@ final class CaptureViewModel: ObservableObject {
 
     /// 捕获指定显示器整屏（供可视化选择器的“整个屏幕”使用）。
     func captureDisplayFull(id displayID: CGDirectDisplayID) async {
+        sourcePicker = nil
         isCapturing = true
         errorMessage = nil
         defer { isCapturing = false }
@@ -362,6 +371,7 @@ final class CaptureViewModel: ObservableObject {
     /// 录制指定显示器：先选输出路径，再开始录制。
     func beginRecording(displayID: CGDirectDisplayID) async {
         guard !isRecording else { return }
+        sourcePicker = nil
         let panel = NSSavePanel()
         panel.allowedContentTypes = [.mpeg4Movie]
         panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).mp4"
@@ -382,6 +392,9 @@ final class CaptureViewModel: ObservableObject {
             try await screenRecorder.stopRecording()
             isRecording = false
             stopRecordingTimer()
+            if let lastRecordingURL {
+                HistoryStore.shared.record(lastRecordingURL, kind: .video)
+            }
         } catch {
             isRecording = screenRecorder.isRecording
             if !isRecording { stopRecordingTimer() }
@@ -423,17 +436,9 @@ final class CaptureViewModel: ObservableObject {
 
         do {
             try PNGEncoder.encode(cgImage).write(to: url, options: .atomic)
-            recordRecentSave(url)
+            HistoryStore.shared.record(url, kind: .image)
         } catch {
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private func recordRecentSave(_ url: URL) {
-        recentSaves.removeAll { $0 == url }
-        recentSaves.insert(url, at: 0)
-        if recentSaves.count > Self.maxRecentSaves {
-            recentSaves = Array(recentSaves.prefix(Self.maxRecentSaves))
         }
     }
 
@@ -456,8 +461,18 @@ final class CaptureViewModel: ObservableObject {
         errorMessage = nil
         lastRecordingURL = nil
         recordingDuration = 0
-        showSourcePicker = false
+        sourcePicker = nil
         annotationTool = .rectangle
+    }
+
+    /// 重启本应用：拉起一个新实例后退出当前进程（常用于授予辅助功能权限后让其对本进程生效）。
+    func restartApp() {
+        guard !isRecording else { return }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
+            Task { @MainActor in NSApp.terminate(nil) }
+        }
     }
 
     private func renderedImage() -> CGImage? {
@@ -498,6 +513,9 @@ final class CaptureViewModel: ObservableObject {
 
 struct CaptureView: View {
     @ObservedObject var model: CaptureViewModel
+    @ObservedObject private var history = HistoryStore.shared
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var preview = PreviewGestureController()
     @State private var showRecentSaves = false
     @State private var panActive = false
@@ -548,6 +566,9 @@ struct CaptureView: View {
                     Spacer()
                     Button(Loc.s("perm.open.settings")) { model.openAccessibilitySettings() }
                     Button(Loc.s("perm.recheck")) { model.refreshAccessibilityPermission() }
+                    Button(Loc.s("action.restart")) { model.restartApp() }
+                        .disabled(model.isRecording)
+                        .help(Loc.s("action.restart.help"))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 10)
@@ -596,7 +617,7 @@ struct CaptureView: View {
                 }
             }
 
-            if model.image != nil && !model.showSourcePicker {
+            if model.image != nil && model.sourcePicker == nil {
                 annotationToolArea
                 annotationOperationArea
                 Divider()
@@ -620,6 +641,13 @@ struct CaptureView: View {
         }
         .onAppear { preview.start() }
         .onDisappear { preview.stop() }
+        .onChange(of: scenePhase) { _, phase in
+            // 从系统设置授权后切回应用时，自动重新检测权限，使横幅自动消失，无需手动“重新检查”。
+            // （辅助功能权限受系统进程缓存影响，可能仍需重启 App 才对本进程生效。）
+            guard phase == .active else { return }
+            if !model.hasScreenPermission { Task { await model.loadWindows() } }
+            if !model.hasAccessibilityPermission { model.refreshAccessibilityPermission() }
+        }
     }
 
     // MARK: - 顶部标题与全局动作
@@ -643,8 +671,6 @@ struct CaptureView: View {
                 .disabled(model.isRecording || (model.image == nil && model.lastRecordingURL == nil))
                 .help(Loc.s("action.reset.help"))
 
-                recordingControl
-
                 Button {
                     model.pinCurrentImage()
                 } label: {
@@ -653,8 +679,6 @@ struct CaptureView: View {
                 .disabled(model.image == nil)
                 .help(Loc.s("action.pin.help"))
 
-                saveControl
-
                 Button {
                     model.copyToClipboard()
                 } label: {
@@ -662,6 +686,15 @@ struct CaptureView: View {
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(model.image == nil)
+
+                saveControl
+
+                Button {
+                    openWindow(id: "history")
+                } label: {
+                    Label(Loc.s("library.open"), systemImage: "clock.arrow.circlepath")
+                }
+                .help(Loc.s("library.open.help"))
             }
             .labelStyle(.titleAndIcon)
         }
@@ -669,7 +702,7 @@ struct CaptureView: View {
         .padding(.vertical, 16)
     }
 
-    /// 录制控件：录制中显示停止；多屏时用菜单选屏；单屏直接录主屏。
+    /// 录制控件：录制中显示停止；多屏时在内容区内嵌屏幕缩略图供选择（不用下拉菜单）；单屏直接录主屏。
     @ViewBuilder
     private var recordingControl: some View {
         if model.isRecording {
@@ -679,25 +712,17 @@ struct CaptureView: View {
                 Label(Loc.s("record.stop"), systemImage: "stop.circle.fill")
             }
             .tint(Color.red)
-        } else if model.availableDisplays.count > 1 {
-            Menu {
-                ForEach(model.availableDisplays) { display in
-                    Button(display.name) {
-                        Task { await model.beginRecording(displayID: display.id) }
-                    }
+        } else {
+            Button {
+                if model.availableDisplays.count > 1 {
+                    model.sourcePicker = .recordScreen
+                } else {
+                    Task { await model.toggleRecording() }
                 }
             } label: {
                 Label(Loc.s("record.screen"), systemImage: "record.circle")
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
             .help(Loc.s("record.pick.help"))
-        } else {
-            Button {
-                Task { await model.toggleRecording() }
-            } label: {
-                Label(Loc.s("record.screen"), systemImage: "record.circle")
-            }
         }
     }
 
@@ -717,13 +742,17 @@ struct CaptureView: View {
                 Image(systemName: "chevron.down")
                     .font(.caption.weight(.semibold))
             }
-            .disabled(model.recentSaves.isEmpty)
+            .disabled(history.entries.isEmpty)
             .help(Loc.s("recent.help"))
             .popover(isPresented: $showRecentSaves, arrowEdge: .bottom) {
                 RecentSavesList(
-                    urls: model.recentSaves,
+                    entries: Array(history.entries.prefix(6)),
                     onOpenFile: { model.openSavedFile($0) },
-                    onRevealFolder: { model.revealInFinder($0) }
+                    onRevealFolder: { model.revealInFinder($0) },
+                    onShowAll: {
+                        showRecentSaves = false
+                        openWindow(id: "history")
+                    }
                 )
             }
         }
@@ -740,20 +769,15 @@ struct CaptureView: View {
             }
             .disabled(model.isCapturing)
 
-            Button {
-                Task { await model.capture() }
-            } label: {
-                Label(Loc.s("capture.main"), systemImage: "display")
-            }
-            .disabled(model.isCapturing)
+            fullScreenControl
 
             Button {
-                Task { await model.captureScrolling() }
+                model.sourcePicker = .window
             } label: {
-                Label(Loc.s("capture.scroll"), systemImage: "arrow.down.doc")
+                Label(Loc.s("capture.window"), systemImage: "macwindow")
             }
             .disabled(model.isCapturing)
-            .help(Loc.s("capture.scroll.help"))
+            .help(Loc.s("capture.window.help"))
 
             Button {
                 Task { await model.captureOwnWindow() }
@@ -763,35 +787,17 @@ struct CaptureView: View {
             .disabled(model.isCapturing)
             .help(Loc.s("capture.self.help"))
 
+            Button {
+                Task { await model.captureScrolling() }
+            } label: {
+                Label(Loc.s("capture.scroll"), systemImage: "arrow.down.doc")
+            }
+            .disabled(model.isCapturing)
+            .help(Loc.s("capture.scroll.help"))
+
             Divider().frame(height: 22)
 
-            Menu {
-                if model.windows.isEmpty {
-                    Text(Loc.s("window.none"))
-                } else {
-                    ForEach(model.windows) { window in
-                        Button(window.displayName) {
-                            Task { await model.captureWindow(id: window.id) }
-                        }
-                    }
-                }
-                Divider()
-                Button(Loc.s("window.refresh")) { Task { await model.loadWindows() } }
-            } label: {
-                Label(Loc.s("window.menu"), systemImage: "macwindow")
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-            .disabled(model.isCapturing)
-            .help(Loc.s("window.menu.help"))
-
-            Button {
-                model.showSourcePicker.toggle()
-            } label: {
-                Label(Loc.s("thumbnail.picker"), systemImage: "square.grid.2x2")
-            }
-            .disabled(model.isCapturing)
-            .help(Loc.s("thumbnail.picker.help"))
+            recordingControl
 
             Spacer(minLength: 12)
             Text("⌘⇧2")
@@ -802,6 +808,21 @@ struct CaptureView: View {
         .labelStyle(.titleAndIcon)
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
+    }
+
+    /// 全屏幕截图：单屏直接截主屏；多屏时在内容区内嵌屏幕缩略图供选择（不用下拉菜单）。
+    private var fullScreenControl: some View {
+        Button {
+            if model.availableDisplays.count > 1 {
+                model.sourcePicker = .captureScreen
+            } else {
+                Task { await model.capture() }
+            }
+        } label: {
+            Label(Loc.s("capture.fullscreen"), systemImage: "display")
+        }
+        .disabled(model.isCapturing)
+        .help(Loc.s("capture.fullscreen.help"))
     }
 
     // MARK: - 标注：工具区（绘制工具 / 颜色 / 线宽）
@@ -932,20 +953,36 @@ struct CaptureView: View {
 
     // MARK: - 内容区（缩略图选择器 / 预览 / 空态）
 
+    private func sourcePickerTitle(_ mode: CaptureViewModel.SourcePickerMode) -> String {
+        switch mode {
+        case .window: return Loc.s("picker.window.title")
+        case .captureScreen: return Loc.s("picker.screen.title")
+        case .recordScreen: return Loc.s("picker.record.title")
+        }
+    }
+
     private var contentArea: some View {
         ZStack {
             Color(nsColor: .windowBackgroundColor)
-            if model.showSourcePicker {
+            if let mode = model.sourcePicker {
                 CaptureSourcePicker(
+                    kind: mode == .window ? .window : .screen,
+                    title: sourcePickerTitle(mode),
                     onPickWindow: { id in
-                        model.showSourcePicker = false
+                        model.sourcePicker = nil
                         Task { await model.captureWindow(id: id) }
                     },
                     onPickDisplay: { id in
-                        model.showSourcePicker = false
-                        Task { await model.captureDisplayFull(id: id) }
+                        model.sourcePicker = nil
+                        Task {
+                            switch mode {
+                            case .captureScreen: await model.captureDisplayFull(id: id)
+                            case .recordScreen: await model.beginRecording(displayID: id)
+                            case .window: break
+                            }
+                        }
                     },
-                    onClose: { model.showSourcePicker = false }
+                    onClose: { model.sourcePicker = nil }
                 )
             } else if let image = model.image {
                 imagePreview(image)
@@ -965,6 +1002,17 @@ struct CaptureView: View {
     @ViewBuilder
     private func imagePreview(_ image: NSImage) -> some View {
         GeometryReader { proxy in
+            // 基准缩放：让 1 个截图像素正好对应 1 个物理像素（不放大位图），
+            // 否则小区域截图被 scaledToFit 撑满预览区会被插值放大、发虚。
+            // 内容比预览区大时再按比例缩小以适配。
+            let displayScale = NSScreen.main?.backingScaleFactor ?? 2
+            let nativeScale = 1 / displayScale
+            let paneScale = min(
+                proxy.size.width / max(1, image.size.width),
+                proxy.size.height / max(1, image.size.height)
+            )
+            let fit = min(nativeScale, paneScale)
+            let displaySize = CGSize(width: image.size.width * fit, height: image.size.height * fit)
             ZStack {
                 Image(nsImage: image)
                     .resizable()
@@ -981,6 +1029,7 @@ struct CaptureView: View {
                 )
                 .allowsHitTesting(!preview.isSpaceDown)
             }
+            .frame(width: displaySize.width, height: displaySize.height)
             .scaleEffect(preview.zoom)
             .offset(preview.pan)
             .frame(width: proxy.size.width, height: proxy.size.height)
@@ -998,6 +1047,16 @@ struct CaptureView: View {
         .onChange(of: model.image.map(ObjectIdentifier.init)) { _, _ in
             preview.reset()
             panActive = false
+        }
+        // 内容区在“内嵌选择器 ↔ 图片预览”间切换会整体重建本视图，
+        // 此时 onChange 不会对初始值触发；故出现时强制归位缩放/平移，
+        // 消失时清空 previewFrame，避免全局滚轮监视器误缩放已隐藏的预览。
+        .onAppear {
+            preview.reset()
+            panActive = false
+        }
+        .onDisappear {
+            preview.previewFrame = .zero
         }
     }
 
@@ -1056,13 +1115,14 @@ struct CaptureView: View {
     }
 }
 
-/// “保存”旁下拉的最近保存列表：点文件名打开图片，悬停显示文件夹图标可定位到 Finder。
+/// “保存”旁下拉的最近保存列表：点文件名打开，悬停显示文件夹图标可定位到 Finder，底部入口跳转完整历史库。
 private struct RecentSavesList: View {
-    let urls: [URL]
+    let entries: [HistoryEntry]
     let onOpenFile: (URL) -> Void
     let onRevealFolder: (URL) -> Void
+    let onShowAll: () -> Void
 
-    @State private var hovered: URL?
+    @State private var hovered: HistoryEntry.ID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -1073,33 +1133,47 @@ private struct RecentSavesList: View {
                 .padding(.top, 10)
                 .padding(.bottom, 2)
 
-            ForEach(urls, id: \.self) { url in
+            ForEach(entries) { entry in
                 HStack(spacing: 8) {
-                    Image(systemName: "photo")
+                    Image(systemName: entry.kind == .video ? "film" : "photo")
                         .foregroundStyle(.secondary)
-                    Text(url.lastPathComponent)
+                    Text(entry.fileName)
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer(minLength: 12)
                     Button {
-                        onRevealFolder(url)
+                        onRevealFolder(entry.url)
                     } label: {
                         Image(systemName: "folder")
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
-                    .opacity(hovered == url ? 1 : 0)
+                    .opacity(hovered == entry.id ? 1 : 0)
                     .help(Loc.s("reveal.finder"))
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .contentShape(Rectangle())
-                .background(hovered == url ? Color.accentColor.opacity(0.12) : Color.clear)
+                .background(hovered == entry.id ? Color.accentColor.opacity(0.12) : Color.clear)
                 .onHover { hovering in
-                    hovered = hovering ? url : (hovered == url ? nil : hovered)
+                    hovered = hovering ? entry.id : (hovered == entry.id ? nil : hovered)
                 }
-                .onTapGesture { onOpenFile(url) }
+                .onTapGesture { onOpenFile(entry.url) }
             }
+
+            Divider().padding(.vertical, 4)
+
+            Button(action: onShowAll) {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.arrow.circlepath")
+                    Text(Loc.s("library.showAll"))
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
         .frame(width: 340)
         .padding(.bottom, 8)

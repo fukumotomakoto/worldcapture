@@ -7,11 +7,31 @@
 "action.reset.help" = "現在のスクショと注釈を消去して初期状態に戻す";
 "action.pin" = "ピン留め";
 "action.pin.help" = "スクショを最前面のフローティング窓に固定";
+"action.restart" = "再起動";
+"action.restart.help" = "WorldCapture を再起動（アクセシビリティ権限の付与後は再起動が必要なことが多い）";
 "action.save" = "保存";
 "action.copy" = "コピー";
 "recent.title" = "最近の保存";
 "recent.help" = "最近保存したスクショ";
 "reveal.finder" = "Finder で表示";
+
+/* 履歴ライブラリ */
+"library.title" = "履歴";
+"library.open" = "履歴";
+"library.open.help" = "過去のスクショと録画を見る";
+"library.empty" = "まだ履歴がありません";
+"library.count" = "%d 件";
+"library.clear" = "消去";
+"library.clear.confirm" = "履歴一覧を消去しますか？（記録のみ。ファイルは残ります）";
+"library.filter.all" = "すべて";
+"library.filter.image" = "画像";
+"library.filter.video" = "動画";
+"library.open.file" = "開く";
+"library.copy" = "コピー";
+"library.trash" = "ゴミ箱に入れる";
+"library.removeEntry" = "履歴から削除";
+"library.missing" = "ファイルが移動／削除されました";
+"library.showAll" = "すべての履歴を表示";
 
 /* 録画 */
 "record.screen" = "画面録画";
@@ -23,6 +43,10 @@
 /* キャプチャ対象 */
 "capture.region" = "範囲";
 "capture.main" = "メイン画面";
+"capture.fullscreen" = "画面全体";
+"capture.fullscreen.help" = "画面全体を取得（複数ディスプレイ時は選択可）";
+"capture.window" = "ウィンドウ";
+"capture.window.help" = "サムネイルから取得するウィンドウを選択";
 "capture.scroll" = "スクロール長尺";
 "capture.scroll.help" = "範囲を選ぶと自動スクロールして長尺画像に連結";
 "capture.self" = "本ウィンドウ";
@@ -30,6 +54,9 @@
 "window.menu" = "ウィンドウ";
 "window.menu.help" = "特定のウィンドウを取得";
 "window.refresh" = "一覧を更新";
+"picker.window.title" = "取得するウィンドウを選択";
+"picker.screen.title" = "取得する画面を選択";
+"picker.record.title" = "録画する画面を選択";
 "window.none" = "利用可能なウィンドウなし";
 "thumbnail.picker" = "サムネイル選択";
 "thumbnail.picker.help" = "サムネイルでウィンドウや画面全体を選択";

@@ -7,11 +7,31 @@
 "action.reset.help" = "Clear the current screenshot and annotations";
 "action.pin" = "Pin";
 "action.pin.help" = "Pin the screenshot as an always-on-top window";
+"action.restart" = "Restart";
+"action.restart.help" = "Restart WorldCapture (often needed after granting Accessibility permission)";
 "action.save" = "Save";
 "action.copy" = "Copy";
 "recent.title" = "Recent saves";
 "recent.help" = "Recently saved screenshots";
 "reveal.finder" = "Show in Finder";
+
+/* History library */
+"library.title" = "History";
+"library.open" = "History";
+"library.open.help" = "Browse past screenshots and recordings";
+"library.empty" = "No history yet";
+"library.count" = "%d items";
+"library.clear" = "Clear";
+"library.clear.confirm" = "Clear the history list? (Records only — files are kept on disk)";
+"library.filter.all" = "All";
+"library.filter.image" = "Images";
+"library.filter.video" = "Videos";
+"library.open.file" = "Open";
+"library.copy" = "Copy";
+"library.trash" = "Move to Trash";
+"library.removeEntry" = "Remove from History";
+"library.missing" = "File moved or deleted";
+"library.showAll" = "Show all history";
 
 /* Recording */
 "record.screen" = "Record";
@@ -23,6 +43,10 @@
 /* Capture sources */
 "capture.region" = "Region";
 "capture.main" = "Main screen";
+"capture.fullscreen" = "Full screen";
+"capture.fullscreen.help" = "Capture the whole screen (pick a display when there are several)";
+"capture.window" = "Window";
+"capture.window.help" = "Pick a window to capture from thumbnails";
 "capture.scroll" = "Scrolling";
 "capture.scroll.help" = "Select a region, then auto-scroll and stitch a long screenshot";
 "capture.self" = "This window";
@@ -30,6 +54,9 @@
 "window.menu" = "Window";
 "window.menu.help" = "Capture a specific window";
 "window.refresh" = "Refresh list";
+"picker.window.title" = "Pick a window to capture";
+"picker.screen.title" = "Pick a screen to capture";
+"picker.record.title" = "Pick a screen to record";
 "window.none" = "No windows available";
 "thumbnail.picker" = "Thumbnails";
 "thumbnail.picker.help" = "Pick a window or whole screen by thumbnail";

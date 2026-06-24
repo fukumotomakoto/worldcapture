@@ -16,7 +16,10 @@ final class CapturePreviewController {
 
     private var panel: NSPanel?
     private var dismissTask: Task<Void, Never>?
+    private var hardDismissTask: Task<Void, Never>?
     private let autoDismissSeconds: UInt64 = 6
+    /// 硬上限：无论是否悬停，超过此时长一定关闭，避免非激活面板的 onHover 卡死导致永不消失。
+    private let maxLifetimeSeconds: UInt64 = 12
 
     func present(image: NSImage, actions: CapturePreviewActions) {
         dismiss()
@@ -52,13 +55,27 @@ final class CapturePreviewController {
         panel.orderFrontRegardless()
         self.panel = panel
         scheduleDismiss()
+        scheduleHardDismiss()
     }
 
     func dismiss() {
         cancelDismiss()
+        hardDismissTask?.cancel()
+        hardDismissTask = nil
         panel?.orderOut(nil)
         panel?.close()
         panel = nil
+    }
+
+    /// 不受悬停影响的硬性关闭计时。
+    private func scheduleHardDismiss() {
+        hardDismissTask?.cancel()
+        hardDismissTask = Task { [weak self] in
+            guard let seconds = self?.maxLifetimeSeconds else { return }
+            try? await Task.sleep(nanoseconds: seconds * 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            self?.dismiss()
+        }
     }
 
     private func scheduleDismiss() {

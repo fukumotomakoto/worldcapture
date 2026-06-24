@@ -37,7 +37,9 @@
 		C7B43EB1CBCEC78F7018855A /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8A12BA446196978A62259FB /* AnnotationRenderer.swift */; };
 		C7D90B519339396704FC8C36 /* ScreenCapturePermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 077B5295E4C18DE1F49D917D /* ScreenCapturePermission.swift */; };
 		CD9CEBF77854D5E8B83E7BA7 /* CaptureErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1FAD595B15D9B4D6F6986EA /* CaptureErrorTests.swift */; };
+		CDD0D8B80EE97D6F54347F0D /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D305097250477193BA8D81 /* HistoryStore.swift */; };
 		D8CC99A0360C4591E0368404 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3DF51FFDB9641A021F16FA4 /* SettingsView.swift */; };
+		E2B90FA571807CC7CB33F3A6 /* HistoryLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E0854B183AEA28EE383D40 /* HistoryLibraryView.swift */; };
 		EDF26B7D76743D8A96AE4483 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
 		EFC53582C0C473D9C12596D9 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
 		F2B8CE2C040D94C79A339D12 /* CaptureKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -114,6 +116,7 @@
 		AC458AEB50E92F3DB0109260 /* CaptureRegionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRegionTests.swift; sourceTree = "<group>"; };
 		B1FAD595B15D9B4D6F6986EA /* CaptureErrorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureErrorTests.swift; sourceTree = "<group>"; };
 		B45B647F647A23E839B68AEB /* ScrollStitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollStitcher.swift; sourceTree = "<group>"; };
+		B5E0854B183AEA28EE383D40 /* HistoryLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryLibraryView.swift; sourceTree = "<group>"; };
 		BA2B315FCF24B0EECFE0916C /* ScrollStitcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollStitcherTests.swift; sourceTree = "<group>"; };
 		C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollInput.swift; sourceTree = "<group>"; };
 		D300F98C4285B98344FE3979 /* ScrollCaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCaptureEngine.swift; sourceTree = "<group>"; };
@@ -125,6 +128,7 @@
 		EB21E5D360DC57F87488B400 /* ScreenRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRecorder.swift; sourceTree = "<group>"; };
 		EF29CEBE1E07720664D987B3 /* RGBAColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RGBAColor.swift; sourceTree = "<group>"; };
 		F6A5BD83F712DD43D7989C11 /* CapturePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePreview.swift; sourceTree = "<group>"; };
+		F6D305097250477193BA8D81 /* HistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryStore.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -155,6 +159,8 @@
 				1EEA26E33217A32D94CE1A38 /* CaptureSourcePicker.swift */,
 				AAF23E9B671521DD1BEC9451 /* CaptureView.swift */,
 				E863C6E6B8504C26DAFB5CB0 /* GlobalHotKey.swift */,
+				B5E0854B183AEA28EE383D40 /* HistoryLibraryView.swift */,
+				F6D305097250477193BA8D81 /* HistoryStore.swift */,
 				7FF822FA161454E950CB0F64 /* Localization.swift */,
 				E00803A9BEEDA5A8F9C3CDBF /* MenuBarCommands.swift */,
 				8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */,
@@ -391,6 +397,8 @@
 				7FCAA1AD26A1A1023790629A /* CaptureSourcePicker.swift in Sources */,
 				50694496E43329643F36C39D /* CaptureView.swift in Sources */,
 				57E9B8F43455AB5103816886 /* GlobalHotKey.swift in Sources */,
+				E2B90FA571807CC7CB33F3A6 /* HistoryLibraryView.swift in Sources */,
+				CDD0D8B80EE97D6F54347F0D /* HistoryStore.swift in Sources */,
 				BFE619DD104D0C435D697405 /* Localization.swift in Sources */,
 				0E00F2BDFA1DA8974182EB1D /* MenuBarCommands.swift in Sources */,
 				79DE76B7B5234692966DBBB2 /* PinnedImage.swift in Sources */,

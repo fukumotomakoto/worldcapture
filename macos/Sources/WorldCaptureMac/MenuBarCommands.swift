@@ -4,6 +4,7 @@ import SwiftUI
 /// 菜单栏常驻入口：无需主窗口聚焦即可发起截屏/录屏。
 struct MenuBarCommands: View {
     @ObservedObject var model: CaptureViewModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Button(Loc.s("menu.region")) { run { await model.captureRegion() } }
@@ -19,6 +20,11 @@ struct MenuBarCommands: View {
         }
 
         Divider()
+
+        Button(Loc.s("library.open")) {
+            NSApp.activate(ignoringOtherApps: true)
+            openWindow(id: "history")
+        }
 
         Button(Loc.s("menu.showMain")) { NSApp.activate(ignoringOtherApps: true) }
         Button(Loc.s("menu.quit")) { NSApp.terminate(nil) }

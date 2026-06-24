@@ -54,23 +54,26 @@ public struct VerticalAlignment: Equatable, Sendable {
     }
 }
 
-/// 在 `[minShift, maxShift]` 内寻找使 `b` 顶部与 `a`（下移 d 行后）最匹配的 d。
+/// 在 `[minShift, maxShift]` 内寻找使 `b`（从 `bandOrigin` 行起的一段）与 `a`（下移 d 行后）最匹配的 d。
 ///
-/// 语义：滚动向下 d 行后，`a` 的第 `d+i` 行 ≈ `b` 的第 `i` 行。
-/// 为控制开销，只比较顶部 `band` 行，并按 `columnStep` 抽样列。
+/// 语义：滚动向下 d 行后，`a` 的第 `bandOrigin+d+i` 行 ≈ `b` 的第 `bandOrigin+i` 行。
+/// 为控制开销，只比较从 `bandOrigin` 起的 `band` 行，并按 `columnStep` 抽样列。
+/// `bandOrigin` 可避开顶部吸顶（sticky）页眉：页眉在滚动时不动，若从第 0 行比对，
+/// 会让 d=0 误判为最佳匹配（“未滚动”），导致长截图过早结束。
 public func bestVerticalShift(
     _ a: GrayImage,
     _ b: GrayImage,
     minShift: Int = 0,
     maxShift: Int? = nil,
     band: Int = 160,
-    columnStep: Int = 4
+    columnStep: Int = 4,
+    bandOrigin: Int = 0
 ) -> VerticalAlignment? {
     guard a.width == b.width, a.width > 0, a.height > 0, b.height > 0 else { return nil }
 
     let width = a.width
-    let height = min(a.height, b.height)
-    let upper = min(maxShift ?? (height - 1), height - 1)
+    let origin = max(0, min(bandOrigin, b.height - 1))
+    let upper = min(maxShift ?? (a.height - 1), a.height - 1)
     let lower = max(0, minShift)
     guard lower <= upper else { return nil }
 
@@ -79,14 +82,15 @@ public func bestVerticalShift(
 
     var best: VerticalAlignment?
     for d in lower...upper {
-        let compareRows = min(band, height - d)
+        // b 取 [origin, origin+rows)；a 取 [origin+d, origin+d+rows)。
+        let compareRows = min(band, min(b.height - origin, a.height - origin - d))
         guard compareRows >= minimumOverlapRows else { continue }
 
         var sum = 0
         var count = 0
         for i in 0..<compareRows {
-            let aRow = (d + i) * a.width
-            let bRow = i * b.width
+            let aRow = (origin + d + i) * a.width
+            let bRow = (origin + i) * b.width
             var x = 0
             while x < width {
                 sum += abs(Int(a.pixels[aRow + x]) - Int(b.pixels[bRow + x]))
@@ -156,12 +160,16 @@ public struct ScrollStitcher {
         }
 
         guard previous.width == gray.width else { return .invalid }
+        // 从画面上方约 12% 处开始比对，跳过常见的吸顶页眉（搜索栏/导航条），
+        // 避免静止页眉把对齐结果拉到 d=0 而误判为“未滚动”导致提前结束。
+        let bandOrigin = max(0, Int(Double(gray.height) * 0.12))
         guard let alignment = bestVerticalShift(
             previous, gray,
             minShift: 0,
             maxShift: gray.height - 1,
             band: options.band,
-            columnStep: options.columnStep
+            columnStep: options.columnStep,
+            bandOrigin: bandOrigin
         ) else { return .invalid }
 
         if alignment.score > options.matchThreshold { return .noOverlap }

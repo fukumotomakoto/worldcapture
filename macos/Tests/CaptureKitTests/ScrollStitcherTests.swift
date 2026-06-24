@@ -166,6 +166,40 @@ private func makeSourceImage(width: Int, height: Int, inverted: Bool = false) ->
     #expect(stitcher.stitchedHeight == 60)
 }
 
+@Test func stitchesPastStickyHeader() {
+    // 模拟吸顶页眉：前 24 行无论怎么滚动都固定不变，其余内容随滚动上移。
+    // 若从第 0 行比对，静止页眉会把对齐拉到 shift 0（误判“未滚动”）；
+    // 跳过顶部后应正确求出滚动量并持续拼接。
+    let width = 16
+    let height = 200
+    let headerRows = 24
+    let delta = 30
+
+    func frame(at position: Int) -> CGImage {
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        for y in 0..<height {
+            // 顶部 headerRows 固定；其余按全局滚动位置取值。
+            let base = y < headerRows ? 200 : ((position + y) * 37) % 256
+            for x in 0..<width {
+                let i = (y * width + x) * 4
+                bytes[i] = UInt8(base); bytes[i + 1] = UInt8(base)
+                bytes[i + 2] = UInt8(base); bytes[i + 3] = 255
+            }
+        }
+        let provider = CGDataProvider(data: Data(bytes) as CFData)!
+        return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
+                       bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                       bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
+    }
+
+    var stitcher = ScrollStitcher(options: .init(band: 80, columnStep: 1))
+    #expect(stitcher.append(frame(at: 0)) == .first)
+    #expect(stitcher.append(frame(at: delta)) == .appended(newRows: delta))
+    #expect(stitcher.append(frame(at: 2 * delta)) == .appended(newRows: delta))
+    #expect(stitcher.frameCount == 3)
+}
+
 @Test func reportsNoOverlapForUnrelatedFrame() {
     let a = makeSourceImage(width: 16, height: 60)
     let b = makeSourceImage(width: 16, height: 60, inverted: true)

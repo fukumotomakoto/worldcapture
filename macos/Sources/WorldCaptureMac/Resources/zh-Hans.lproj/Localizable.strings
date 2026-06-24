@@ -7,11 +7,31 @@
 "action.reset.help" = "清空当前截图与标注，回到初始界面";
 "action.pin" = "钉屏";
 "action.pin.help" = "把当前截图钉为置顶悬浮窗";
+"action.restart" = "重启";
+"action.restart.help" = "重新启动 WorldCapture（授予辅助功能权限后常需重启才生效）";
 "action.save" = "保存";
 "action.copy" = "复制";
 "recent.title" = "最近保存";
 "recent.help" = "最近保存的截图";
 "reveal.finder" = "在 Finder 中显示";
+
+/* 历史库 */
+"library.title" = "历史库";
+"library.open" = "历史";
+"library.open.help" = "浏览过去保存的截图与录像";
+"library.empty" = "还没有历史记录";
+"library.count" = "%d 项";
+"library.clear" = "清空";
+"library.clear.confirm" = "确定清空历史列表吗？（仅清记录，不删除磁盘文件）";
+"library.filter.all" = "全部";
+"library.filter.image" = "图片";
+"library.filter.video" = "视频";
+"library.open.file" = "打开";
+"library.copy" = "复制";
+"library.trash" = "移到废纸篓";
+"library.removeEntry" = "从历史移除";
+"library.missing" = "文件已移动或删除";
+"library.showAll" = "查看全部历史";
 
 /* 录制 */
 "record.screen" = "录制屏幕";
@@ -23,6 +43,10 @@
 /* 捕获来源 */
 "capture.region" = "区域";
 "capture.main" = "主屏幕";
+"capture.fullscreen" = "全屏幕";
+"capture.fullscreen.help" = "截取整个屏幕（多屏时可选择哪个屏幕）";
+"capture.window" = "全窗口";
+"capture.window.help" = "以缩略图选择要截取的窗口";
 "capture.scroll" = "滚动长图";
 "capture.scroll.help" = "选择区域后自动滚动并拼接成长截图";
 "capture.self" = "本窗口";
@@ -31,6 +55,9 @@
 "window.menu.help" = "直接截取某个窗口";
 "window.refresh" = "刷新列表";
 "window.none" = "没有可用窗口";
+"picker.window.title" = "选择要截取的窗口";
+"picker.screen.title" = "选择要截取的屏幕";
+"picker.record.title" = "选择要录制的屏幕";
 "thumbnail.picker" = "缩略图选择";
 "thumbnail.picker.help" = "以缩略图选择窗口或整个屏幕";
 "region.shortcut.help" = "区域截屏快捷键";

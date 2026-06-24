@@ -1,9 +1,13 @@
 import CaptureKit
 import SwiftUI
 
-/// 内嵌于主窗口的捕获目标选择器：以缩略图网格挑选窗口或整个屏幕（类似浏览器的“选择要分享的内容”）。
-/// 直接铺在主界面内容区，不再以独立模态弹窗呈现。
+/// 内嵌于主窗口内容区的缩略图选择器：以缩略图网格挑选要截取的窗口，或要截图/录制的屏幕。
+/// 全窗口、全屏幕、录制屏幕统一走这个内嵌网格，不再用下拉菜单。
 struct CaptureSourcePicker: View {
+    enum Kind { case window, screen }
+
+    let kind: Kind
+    let title: String
     let onPickWindow: (CGWindowID) -> Void
     let onPickDisplay: (CGDirectDisplayID) -> Void
     let onClose: () -> Void
@@ -11,17 +15,7 @@ struct CaptureSourcePicker: View {
     private let capturer = ScreenCapturer()
     @State private var windows: [CaptureWindow] = []
     @State private var displays: [DisplayInfo] = []
-    @State private var tab: Tab = .windows
     @State private var isLoading = true
-
-    private enum Tab: String, CaseIterable, Identifiable {
-        case windows
-        case screens
-        var id: String { rawValue }
-        var title: String {
-            self == .windows ? Loc.s("picker.tab.windows") : Loc.s("picker.tab.screens")
-        }
-    }
 
     private struct DisplayInfo: Identifiable {
         let id: CGDirectDisplayID
@@ -30,18 +24,16 @@ struct CaptureSourcePicker: View {
 
     private let columns = [GridItem(.adaptive(minimum: 200), spacing: 16)]
 
+    private var isEmpty: Bool {
+        kind == .window ? windows.isEmpty : displays.isEmpty
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Text(Loc.s("picker.title"))
+                Text(title)
                     .font(.headline)
                 Spacer()
-                Picker("", selection: $tab) {
-                    ForEach(Tab.allCases) { Text($0.title).tag($0) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(width: 200)
                 Button {
                     Task { await load() }
                 } label: {
@@ -64,9 +56,13 @@ struct CaptureSourcePicker: View {
             ScrollView {
                 if isLoading {
                     ProgressView(Loc.s("picker.loading")).padding(40)
+                } else if isEmpty {
+                    Text(Loc.s("window.none"))
+                        .foregroundStyle(.secondary)
+                        .padding(40)
                 } else {
                     LazyVGrid(columns: columns, spacing: 16) {
-                        if tab == .windows {
+                        if kind == .window {
                             ForEach(windows) { window in
                                 ThumbnailCell(title: window.displayName,
                                               loader: { await capturer.windowThumbnail(id: window.id) }) {
@@ -86,17 +82,24 @@ struct CaptureSourcePicker: View {
                 }
             }
         }
-        .task { await load() }
+        // 直接在“窗口选择 ↔ 屏幕选择”之间切换时，SwiftUI 会复用同一视图实例，
+        // 普通 .task 只在首次出现时执行、不会重跑，导致切换后仍显示上一次的（空）状态。
+        // 绑定 kind 后，每次种类变化都会重新加载对应的窗口/屏幕列表。
+        .task(id: kind) { await load() }
     }
 
     private func load() async {
         isLoading = true
-        windows = (try? await capturer.availableWindows()) ?? []
-        displays = NSScreen.screens.enumerated().compactMap { index, screen in
-            guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
-                return nil
+        switch kind {
+        case .window:
+            windows = (try? await capturer.availableWindows()) ?? []
+        case .screen:
+            displays = NSScreen.screens.enumerated().compactMap { index, screen in
+                guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
+                    return nil
+                }
+                return DisplayInfo(id: id, name: Loc.s("screen.index", index + 1))
             }
-            return DisplayInfo(id: id, name: Loc.s("screen.index", index + 1))
         }
         isLoading = false
     }

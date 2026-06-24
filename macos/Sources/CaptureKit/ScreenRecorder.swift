@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreGraphics
 import CoreMedia
 import CoreVideo
 import Foundation
@@ -51,15 +52,24 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
             filter = SCContentFilter(display: display, excludingWindows: [])
         }
 
-        // SCDisplay.width/height are in points; SCStreamConfiguration expects pixels.
-        // Scale by pointPixelScale so the recording keeps native Retina resolution.
+        // 录制目标尺寸 = 显示器原生像素。优先取当前显示模式的真实像素尺寸（最可靠的“原尺寸”）；
+        // 取不到时回退到 contentRect(点) × pointPixelScale。再用 captureResolution = .best 杜绝降采样。
         let scale = CGFloat(filter.pointPixelScale)
+        var pixelWidth = Int((filter.contentRect.width * scale).rounded())
+        var pixelHeight = Int((filter.contentRect.height * scale).rounded())
+        if let mode = CGDisplayCopyDisplayMode(display.displayID), mode.pixelWidth > 0, mode.pixelHeight > 0 {
+            pixelWidth = mode.pixelWidth
+            pixelHeight = mode.pixelHeight
+        }
+
         let streamConfiguration = SCStreamConfiguration()
-        streamConfiguration.width = max(1, Int((filter.contentRect.width * scale).rounded()))
-        streamConfiguration.height = max(1, Int((filter.contentRect.height * scale).rounded()))
+        streamConfiguration.width = max(1, pixelWidth)
+        streamConfiguration.height = max(1, pixelHeight)
+        streamConfiguration.captureResolution = .best
         streamConfiguration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
-        streamConfiguration.queueDepth = 6
+        streamConfiguration.queueDepth = 8
         streamConfiguration.pixelFormat = kCVPixelFormatType_32BGRA
+        streamConfiguration.colorSpaceName = CGColorSpace.sRGB
         streamConfiguration.showsCursor = true
         streamConfiguration.capturesAudio = true
         streamConfiguration.excludesCurrentProcessAudio = true
