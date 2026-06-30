@@ -21,6 +21,7 @@
 		76691E9AC47E6D03530A47A5 /* CapturePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A5BD83F712DD43D7989C11 /* CapturePreview.swift */; };
 		79DE76B7B5234692966DBBB2 /* PinnedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */; };
 		7B59E7239113A61E1E6B97A8 /* RegionSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0C30C2E0AB62ABB9783DFD /* RegionSelector.swift */; };
+		7C8899173183CBBAFBA331EC /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 581077C8E6E779F5764EE47A /* PrivacyInfo.xcprivacy */; };
 		7CD601D542B97471A1C49B26 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A577B0A8255CB24BCBE91D6 /* Updater.swift */; };
 		7F03CCC55304F04D21521E1A /* RGBAColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF29CEBE1E07720664D987B3 /* RGBAColor.swift */; };
 		7FCAA1AD26A1A1023790629A /* CaptureSourcePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EEA26E33217A32D94CE1A38 /* CaptureSourcePicker.swift */; };
@@ -100,6 +101,7 @@
 		2C16188A9938E701B5E146BD /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3AC277EDDC93F6A133C68F64 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		49E3520644F36DE7341A98B7 /* CaptureRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRegion.swift; sourceTree = "<group>"; };
+		581077C8E6E779F5764EE47A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5A577B0A8255CB24BCBE91D6 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		5DEF979B964628A95C55BCA7 /* PNGEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PNGEncoder.swift; sourceTree = "<group>"; };
 		6945C9140E531B29ABAA4AA5 /* CaptureAnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAnnotationTests.swift; sourceTree = "<group>"; };
@@ -155,6 +157,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		34BD1E5749C4DC7A7D207AE4 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				581077C8E6E779F5764EE47A /* PrivacyInfo.xcprivacy */,
+			);
+			name = App;
+			path = macos/App;
+			sourceTree = "<group>";
+		};
 		45A067CBB0DE8F42990F2271 /* WorldCaptureMac */ = {
 			isa = PBXGroup;
 			children = (
@@ -217,6 +228,7 @@
 		8E753C1082D5DFB46BA1366D = {
 			isa = PBXGroup;
 			children = (
+				34BD1E5749C4DC7A7D207AE4 /* App */,
 				6EACA81D9E54EE9B588924F7 /* CaptureKit */,
 				4E410F4F683CB62B86B4F842 /* CaptureKitTests */,
 				45A067CBB0DE8F42990F2271 /* WorldCaptureMac */,
@@ -359,6 +371,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				27970A52D8DB9D2331123786 /* Localizable.strings in Resources */,
+				7C8899173183CBBAFBA331EC /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

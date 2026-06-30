@@ -46,6 +46,8 @@ targets:
     platform: macOS
     sources:
       - path: macos/Sources/WorldCaptureMac
+      - path: macos/App/PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - target: CaptureKit
       - package: Sparkle

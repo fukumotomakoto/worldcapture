@@ -27,8 +27,8 @@
 | **DMG 打包** | ✅ 已脚本化（待真机公证验证）| `release.sh` 已含 `hdiutil` 打包 + 签名 + 公证 + 装订 DMG（功能版）；带背景图布局留待后续 |
 | **自动更新** | ✅ 已集成（待真机联网验证）| Sparkle 2.9.3：`UpdaterController` + 菜单「检查更新…」；`release.sh` 第 9 步生成 EdDSA 签名的 appcast。**SUFeedURL 仍是占位域名，待官网替换** |
 | **官网 / 下载页** | ❌ 缺口 | 免费也要有承载下载、隐私政策、更新日志的站点 |
-| **隐私清单 PrivacyInfo** | ❌ 缺口 | Apple 对新提交要求 `PrivacyInfo.xcprivacy` |
-| **应用图标 / 视觉素材** | ⚠️ 待确认 | 需 1024 图标、官网截图、商店截图 |
+| **隐私清单 PrivacyInfo** | ✅ 已完成 | `macos/App/PrivacyInfo.xcprivacy`：零收集、不追踪，仅声明 UserDefaults(CA92.1)；已验证落入 bundle |
+| **应用图标 / 视觉素材** | ⏸ 待定（设计）| 需品牌 1024 图标 + 官网/商店截图；属设计决定，未做 |
 | Windows 后端 | ❌ 未开发 | Graphics Capture/WASAPI，路线图 Phase 3/5 |
 
 ---
@@ -75,8 +75,8 @@
 ## 4. 上架前置清单（按渠道）
 
 ### A. Developer ID 直分发（1.0 首发 · 必做）
-- [ ] 应用图标全套（含 1024×1024）、关于页版权信息
-- [ ] `PrivacyInfo.xcprivacy`（声明本地处理、无数据收集）
+- [ ] ⏸ 应用图标全套（含 1024×1024）、关于页版权信息 — **待品牌设计稿**
+- [x] `PrivacyInfo.xcprivacy`（声明本地处理、无数据收集）— 已完成并验证
 - [ ] TCC 用途文案审校：屏幕录制、麦克风（已有）、辅助功能（滚动截图）——文案要让用户看懂*为什么*
 - [x] `release.sh` 扩展：DMG 打包 + DMG 公证装订 + Sparkle 签名 + appcast 生成（已验证）
 - [x] Sparkle 集成 + EdDSA 密钥生成；`Info.plist` 写入 feed URL + 公钥（经 project.yml）
