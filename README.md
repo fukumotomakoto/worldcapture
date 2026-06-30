@@ -1,6 +1,6 @@
 # WorldCapture
 
-Windows 与 macOS 的本地优先截屏、标注和录屏工具。
+macOS 的本地优先截屏、标注和录屏工具（Windows 规划中）。**MIT 开源、免费、无广告、无追踪。**
 
 开发、构建、测试、权限、发布和故障排查请参阅 [完整开发文档](docs/DEVELOPMENT.md)。
 
@@ -42,3 +42,15 @@ xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
 3. 非破坏标注模型与编辑器：矩形、箭头、文字、序号和马赛克。✅
 4. ScreenCaptureKit 主屏幕录制、系统音频和 MP4 导出已实现；麦克风待完成。
 5. Windows Graphics Capture / WASAPI 后端。
+
+## 隐私
+
+本地优先：截图、录屏和 OCR 默认不离开设备；无账号、无埋点、无追踪。唯一的联网行为是可选的自动更新检查（可在设置中关闭）。详见 [隐私政策](PRIVACY.md)。
+
+## 许可
+
+[MIT](LICENSE) 开源。源码公开，欢迎审计——这正是隐私工具开源的意义。
+
+## 赞助
+
+WorldCapture 是非商业的免费工具，靠赞助维持开发。若它对你有用，欢迎通过仓库的 **Sponsor** 按钮支持（GitHub Sponsors 开通后生效）。
