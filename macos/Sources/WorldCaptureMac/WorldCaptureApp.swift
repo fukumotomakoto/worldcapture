@@ -25,7 +25,7 @@ struct WorldCaptureApp: App {
         .defaultSize(width: 820, height: 560)
 
         Settings {
-            SettingsView()
+            SettingsView(updater: updater)
         }
 
         MenuBarExtra("WorldCapture", systemImage: "camera.viewfinder") {

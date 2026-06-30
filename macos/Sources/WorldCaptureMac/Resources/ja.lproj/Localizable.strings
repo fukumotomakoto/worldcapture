@@ -133,6 +133,8 @@
 "settings.savePath.ask" = "毎回確認";
 "settings.shortcuts" = "ショートカット";
 "settings.shortcuts.note" = "現在：⌘⇧2 範囲撮影（カスタマイズ未対応）。";
+"settings.section.updates" = "アップデート";
+"settings.autoUpdate" = "アップデートを自動的に確認";
 
 /* その他 */
 "action.edit" = "編集";

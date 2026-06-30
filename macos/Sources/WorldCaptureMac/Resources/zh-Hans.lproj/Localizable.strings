@@ -133,6 +133,8 @@
 "settings.savePath.ask" = "每次询问";
 "settings.shortcuts" = "快捷键";
 "settings.shortcuts.note" = "当前：⌘⇧2 区域截屏（暂不可自定义）。";
+"settings.section.updates" = "更新";
+"settings.autoUpdate" = "自动检查更新";
 
 /* 其它 */
 "action.edit" = "编辑";

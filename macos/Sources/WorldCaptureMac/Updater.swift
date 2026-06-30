@@ -29,4 +29,10 @@ final class UpdaterController: ObservableObject {
     func checkForUpdates() {
         controller.checkForUpdates(nil)
     }
+
+    /// 是否自动后台检查更新（设置页开关绑定；直写 Sparkle，KVO 持久化）。
+    var automaticallyChecksForUpdates: Bool {
+        get { controller.updater.automaticallyChecksForUpdates }
+        set { controller.updater.automaticallyChecksForUpdates = newValue }
+    }
 }

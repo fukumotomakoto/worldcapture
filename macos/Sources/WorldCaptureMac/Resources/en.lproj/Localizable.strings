@@ -133,6 +133,8 @@
 "settings.savePath.ask" = "Ask every time";
 "settings.shortcuts" = "Shortcuts";
 "settings.shortcuts.note" = "Current: ⌘⇧2 region capture (not yet customizable).";
+"settings.section.updates" = "Updates";
+"settings.autoUpdate" = "Automatically check for updates";
 
 /* Misc */
 "action.edit" = "Edit";

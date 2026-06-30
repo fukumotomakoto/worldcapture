@@ -2,6 +2,7 @@ import SwiftUI
 
 /// 偏好设置（⌘,）：界面语言、默认保存位置与快捷键说明。
 struct SettingsView: View {
+    @ObservedObject var updater: UpdaterController
     @State private var language = AppLanguage.current
 
     var body: some View {
@@ -29,8 +30,17 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+
+            Section(Loc.s("settings.section.updates")) {
+                Toggle(Loc.s("settings.autoUpdate"), isOn: Binding(
+                    get: { updater.automaticallyChecksForUpdates },
+                    set: { updater.automaticallyChecksForUpdates = $0 }
+                ))
+                Button(Loc.s("menu.checkUpdates")) { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 300)
+        .frame(width: 460, height: 340)
     }
 }
