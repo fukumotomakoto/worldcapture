@@ -23,9 +23,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>NSAudioCaptureUsageDescription</key>
@@ -36,5 +36,9 @@
 	<string>WorldCapture 需要访问麦克风，以便在屏幕录像中加入讲解声音。</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://worldcapture.io/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>S9o2kOwFSWxEpNJ9z43Jxa15FwBBjVG6lmKXu2Kw8yY=</string>
 </dict>
 </plist>

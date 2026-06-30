@@ -21,6 +21,7 @@
 		76691E9AC47E6D03530A47A5 /* CapturePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A5BD83F712DD43D7989C11 /* CapturePreview.swift */; };
 		79DE76B7B5234692966DBBB2 /* PinnedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */; };
 		7B59E7239113A61E1E6B97A8 /* RegionSelector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0C30C2E0AB62ABB9783DFD /* RegionSelector.swift */; };
+		7CD601D542B97471A1C49B26 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A577B0A8255CB24BCBE91D6 /* Updater.swift */; };
 		7F03CCC55304F04D21521E1A /* RGBAColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF29CEBE1E07720664D987B3 /* RGBAColor.swift */; };
 		7FCAA1AD26A1A1023790629A /* CaptureSourcePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EEA26E33217A32D94CE1A38 /* CaptureSourcePicker.swift */; };
 		81EF139153C95E5B38E4446F /* ScrollCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D300F98C4285B98344FE3979 /* ScrollCaptureEngine.swift */; };
@@ -39,6 +40,7 @@
 		CD9CEBF77854D5E8B83E7BA7 /* CaptureErrorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1FAD595B15D9B4D6F6986EA /* CaptureErrorTests.swift */; };
 		CDD0D8B80EE97D6F54347F0D /* HistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6D305097250477193BA8D81 /* HistoryStore.swift */; };
 		D8CC99A0360C4591E0368404 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3DF51FFDB9641A021F16FA4 /* SettingsView.swift */; };
+		DD998AA0992A6DFBE903087C /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 847F179477EFD14E681D84C7 /* Sparkle */; };
 		E2B90FA571807CC7CB33F3A6 /* HistoryLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5E0854B183AEA28EE383D40 /* HistoryLibraryView.swift */; };
 		EDF26B7D76743D8A96AE4483 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
 		EFC53582C0C473D9C12596D9 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
@@ -98,6 +100,7 @@
 		2C16188A9938E701B5E146BD /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3AC277EDDC93F6A133C68F64 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		49E3520644F36DE7341A98B7 /* CaptureRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRegion.swift; sourceTree = "<group>"; };
+		5A577B0A8255CB24BCBE91D6 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		5DEF979B964628A95C55BCA7 /* PNGEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PNGEncoder.swift; sourceTree = "<group>"; };
 		6945C9140E531B29ABAA4AA5 /* CaptureAnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAnnotationTests.swift; sourceTree = "<group>"; };
 		6B1F00B673C0655BB96F749A /* WorldCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -137,6 +140,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EFC53582C0C473D9C12596D9 /* CaptureKit.framework in Frameworks */,
+				DD998AA0992A6DFBE903087C /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -168,6 +172,7 @@
 				9A0C30C2E0AB62ABB9783DFD /* RegionSelector.swift */,
 				C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */,
 				E3DF51FFDB9641A021F16FA4 /* SettingsView.swift */,
+				5A577B0A8255CB24BCBE91D6 /* Updater.swift */,
 				E2845AE5CC079FED4DDD3C70 /* WorldCaptureApp.swift */,
 				A6DE70E3C7F148F8D63D20D8 /* Resources */,
 			);
@@ -293,6 +298,7 @@
 			);
 			name = WorldCapture;
 			packageProductDependencies = (
+				847F179477EFD14E681D84C7 /* Sparkle */,
 			);
 			productName = WorldCapture;
 			productReference = 6B1F00B673C0655BB96F749A /* WorldCapture.app */;
@@ -332,6 +338,9 @@
 			);
 			mainGroup = 8E753C1082D5DFB46BA1366D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				02346C295737988BD0A26035 /* XCRemoteSwiftPackageReference "Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CD464B0387E5BB48E550484F /* Products */;
 			projectDirPath = "";
@@ -406,6 +415,7 @@
 				7B59E7239113A61E1E6B97A8 /* RegionSelector.swift in Sources */,
 				BE15E0C542E55282F5B3C9FF /* ScrollInput.swift in Sources */,
 				D8CC99A0360C4591E0368404 /* SettingsView.swift in Sources */,
+				7CD601D542B97471A1C49B26 /* Updater.swift in Sources */,
 				A4B637C35E604FD1BC37F780 /* WorldCaptureApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -726,6 +736,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		02346C295737988BD0A26035 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		847F179477EFD14E681D84C7 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 02346C295737988BD0A26035 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1D07875E7C9A4369C04C52BD /* Project object */;
 }

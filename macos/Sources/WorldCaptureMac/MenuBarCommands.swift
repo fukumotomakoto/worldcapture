@@ -4,6 +4,7 @@ import SwiftUI
 /// 菜单栏常驻入口：无需主窗口聚焦即可发起截屏/录屏。
 struct MenuBarCommands: View {
     @ObservedObject var model: CaptureViewModel
+    @ObservedObject var updater: UpdaterController
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -27,6 +28,11 @@ struct MenuBarCommands: View {
         }
 
         Button(Loc.s("menu.showMain")) { NSApp.activate(ignoringOtherApps: true) }
+
+        Divider()
+
+        Button(Loc.s("menu.checkUpdates")) { updater.checkForUpdates() }
+            .disabled(!updater.canCheckForUpdates)
         Button(Loc.s("menu.quit")) { NSApp.terminate(nil) }
             .keyboardShortcut("q", modifiers: .command)
     }

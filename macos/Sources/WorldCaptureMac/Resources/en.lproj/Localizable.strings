@@ -120,6 +120,7 @@
 "menu.main" = "Capture main screen";
 "menu.window" = "Capture window";
 "menu.showMain" = "Show main window";
+"menu.checkUpdates" = "Check for Updates…";
 "menu.quit" = "Quit WorldCapture";
 
 /* Settings */

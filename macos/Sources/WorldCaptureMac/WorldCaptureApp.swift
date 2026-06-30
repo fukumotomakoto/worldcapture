@@ -4,6 +4,7 @@ import SwiftUI
 struct WorldCaptureApp: App {
     @StateObject private var model = CaptureViewModel()
     @StateObject private var history = HistoryStore.shared
+    @StateObject private var updater = UpdaterController()
 
     var body: some Scene {
         WindowGroup {
@@ -11,6 +12,12 @@ struct WorldCaptureApp: App {
                 .frame(minWidth: 900, minHeight: 560)
         }
         .windowStyle(.hiddenTitleBar)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                Button(Loc.s("menu.checkUpdates")) { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+            }
+        }
 
         Window(Loc.s("library.title"), id: "history") {
             HistoryLibraryView(store: history)
@@ -22,7 +29,7 @@ struct WorldCaptureApp: App {
         }
 
         MenuBarExtra("WorldCapture", systemImage: "camera.viewfinder") {
-            MenuBarCommands(model: model)
+            MenuBarCommands(model: model, updater: updater)
         }
     }
 }

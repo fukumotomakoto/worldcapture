@@ -734,12 +734,52 @@ CURRENT_PROJECT_VERSION: 1
 #### 一键发布
 
 ```bash
-scripts/release.sh <profile>
+scripts/release.sh <profile> [signing-identity]
 ```
 
-脚本依次执行：生成工程 → `Release` 归档 → 按 `scripts/ExportOptions.plist`（`developer-id`）导出 → 打包 zip → `notarytool submit --wait` 公证 → `stapler staple` 装订 → `codesign`/`spctl` 验证，产出 `build/WorldCapture-notarized.zip`。
+- `<profile>`：notarytool 的 keychain profile 名（如 `BlissMeta-Notary`）。
+- `[signing-identity]`：给 DMG 签名用的证书名，默认 `Developer ID Application`；钥匙串里有多张同名证书时显式指定。
+
+脚本依次执行（8 步）：生成工程 → `Release` 归档 → 按 `scripts/ExportOptions.plist`（`developer-id`）导出 `.app` → 用 `hdiutil` 打包 **DMG**（内含 `.app` 与拖入用的 `/Applications` 符号链接）→ `codesign --timestamp` 给 DMG 签名 → `notarytool submit --wait` 公证 DMG → `stapler staple` 装订到 DMG → `codesign`/`spctl`/`stapler validate` 验证。
+
+交付物为单个 **`build/WorldCapture-<version>.dmg`**（已签名 + 已公证 + 已装订，可直接分发）；版本号自动取自 `project.yml` 的 `MARKETING_VERSION`。
+
+> DMG 为零依赖功能版（App + Applications 链接）。如需带背景图/窗口布局的精美 DMG，改用 `create-dmg`（Homebrew）或追加一段 AppleScript 布局脚本。
+
+> 排错提醒：用 `| tee` 记录日志时，`tee` 返回 0 会掩盖脚本失败——务必检查日志中是否出现 `EXPORT FAILED`，不要只看 exit code。首次导出偶发 `A timestamp was expected but was not found`（codesign 连不上 `timestamp.apple.com`），重试 `xcodebuild -exportArchive` 即可，非配置问题。
 
 证书与公证凭据必须由发布负责人提供，**不得写入仓库**。
+
+### 21.3 自动更新（Sparkle）
+
+直分发版通过 **Sparkle 2** 自动更新（SPM 依赖，配置在 `project.yml` 的 `packages.Sparkle`，当前解析到 2.9.3）。代码封装在 `Updater.swift`（`UpdaterController`），应用入口 `WorldCaptureApp` 持有它，主菜单「检查更新…」与菜单栏均可触发；菜单文案走 `Loc.s("menu.checkUpdates")`（三语已加）。
+
+更新链路两个关键配置写在 **Info.plist**（经 `project.yml` 的 `info.properties` 注入，**不要直接改 `macos/App/Info.plist`——它由 XcodeGen 生成、每次 `xcodegen generate` 会被覆盖**）：
+
+- `SUFeedURL` — appcast 地址。**当前为占位域名 `https://worldcapture.io/appcast.xml`，官网定后必须替换**。
+- `SUPublicEDKey` — EdDSA 验签公钥（`S9o2kOwFSWxEpNJ9z43Jxa15FwBBjVG6lmKXu2Kw8yY=`）。
+
+> 版本比较：Sparkle 用 bundle 的 `CFBundleVersion`/`CFBundleShortVersionString`。两者已改为引用 `$(MARKETING_VERSION)`/`$(CURRENT_PROJECT_VERSION)`（同样在 `project.yml`），与 DMG 命名保持单一来源；发版时只改 `project.yml` 里的版本号即可。
+
+#### EdDSA 密钥（一次性 + 须备份）
+
+私钥已用 Sparkle 的 `generate_keys` 生成并存入**登录钥匙串**（条目 “Private key for signing Sparkle updates”）。
+
+- **务必离线备份私钥**：`generate_keys -x sparkle_private_key.txt`（导出后存到安全处，**不得入库**）。私钥丢失 = 无法再发布能被老版本接受的更新，更新链断裂。
+- 换机/CI 上恢复：`generate_keys -f sparkle_private_key.txt` 导入。
+- 工具位置：随 Sparkle SPM artifact 落在 `build/dd/SourcePackages/artifacts/sparkle/Sparkle/bin/`（archive 后存在）。
+
+#### 发布脚本生成 appcast
+
+`scripts/release.sh`（第 9 步）在公证装订后用 `generate_appcast` 扫描 `build/appcast/`、以钥匙串私钥 EdDSA 签名、生成/更新 `appcast.xml`：
+
+- `build/appcast/` **持久保留**（跨版本累积发布记录，Sparkle 据此判断可升级项）。
+- enclosure 下载前缀默认 `https://worldcapture.io/`，可用环境变量覆盖：`DOWNLOAD_URL_PREFIX=https://你的域名/ scripts/release.sh <profile>`。
+- **分发时**：把 `WorldCapture-<version>.dmg` 与 `appcast.xml` 一起上传托管，确保 appcast 里 enclosure 的 URL 与 `SUFeedURL` 同域可达。
+
+#### 仍需真机验证
+
+应用内点「检查更新…」的实际联网行为，要等 `SUFeedURL` 指向真实可访问的 appcast 后才能端到端测试（占位域名不可达）。首次运行 Sparkle 会询问是否开启自动检查（未设 `SUEnableAutomaticChecks`，符合隐私优先）。
 
 ## 22. 隐私与安全要求
 

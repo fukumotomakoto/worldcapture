@@ -120,6 +120,7 @@
 "menu.main" = "截取主屏幕";
 "menu.window" = "截取窗口";
 "menu.showMain" = "显示主窗口";
+"menu.checkUpdates" = "检查更新…";
 "menu.quit" = "退出 WorldCapture";
 
 /* 设置 */

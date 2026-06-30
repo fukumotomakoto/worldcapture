@@ -120,6 +120,7 @@
 "menu.main" = "メイン画面を撮影";
 "menu.window" = "ウィンドウを撮影";
 "menu.showMain" = "メインウィンドウを表示";
+"menu.checkUpdates" = "アップデートを確認…";
 "menu.quit" = "WorldCapture を終了";
 
 /* 設定 */

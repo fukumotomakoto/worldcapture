@@ -22,6 +22,12 @@ settings:
     Release:
       CODE_SIGN_IDENTITY: "Developer ID Application"
 
+packages:
+  # 自动更新（Developer ID 直分发用，非 App Store）。
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.5.0"
+
 targets:
   CaptureKit:
     type: framework
@@ -42,17 +48,25 @@ targets:
       - path: macos/Sources/WorldCaptureMac
     dependencies:
       - target: CaptureKit
+      - package: Sparkle
     info:
       path: macos/App/Info.plist
       properties:
         CFBundleDisplayName: WorldCapture
         CFBundleDevelopmentRegion: zh-Hans
         CFBundleLocalizations: [zh-Hans, en, ja]
+        # 版本号单一来源 = settings 里的 MARKETING_VERSION / CURRENT_PROJECT_VERSION，
+        # 避免 XcodeGen 默认值(1.0/1)与之不一致影响 Sparkle 版本比较。
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.productivity
         NSAudioCaptureUsageDescription: WorldCapture 需要访问系统音频，以便将电脑声音录入屏幕录像。
         NSMicrophoneUsageDescription: WorldCapture 需要访问麦克风，以便在屏幕录像中加入讲解声音。
         NSHighResolutionCapable: true
         NSSupportsAutomaticGraphicsSwitching: true
+        # Sparkle 自动更新（占位域名，官网定后替换 SUFeedURL）。
+        SUFeedURL: https://worldcapture.io/appcast.xml
+        SUPublicEDKey: S9o2kOwFSWxEpNJ9z43Jxa15FwBBjVG6lmKXu2Kw8yY=
     entitlements:
       path: macos/App/WorldCapture.entitlements
       properties:
