@@ -1220,6 +1220,7 @@ struct CaptureView: View {
         HStack(spacing: 14) {
             Picker("", selection: $model.annotationTool) {
                 Text(Loc.s("anno.rect")).tag(AnnotationKind.rectangle)
+                Text(Loc.s("anno.ellipse")).tag(AnnotationKind.ellipse)
                 Text(Loc.s("anno.arrow")).tag(AnnotationKind.arrow)
                 Text(Loc.s("anno.text")).tag(AnnotationKind.text)
                 Text(Loc.s("anno.number")).tag(AnnotationKind.number)
@@ -1227,7 +1228,7 @@ struct CaptureView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 320)
+            .frame(width: 384)
 
             Divider().frame(height: 20)
 

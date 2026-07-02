@@ -43,6 +43,13 @@ public enum AnnotationRenderer {
                     width: abs(end.x - start.x),
                     height: abs(end.y - start.y)
                 ))
+            case .ellipse:
+                context.strokeEllipse(in: CGRect(
+                    x: min(start.x, end.x),
+                    y: min(start.y, end.y),
+                    width: abs(end.x - start.x),
+                    height: abs(end.y - start.y)
+                ))
             case .arrow:
                 drawArrow(in: context, start: start, end: end)
             case .text:

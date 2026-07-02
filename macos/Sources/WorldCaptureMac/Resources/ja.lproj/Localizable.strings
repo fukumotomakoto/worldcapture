@@ -98,6 +98,7 @@
 
 /* 注釈 */
 "anno.rect" = "矩形";
+"anno.ellipse" = "楕円";
 "anno.arrow" = "矢印";
 "anno.text" = "テキスト";
 "anno.number" = "番号";

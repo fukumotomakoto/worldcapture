@@ -121,7 +121,7 @@ struct AnnotationCanvas: View {
         switch annotation.kind {
         case .text, .number:
             return true
-        case .rectangle, .arrow, .mosaic:
+        case .rectangle, .ellipse, .arrow, .mosaic:
             let bounds = annotation.normalizedBounds
             return bounds.width >= 0.01 || bounds.height >= 0.01
         }
@@ -157,7 +157,7 @@ struct AnnotationCanvas: View {
                 (0, screenPoint(annotation.start, in: imageRect)),
                 (1, screenPoint(annotation.end, in: imageRect)),
             ]
-        case .rectangle, .mosaic:
+        case .rectangle, .ellipse, .mosaic:
             return corners(of: annotation, imageRect: imageRect).enumerated().map { ($0.offset, $0.element) }
         case .text, .number:
             return []
@@ -181,7 +181,7 @@ struct AnnotationCanvas: View {
         switch origin.kind {
         case .arrow:
             if handle == 0 { updated.start = dragged } else { updated.end = dragged }
-        case .rectangle, .mosaic:
+        case .rectangle, .ellipse, .mosaic:
             let bounds = origin.normalizedBounds
             // 锚定被拖角的对角，使矩形从固定角缩放。
             let anchor: NormalizedPoint
@@ -214,6 +214,13 @@ struct AnnotationCanvas: View {
         switch annotation.kind {
         case .rectangle:
             path.addRect(CGRect(
+                x: min(start.x, end.x),
+                y: min(start.y, end.y),
+                width: abs(end.x - start.x),
+                height: abs(end.y - start.y)
+            ))
+        case .ellipse:
+            path.addEllipse(in: CGRect(
                 x: min(start.x, end.x),
                 y: min(start.y, end.y),
                 width: abs(end.x - start.x),
@@ -260,7 +267,7 @@ struct AnnotationCanvas: View {
             )
             context.fill(Path(rect), with: .color(.gray.opacity(0.55)))
         }
-        if annotation.kind == .rectangle || annotation.kind == .arrow {
+        if annotation.kind == .rectangle || annotation.kind == .ellipse || annotation.kind == .arrow {
             context.stroke(
                 path,
                 with: .color(color),

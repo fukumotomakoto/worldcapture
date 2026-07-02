@@ -98,6 +98,7 @@
 
 /* 标注 */
 "anno.rect" = "矩形";
+"anno.ellipse" = "椭圆";
 "anno.arrow" = "箭头";
 "anno.text" = "文字";
 "anno.number" = "序号";

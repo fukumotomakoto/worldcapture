@@ -98,6 +98,7 @@
 
 /* Annotation */
 "anno.rect" = "Rectangle";
+"anno.ellipse" = "Ellipse";
 "anno.arrow" = "Arrow";
 "anno.text" = "Text";
 "anno.number" = "Number";

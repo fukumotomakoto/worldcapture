@@ -3,6 +3,7 @@ import Foundation
 
 public enum AnnotationKind: String, Codable, CaseIterable, Sendable {
     case rectangle
+    case ellipse
     case arrow
     case text
     case number
@@ -81,7 +82,7 @@ public extension CaptureAnnotation {
     func hitTest(_ point: NormalizedPoint, tolerance: Double) -> Bool {
         let p = CGPoint(x: point.x, y: point.y)
         switch kind {
-        case .rectangle, .mosaic:
+        case .rectangle, .ellipse, .mosaic:
             return normalizedBounds.insetBy(dx: -tolerance, dy: -tolerance).contains(p)
         case .arrow:
             return Self.distance(from: p,

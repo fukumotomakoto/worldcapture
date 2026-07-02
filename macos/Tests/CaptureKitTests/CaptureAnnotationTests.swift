@@ -51,6 +51,26 @@ import Testing
     #expect(!arrow.hitTest(NormalizedPoint(x: 0.1, y: 0.9), tolerance: 0.02))
 }
 
+@Test func hitTestSelectsEllipseWithinBounds() {
+    let ellipse = CaptureAnnotation(
+        kind: .ellipse,
+        start: NormalizedPoint(x: 0.2, y: 0.2),
+        end: NormalizedPoint(x: 0.6, y: 0.6)
+    )
+    #expect(ellipse.hitTest(NormalizedPoint(x: 0.4, y: 0.4), tolerance: 0.02))
+    #expect(!ellipse.hitTest(NormalizedPoint(x: 0.9, y: 0.9), tolerance: 0.02))
+}
+
+@Test func ellipseRoundTripsThroughJSON() throws {
+    let ellipse = CaptureAnnotation(
+        kind: .ellipse,
+        start: NormalizedPoint(x: 0.1, y: 0.2),
+        end: NormalizedPoint(x: 0.7, y: 0.5)
+    )
+    let data = try JSONEncoder().encode(ellipse)
+    #expect(try JSONDecoder().decode(CaptureAnnotation.self, from: data) == ellipse)
+}
+
 @Test func translatingAnnotationKeepsEndpointsInBounds() {
     let annotation = CaptureAnnotation(
         kind: .rectangle,
