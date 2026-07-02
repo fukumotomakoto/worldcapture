@@ -462,12 +462,14 @@ final class CaptureViewModel: ObservableObject {
         }
 
         let panel = NSSavePanel()
-        panel.allowedContentTypes = [.png]
-        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).png"
+        // 面板底部出现「文件格式」下拉，用户可选 PNG/JPEG/TIFF/PDF；扩展名随之更新。
+        panel.allowedContentTypes = ImageFormat.allCases.map(\.utType)
+        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp())"
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
+        let format = ImageFormat(fileExtension: url.pathExtension) ?? .png
         do {
-            try PNGEncoder.encode(cgImage).write(to: url, options: .atomic)
+            try ImageEncoder.encode(cgImage, as: format).write(to: url, options: .atomic)
             HistoryStore.shared.record(url, kind: .image)
         } catch {
             errorMessage = error.localizedDescription
