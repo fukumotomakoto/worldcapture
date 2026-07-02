@@ -33,6 +33,7 @@ final class CaptureViewModel: ObservableObject {
         !selectedAnnotationIDs.isEmpty
     }
     @Published var isRecording = false
+    @Published var isRecordingPaused = false
     @Published var lastRecordingURL: URL?
     @Published var recordingDuration: TimeInterval = 0
     /// GIF 录制：进行中标志与时长；区域 GIF 录制到内存帧，停止后编码。
@@ -86,6 +87,9 @@ final class CaptureViewModel: ObservableObject {
     private var globalHotKey: GlobalHotKey?
     private var recordingTimer: Timer?
     private var recordingStartedAt: Date?
+    /// 累计已暂停时长，及当前这次暂停的起点——用于让显示时长排除暂停段（与输出实际时长一致）。
+    private var recordingPausedTotal: TimeInterval = 0
+    private var recordingPausedAt: Date?
 
     var recordingDurationText: String {
         let totalSeconds = max(0, Int(recordingDuration))
@@ -666,23 +670,55 @@ final class CaptureViewModel: ObservableObject {
         return formatter.string(from: Date())
     }
 
+    /// 暂停/继续录制：分段实现在录制器内部，这里只切状态并累计暂停时长。
+    func pauseOrResumeRecording() async {
+        guard isRecording else { return }
+        do {
+            if isRecordingPaused {
+                try await screenRecorder.resume()
+                if let at = recordingPausedAt {
+                    recordingPausedTotal += Date().timeIntervalSince(at)
+                    recordingPausedAt = nil
+                }
+                isRecordingPaused = false
+            } else {
+                try await screenRecorder.pause()
+                recordingPausedAt = Date()
+                isRecordingPaused = true
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+            isRecordingPaused = screenRecorder.isPaused
+        }
+    }
+
     private func startRecordingTimer() {
         recordingDuration = 0
         recordingStartedAt = Date()
+        recordingPausedTotal = 0
+        recordingPausedAt = nil
         recordingTimer?.invalidate()
         recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
             Task { @MainActor in
-                guard let self, let recordingStartedAt = self.recordingStartedAt else { return }
-                self.recordingDuration = Date().timeIntervalSince(recordingStartedAt)
+                guard let self else { return }
+                self.recordingDuration = self.elapsedRecordingDuration()
             }
         }
     }
 
+    /// 已录制时长 = 墙钟 − 累计暂停（含当前正在进行的暂停）。
+    private func elapsedRecordingDuration() -> TimeInterval {
+        guard let recordingStartedAt else { return 0 }
+        let ongoingPause = recordingPausedAt.map { Date().timeIntervalSince($0) } ?? 0
+        return max(0, Date().timeIntervalSince(recordingStartedAt) - recordingPausedTotal - ongoingPause)
+    }
+
     private func stopRecordingTimer() {
-        if let recordingStartedAt {
-            recordingDuration = Date().timeIntervalSince(recordingStartedAt)
-        }
+        recordingDuration = elapsedRecordingDuration()
         recordingStartedAt = nil
+        recordingPausedTotal = 0
+        recordingPausedAt = nil
+        isRecordingPaused = false
         recordingTimer?.invalidate()
         recordingTimer = nil
     }
@@ -775,15 +811,24 @@ struct CaptureView: View {
 
             if model.isRecording {
                 HStack(spacing: 8) {
-                    Circle().fill(.red).frame(width: 8, height: 8)
-                    Text(Loc.s("record.active"))
+                    Circle().fill(model.isRecordingPaused ? Color.orange : Color.red).frame(width: 8, height: 8)
+                    Text(model.isRecordingPaused ? Loc.s("record.paused") : Loc.s("record.active"))
                         .font(.callout.weight(.medium))
                     Text(model.recordingDurationText)
                         .font(.system(.callout, design: .monospaced).weight(.semibold))
                     Spacer()
+                    Button {
+                        Task { await model.pauseOrResumeRecording() }
+                    } label: {
+                        Label(model.isRecordingPaused ? Loc.s("record.resume") : Loc.s("record.pause"),
+                              systemImage: model.isRecordingPaused ? "play.circle.fill" : "pause.circle.fill")
+                    }
+                    .help(Loc.s(model.isRecordingPaused ? "record.resume" : "record.pause"))
                     Text(model.lastRecordingURL?.lastPathComponent ?? "")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 10)

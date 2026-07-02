@@ -47,6 +47,9 @@
 "record.window" = "ウインドウ録画";
 "record.window.help" = "サムネイルでウインドウを選んで録画";
 "record.stop" = "停止";
+"record.pause" = "一時停止";
+"record.resume" = "再開";
+"record.paused" = "録画を一時停止中";
 "record.pick.help" = "録画するディスプレイを選択";
 "record.active" = "画面とシステム音声を録画中";
 "record.saved" = "録画を保存：%@";

@@ -47,6 +47,9 @@
 "record.window" = "Record Window";
 "record.window.help" = "Pick a window by thumbnail and record it";
 "record.stop" = "Stop";
+"record.pause" = "Pause";
+"record.resume" = "Resume";
+"record.paused" = "Recording paused";
 "record.pick.help" = "Choose a display to record";
 "record.active" = "Recording screen and system audio";
 "record.saved" = "Recording saved: %@";

@@ -14,8 +14,22 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
     private var didFinish = false
     private var finishContinuations: [CheckedContinuation<Void, Never>] = []
 
+    // 暂停/继续采用「分段录制」：每次暂停结束当前段（一个正常的 SCRecordingOutput MP4），
+    // 继续时开新段，停止时把所有段无损拼接（AVMutableComposition + Passthrough 导出）。
+    private var recipe: (filter: SCContentFilter, configuration: SCStreamConfiguration)?
+    private var finalOutputURL: URL?
+    private var currentSegmentURL: URL?
+    private var segments: [URL] = []
+    private var paused = false
+
+    /// 录制会话进行中（含暂停态）。
     public var isRecording: Bool {
-        stateLock.withLock { stream != nil }
+        stateLock.withLock { stream != nil || paused }
+    }
+
+    /// 当前是否处于暂停态。
+    public var isPaused: Bool {
+        stateLock.withLock { paused }
     }
 
     public override init() {
@@ -80,7 +94,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         streamConfiguration.width = max(1, pixelWidth)
         streamConfiguration.height = max(1, pixelHeight)
         Self.applyCommonConfiguration(to: streamConfiguration, includeMicrophone: includeMicrophone)
-        try await beginStream(filter: filter, configuration: streamConfiguration, to: outputURL)
+        try await beginSession(filter: filter, configuration: streamConfiguration, to: outputURL)
     }
 
     /// 录制单个窗口（跟随该窗口，不含桌面其余部分）。
@@ -107,7 +121,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         streamConfiguration.width = max(1, Int((filter.contentRect.width * scale).rounded()))
         streamConfiguration.height = max(1, Int((filter.contentRect.height * scale).rounded()))
         Self.applyCommonConfiguration(to: streamConfiguration, includeMicrophone: includeMicrophone)
-        try await beginStream(filter: filter, configuration: streamConfiguration, to: outputURL)
+        try await beginSession(filter: filter, configuration: streamConfiguration, to: outputURL)
     }
 
     /// 录制流的公共配置（音频、像素格式、帧率、光标）。width/height/sourceRect 由调用方设定。
@@ -125,15 +139,41 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         configuration.channelCount = 2
     }
 
-    /// 用给定过滤器+配置创建 MP4 录制输出并开始采集。
-    private func beginStream(filter: SCContentFilter, configuration: SCStreamConfiguration, to outputURL: URL) async throws {
+    /// 开始一次录制会话：记录配方（过滤器+配置）与最终输出路径，然后开录第一段。
+    private func beginSession(filter: SCContentFilter, configuration: SCStreamConfiguration, to outputURL: URL) async throws {
+        guard !isRecording else { throw CaptureError.recordingAlreadyActive }
+        stateLock.withLock {
+            self.recipe = (filter, configuration)
+            self.finalOutputURL = outputURL
+            self.segments = []
+            self.paused = false
+        }
+        do {
+            try await startSegment()
+        } catch {
+            stateLock.withLock {
+                self.recipe = nil
+                self.finalOutputURL = nil
+            }
+            throw error
+        }
+    }
+
+    /// 录制一个新分段到临时文件（每段是一个独立、正常的 SCRecordingOutput MP4）。
+    private func startSegment() async throws {
+        guard let recipe = stateLock.withLock({ self.recipe }) else {
+            throw CaptureError.recordingNotActive
+        }
+        let segmentURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("wc-segment-\(UUID().uuidString).mp4")
+
         let outputConfiguration = SCRecordingOutputConfiguration()
-        outputConfiguration.outputURL = outputURL
+        outputConfiguration.outputURL = segmentURL
         outputConfiguration.outputFileType = .mp4
         outputConfiguration.videoCodecType = .h264
 
         let recordingOutput = SCRecordingOutput(configuration: outputConfiguration, delegate: self)
-        let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
+        let stream = SCStream(filter: recipe.filter, configuration: recipe.configuration, delegate: self)
         do {
             try stream.addRecordingOutput(recordingOutput)
         } catch {
@@ -143,6 +183,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         stateLock.withLock {
             self.stream = stream
             self.recordingOutput = recordingOutput
+            self.currentSegmentURL = segmentURL
             self.terminalError = nil
             self.didFinish = false
             self.finishContinuations.removeAll()
@@ -151,28 +192,110 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         do {
             try await stream.startCapture()
         } catch {
-            resetState()
+            stateLock.withLock {
+                self.stream = nil
+                self.recordingOutput = nil
+                self.currentSegmentURL = nil
+            }
             throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
     }
 
-    public func stopRecording() async throws {
+    /// 结束当前分段：停止采集、等输出写完、把段文件收入 segments。
+    private func finishCurrentSegment() async throws {
         let activeStream = stateLock.withLock { stream }
-        guard let activeStream else { throw CaptureError.recordingNotActive }
+        guard let activeStream else { return }
 
         do {
             try await activeStream.stopCapture()
         } catch {
             throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
-
         await waitForRecordingOutputToFinish()
-        let error = stateLock.withLock { terminalError }
-        resetState()
 
+        let error = stateLock.withLock {
+            if let url = currentSegmentURL { segments.append(url) }
+            let e = terminalError
+            stream = nil
+            recordingOutput = nil
+            currentSegmentURL = nil
+            return e
+        }
         if let error {
             throw CaptureError.recordingFailed(Self.errorDetails(error))
         }
+    }
+
+    /// 暂停：结束当前分段，进入暂停态（不占用采集）。
+    public func pause() async throws {
+        let canPause = stateLock.withLock { stream != nil && !paused }
+        guard canPause else { return }
+        try await finishCurrentSegment()
+        stateLock.withLock { paused = true }
+    }
+
+    /// 继续：从暂停态开一个新分段。
+    public func resume() async throws {
+        let canResume = stateLock.withLock { paused && stream == nil }
+        guard canResume else { return }
+        stateLock.withLock { paused = false }
+        do {
+            try await startSegment()
+        } catch {
+            stateLock.withLock { paused = true }
+            throw error
+        }
+    }
+
+    public func stopRecording() async throws {
+        let (active, wasPaused) = stateLock.withLock { (stream != nil, paused) }
+        guard active || wasPaused else { throw CaptureError.recordingNotActive }
+
+        if active {
+            try await finishCurrentSegment()
+        }
+
+        let (collected, output) = stateLock.withLock { (segments, finalOutputURL) }
+        defer { resetState() }
+
+        guard let output, !collected.isEmpty else {
+            throw CaptureError.recordingFailed("no recorded segments")
+        }
+
+        try? FileManager.default.removeItem(at: output)
+        if collected.count == 1 {
+            try FileManager.default.moveItem(at: collected[0], to: output)
+        } else {
+            try await Self.mergeSegments(collected, to: output)
+            collected.forEach { try? FileManager.default.removeItem(at: $0) }
+        }
+    }
+
+    /// 把多个分段无损拼接为一个 MP4（编解码一致，用 Passthrough 不重编码）。
+    private static func mergeSegments(_ segments: [URL], to outputURL: URL) async throws {
+        let composition = AVMutableComposition()
+        let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+        let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
+
+        var cursor = CMTime.zero
+        for url in segments {
+            let asset = AVURLAsset(url: url)
+            let duration = try await asset.load(.duration)
+            guard duration.isValid, duration > .zero else { continue }
+            let range = CMTimeRange(start: .zero, duration: duration)
+            if let videoSource = try await asset.loadTracks(withMediaType: .video).first {
+                try videoTrack?.insertTimeRange(range, of: videoSource, at: cursor)
+            }
+            if let audioSource = try await asset.loadTracks(withMediaType: .audio).first {
+                try? audioTrack?.insertTimeRange(range, of: audioSource, at: cursor)
+            }
+            cursor = CMTimeAdd(cursor, duration)
+        }
+
+        guard let export = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetPassthrough) else {
+            throw CaptureError.recordingFailed("could not create export session")
+        }
+        try await export.export(to: outputURL, as: .mp4)
     }
 
     public func stream(_ stream: SCStream, didStopWithError error: Error) {
@@ -218,6 +341,11 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
             terminalError = nil
             didFinish = false
             finishContinuations.removeAll()
+            recipe = nil
+            finalOutputURL = nil
+            currentSegmentURL = nil
+            segments = []
+            paused = false
         }
     }
 

@@ -47,6 +47,9 @@
 "record.window" = "录制窗口";
 "record.window.help" = "以缩略图选择一个窗口并录制它";
 "record.stop" = "停止录制";
+"record.pause" = "暂停";
+"record.resume" = "继续";
+"record.paused" = "录制已暂停";
 "record.pick.help" = "选择要录制的显示器";
 "record.active" = "正在录制屏幕与系统音频";
 "record.saved" = "录制已保存：%@";
