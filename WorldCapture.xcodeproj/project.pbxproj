@@ -38,6 +38,7 @@
 		A4A2642BC853C7FA29A87AAB /* AnnotationCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA42433A6EC09BD1F8F8C78 /* AnnotationCanvas.swift */; };
 		A4B637C35E604FD1BC37F780 /* WorldCaptureApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2845AE5CC079FED4DDD3C70 /* WorldCaptureApp.swift */; };
 		AB6FD2FD32BDC32AA1099968 /* CaptureError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B867592A3751A22E86A6CD /* CaptureError.swift */; };
+		BD1AC3879E9881295CCDB323 /* WindowCloseBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0280B28FCB763317D7EA0717 /* WindowCloseBehavior.swift */; };
 		BE15E0C542E55282F5B3C9FF /* ScrollInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */; };
 		BFE619DD104D0C435D697405 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FF822FA161454E950CB0F64 /* Localization.swift */; };
 		C7B43EB1CBCEC78F7018855A /* AnnotationRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8A12BA446196978A62259FB /* AnnotationRenderer.swift */; };
@@ -100,6 +101,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0280B28FCB763317D7EA0717 /* WindowCloseBehavior.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowCloseBehavior.swift; sourceTree = "<group>"; };
 		077B5295E4C18DE1F49D917D /* ScreenCapturePermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturePermission.swift; sourceTree = "<group>"; };
 		12E0C3C00F081615D450691B /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		195AE13EE4566D20BF379F2A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
@@ -198,6 +200,7 @@
 				C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */,
 				E3DF51FFDB9641A021F16FA4 /* SettingsView.swift */,
 				5A577B0A8255CB24BCBE91D6 /* Updater.swift */,
+				0280B28FCB763317D7EA0717 /* WindowCloseBehavior.swift */,
 				E2845AE5CC079FED4DDD3C70 /* WorldCaptureApp.swift */,
 				A6DE70E3C7F148F8D63D20D8 /* Resources */,
 			);
@@ -457,6 +460,7 @@
 				BE15E0C542E55282F5B3C9FF /* ScrollInput.swift in Sources */,
 				D8CC99A0360C4591E0368404 /* SettingsView.swift in Sources */,
 				7CD601D542B97471A1C49B26 /* Updater.swift in Sources */,
+				BD1AC3879E9881295CCDB323 /* WindowCloseBehavior.swift in Sources */,
 				A4B637C35E604FD1BC37F780 /* WorldCaptureApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

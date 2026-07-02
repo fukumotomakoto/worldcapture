@@ -10,6 +10,7 @@ struct WorldCaptureApp: App {
         WindowGroup {
             CaptureView(model: model)
                 .frame(minWidth: 1280, minHeight: 560)
+                .background(MinimizeOnClose())
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 640)
