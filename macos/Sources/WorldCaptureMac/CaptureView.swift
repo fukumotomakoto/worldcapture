@@ -229,20 +229,47 @@ final class CaptureViewModel: ObservableObject {
 
         let capturer = self.capturer
         let scrollPoint = CGPoint(x: windowFrame.midX, y: windowFrame.midY)
-        let scrollPixels = max(40, Int(windowFrame.height * 0.6))
-        let engine = ScrollCaptureEngine()
+        let scrollPixels = max(40, Int(windowFrame.height * 0.5))
 
         do {
-            let result = try await engine.run(
-                capture: { try await capturer.captureWindow(id: windowID) },
-                scroll: {
-                    ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
-                    try? await Task.sleep(nanoseconds: 500_000_000)
+            // 1) 采两帧，检测「真正滚动的内容区域」，排除固定的浏览器边框/侧栏/留白，
+            //    否则整窗逐帧拼接会把这些固定部分重复叠成乱图。
+            let first = try await capturer.captureWindow(id: windowID)
+            ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            let second = try await capturer.captureWindow(id: windowID)
+            let region = ContentRegionDetector.changedRect(first, second)
+
+            func crop(_ image: CGImage) -> CGImage {
+                guard let region, let cropped = image.cropping(to: region) else { return image }
+                return cropped
+            }
+
+            // 2) 只拼接裁剪后的内容区域。先塞入已采的前两帧，再继续滚动。
+            var stitcher = ScrollStitcher()
+            _ = stitcher.append(crop(first))
+            var nonProgress = 0
+            switch stitcher.append(crop(second)) {
+            case .first, .appended: nonProgress = 0
+            case .duplicate, .noOverlap, .invalid: nonProgress = 1
+            }
+
+            let maxFrames = 60
+            var framesUsed = 2
+            while framesUsed < maxFrames, nonProgress < 2 {
+                ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                let frame = try await capturer.captureWindow(id: windowID)
+                framesUsed += 1
+                switch stitcher.append(crop(frame)) {
+                case .first, .appended: nonProgress = 0
+                case .duplicate, .noOverlap, .invalid: nonProgress += 1
                 }
-            )
+            }
+
             restoreWindows()
             isCapturing = false
-            guard let stitched = result.image else {
+            guard let stitched = stitcher.makeImage() else {
                 errorMessage = Loc.s("error.scrollEmpty")
                 return
             }
@@ -250,7 +277,7 @@ final class CaptureViewModel: ObservableObject {
             annotations = []
             selectedAnnotationIDs = []
             presentCapturePreview()
-            if result.frameCount <= 1 { errorMessage = Loc.s("error.scrollNoProgress") }
+            if stitcher.frameCount <= 1 { errorMessage = Loc.s("error.scrollNoProgress") }
         } catch {
             restoreWindows()
             isCapturing = false
