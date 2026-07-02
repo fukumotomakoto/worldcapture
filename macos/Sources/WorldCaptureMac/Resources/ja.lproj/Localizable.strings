@@ -170,3 +170,5 @@
 "action.close" = "閉じる";
 "anno.text.default" = "テキスト";
 "pin.remove" = "ピンを解除";
+"pin.clickThrough" = "クリックスルー（下のウインドウにクリックが通る・解除はメニューバーから）";
+"pin.clickThrough.disableAll" = "ピンのクリックスルーを解除";

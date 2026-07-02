@@ -5,6 +5,7 @@ import SwiftUI
 struct MenuBarCommands: View {
     @ObservedObject var model: CaptureViewModel
     @ObservedObject var updater: UpdaterController
+    @ObservedObject private var pinned = PinnedImageController.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -28,6 +29,9 @@ struct MenuBarCommands: View {
         }
 
         Button(Loc.s("menu.showMain")) { NSApp.activate(ignoringOtherApps: true) }
+
+        Button(Loc.s("pin.clickThrough.disableAll")) { pinned.disableAllClickThrough() }
+            .disabled(pinned.clickThroughCount == 0)
 
         Divider()
 

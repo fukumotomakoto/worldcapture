@@ -170,3 +170,5 @@
 "action.close" = "Close";
 "anno.text.default" = "Text";
 "pin.remove" = "Remove pin";
+"pin.clickThrough" = "Click-through (clicks pass to the window beneath; undo from the menu bar)";
+"pin.clickThrough.disableAll" = "Turn off pin click-through";

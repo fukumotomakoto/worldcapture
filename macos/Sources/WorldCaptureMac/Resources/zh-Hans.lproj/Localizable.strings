@@ -170,3 +170,5 @@
 "action.close" = "关闭";
 "anno.text.default" = "说明";
 "pin.remove" = "取消钉屏";
+"pin.clickThrough" = "点击穿透（鼠标点击落到下方窗口，可在菜单栏取消）";
+"pin.clickThrough.disableAll" = "取消钉屏点击穿透";
