@@ -966,8 +966,11 @@ struct CaptureView: View {
                 Text(Loc.s("app.subtitle"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            Spacer(minLength: 24)
+            .layoutPriority(0)
+            Spacer(minLength: 16)
             HStack(spacing: 10) {
                 Button {
                     model.reset()
@@ -1011,6 +1014,9 @@ struct CaptureView: View {
                 .help(Loc.s("library.open.help"))
             }
             .labelStyle(.titleAndIcon)
+            // 头部动作按钮保持完整标签（尤其日文更长），窄窗时优先压缩左侧副标题而非截断按钮。
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
