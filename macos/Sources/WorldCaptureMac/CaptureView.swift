@@ -35,6 +35,16 @@ final class CaptureViewModel: ObservableObject {
     @Published var isRecording = false
     @Published var lastRecordingURL: URL?
     @Published var recordingDuration: TimeInterval = 0
+    /// OCR：识别进行中标志；`ocrResult` 非 nil 时弹出结果面板（含空态）。
+    @Published var isRecognizingText = false
+    @Published var ocrResult: OCRResult?
+
+    /// 一次 OCR 的结果，供结果面板以 `.sheet(item:)` 呈现。
+    struct OCRResult: Identifiable {
+        let id = UUID()
+        let text: String
+        var isEmpty: Bool { text.isEmpty }
+    }
     @Published var hasScreenPermission = true
     @Published var hasAccessibilityPermission = true
     /// 主界面内容区内嵌的缩略图选择器当前模式；nil 表示不显示。
@@ -278,6 +288,28 @@ final class CaptureViewModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// 对当前截图做本地 OCR（Vision，纯设备端）。识别在后台执行，完成后弹出结果面板；
+    /// 用已渲染图（含标注）作为输入，使马赛克遮盖的文字不会被提取。
+    func extractText() async {
+        guard !isRecognizingText, let cgImage = renderedImage() else { return }
+        isRecognizingText = true
+        errorMessage = nil
+        defer { isRecognizingText = false }
+        do {
+            let result = try await TextRecognizer.recognize(cgImage: cgImage)
+            ocrResult = OCRResult(text: result.text)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 把 OCR 识别出的文字写入剪贴板（纯文本）。
+    func copyText(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
     }
 
     /// 刷新屏幕录制权限状态；尚未决定时触发一次系统授权弹窗。
@@ -633,6 +665,9 @@ struct CaptureView: View {
         } message: {
             Text(model.errorMessage ?? Loc.s("error.unknown"))
         }
+        .sheet(item: $model.ocrResult) { result in
+            OCRResultView(text: result.text) { model.copyText($0) }
+        }
         .task {
             model.installGlobalHotKey()
             model.refreshScreenPermission(requestIfNeeded: true)
@@ -686,6 +721,14 @@ struct CaptureView: View {
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(model.image == nil)
+
+                Button {
+                    Task { await model.extractText() }
+                } label: {
+                    Label(Loc.s("action.ocr"), systemImage: "text.viewfinder")
+                }
+                .disabled(model.image == nil || model.isRecognizingText)
+                .help(Loc.s("action.ocr.help"))
 
                 saveControl
 
@@ -1177,5 +1220,70 @@ private struct RecentSavesList: View {
         }
         .frame(width: 340)
         .padding(.bottom, 8)
+    }
+}
+
+/// OCR 结果面板：以只读、可选中的文本视图展示识别文字，可一键复制全部；无文字时显示空态。
+private struct OCRResultView: View {
+    let text: String
+    let onCopy: (String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var copied = false
+
+    private var isEmpty: Bool { text.isEmpty }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Label(Loc.s("ocr.title"), systemImage: "text.viewfinder")
+                    .font(.headline)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 12)
+
+            Divider()
+
+            if isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "text.badge.xmark")
+                        .font(.system(size: 32))
+                        .foregroundStyle(.secondary)
+                    Text(Loc.s("ocr.empty"))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(24)
+            } else {
+                TextEditor(text: .constant(text))
+                    .font(.system(.body, design: .default))
+                    .textSelection(.enabled)
+                    .frame(minHeight: 220)
+                    .padding(8)
+            }
+
+            Divider()
+
+            HStack(spacing: 10) {
+                Spacer()
+                Button(Loc.s("ocr.close")) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button {
+                    onCopy(text)
+                    copied = true
+                } label: {
+                    Label(copied ? Loc.s("ocr.copied") : Loc.s("ocr.copyAll"),
+                          systemImage: copied ? "checkmark" : "doc.on.doc")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isEmpty)
+                .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(width: 460, height: 380)
     }
 }

@@ -11,6 +11,13 @@
 "action.restart.help" = "WorldCapture を再起動（アクセシビリティ権限の付与後は再起動が必要なことが多い）";
 "action.save" = "保存";
 "action.copy" = "コピー";
+"action.ocr" = "テキスト抽出";
+"action.ocr.help" = "現在のスクショ内の文字を認識（オンデバイス処理・アップロードなし）";
+"ocr.title" = "抽出したテキスト";
+"ocr.empty" = "このスクショから文字は検出されませんでした";
+"ocr.copyAll" = "すべてコピー";
+"ocr.copied" = "コピー済み";
+"ocr.close" = "閉じる";
 "recent.title" = "最近の保存";
 "recent.help" = "最近保存したスクショ";
 "reveal.finder" = "Finder で表示";

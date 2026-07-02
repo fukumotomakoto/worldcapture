@@ -11,6 +11,13 @@
 "action.restart.help" = "重新启动 WorldCapture（授予辅助功能权限后常需重启才生效）";
 "action.save" = "保存";
 "action.copy" = "复制";
+"action.ocr" = "提取文字";
+"action.ocr.help" = "识别当前截图中的文字（本地进行，不上传）";
+"ocr.title" = "提取的文字";
+"ocr.empty" = "未在这张截图中识别到文字";
+"ocr.copyAll" = "复制全部";
+"ocr.copied" = "已复制";
+"ocr.close" = "关闭";
 "recent.title" = "最近保存";
 "recent.help" = "最近保存的截图";
 "reveal.finder" = "在 Finder 中显示";

@@ -11,6 +11,13 @@
 "action.restart.help" = "Restart WorldCapture (often needed after granting Accessibility permission)";
 "action.save" = "Save";
 "action.copy" = "Copy";
+"action.ocr" = "Extract Text";
+"action.ocr.help" = "Recognize text in the current screenshot (runs on-device, nothing uploaded)";
+"ocr.title" = "Extracted Text";
+"ocr.empty" = "No text was found in this screenshot";
+"ocr.copyAll" = "Copy All";
+"ocr.copied" = "Copied";
+"ocr.close" = "Close";
 "recent.title" = "Recent saves";
 "recent.help" = "Recently saved screenshots";
 "reveal.finder" = "Show in Finder";

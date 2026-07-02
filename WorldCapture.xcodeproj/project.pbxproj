@@ -47,6 +47,7 @@
 		EFC53582C0C473D9C12596D9 /* CaptureKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; };
 		F2B8CE2C040D94C79A339D12 /* CaptureKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		F362F7572BA279F663AC7C14 /* PreviewZoomPan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8173312EBBDE59245C770E71 /* PreviewZoomPan.swift */; };
+		F7102ABC0EB95D724FD32E25 /* TextRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681BEE8887F18416F0D4FE1E /* TextRecognizer.swift */; };
 		FC53C384E29BDC28F00C7033 /* ScreenCapturer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 195AE13EE4566D20BF379F2A /* ScreenCapturer.swift */; };
 /* End PBXBuildFile section */
 
@@ -104,6 +105,7 @@
 		581077C8E6E779F5764EE47A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5A577B0A8255CB24BCBE91D6 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		5DEF979B964628A95C55BCA7 /* PNGEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PNGEncoder.swift; sourceTree = "<group>"; };
+		681BEE8887F18416F0D4FE1E /* TextRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
 		6945C9140E531B29ABAA4AA5 /* CaptureAnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAnnotationTests.swift; sourceTree = "<group>"; };
 		6B1F00B673C0655BB96F749A /* WorldCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		71B867592A3751A22E86A6CD /* CaptureError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureError.swift; sourceTree = "<group>"; };
@@ -220,6 +222,7 @@
 				EB21E5D360DC57F87488B400 /* ScreenRecorder.swift */,
 				D300F98C4285B98344FE3979 /* ScrollCaptureEngine.swift */,
 				B45B647F647A23E839B68AEB /* ScrollStitcher.swift */,
+				681BEE8887F18416F0D4FE1E /* TextRecognizer.swift */,
 			);
 			name = CaptureKit;
 			path = macos/Sources/CaptureKit;
@@ -394,6 +397,7 @@
 				4F6DA62CAC80880624F3FAF7 /* ScreenRecorder.swift in Sources */,
 				81EF139153C95E5B38E4446F /* ScrollCaptureEngine.swift in Sources */,
 				62A910932E27DCAE4C33BAD0 /* ScrollStitcher.swift in Sources */,
+				F7102ABC0EB95D724FD32E25 /* TextRecognizer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
