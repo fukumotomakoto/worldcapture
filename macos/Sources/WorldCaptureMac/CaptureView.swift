@@ -35,6 +35,9 @@ final class CaptureViewModel: ObservableObject {
     @Published var isRecording = false
     @Published var lastRecordingURL: URL?
     @Published var recordingDuration: TimeInterval = 0
+    /// GIF 录制：进行中标志与时长；区域 GIF 录制到内存帧，停止后编码。
+    @Published var isGIFRecording = false
+    @Published var gifRecordingDuration: TimeInterval = 0
     /// OCR：识别进行中标志；`ocrResult` 非 nil 时弹出结果面板（含空态）。
     @Published var isRecognizingText = false
     @Published var ocrResult: OCRResult?
@@ -69,9 +72,16 @@ final class CaptureViewModel: ObservableObject {
         annotations.filter { $0.kind == .number }.count + 1
     }
 
+    /// GIF 录制帧率与时长上限（秒）。到时自动停止编码。
+    static let gifFPS = 12
+    static let gifMaxDuration: TimeInterval = 30
+
     private let capturer: any ScreenCapturing
     private let regionSelector = RegionSelector()
     private let screenRecorder = ScreenRecorder()
+    private let gifRecorder = GIFRecorder()
+    private var gifTimer: Timer?
+    private var gifStartedAt: Date?
     private var globalHotKey: GlobalHotKey?
     private var recordingTimer: Timer?
     private var recordingStartedAt: Date?
@@ -434,6 +444,92 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
+    var gifRecordingDurationText: String {
+        let totalSeconds = max(0, Int(gifRecordingDuration))
+        return String(format: "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+    }
+
+    /// 区域 GIF 录制：框选区域后开始逐帧抓取（到时上限自动停止）。
+    func toggleGIFRecording() async {
+        if isGIFRecording {
+            await stopGIFRecording()
+        } else {
+            await beginGIFRecording()
+        }
+    }
+
+    private func beginGIFRecording() async {
+        guard !isGIFRecording, !isRecording else { return }
+        sourcePicker = nil
+        let restoreWindows = hideOwnWindows()
+        guard let selection = await regionSelector.selectRegion() else {
+            restoreWindows()
+            return
+        }
+        restoreWindows()
+
+        do {
+            try await gifRecorder.start(displayID: selection.displayID, region: selection.region, fps: Self.gifFPS)
+            isGIFRecording = true
+            errorMessage = nil
+            startGIFTimer()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func stopGIFRecording() async {
+        guard isGIFRecording else { return }
+        isGIFRecording = false
+        stopGIFTimer()
+
+        do {
+            let captured = try await gifRecorder.stop()
+            guard !captured.isEmpty else {
+                errorMessage = Loc.s("error.gifEmpty")
+                return
+            }
+
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [.gif]
+            panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).gif"
+            guard panel.runModal() == .OK, let url = panel.url else { return }
+
+            let frames = GIFEncoder.frames(from: captured, fallbackFPS: Self.gifFPS)
+            let data = try GIFEncoder.encode(frames: frames)
+            try data.write(to: url, options: .atomic)
+            lastRecordingURL = url
+            HistoryStore.shared.record(url, kind: .image)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func startGIFTimer() {
+        gifRecordingDuration = 0
+        gifStartedAt = Date()
+        gifTimer?.invalidate()
+        gifTimer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let started = self.gifStartedAt else { return }
+                self.gifRecordingDuration = Date().timeIntervalSince(started)
+                // 到达时长上限自动停止并编码。
+                if self.gifRecordingDuration >= Self.gifMaxDuration {
+                    await self.stopGIFRecording()
+                }
+            }
+        }
+    }
+
+    private func stopGIFTimer() {
+        if let gifStartedAt {
+            gifRecordingDuration = Date().timeIntervalSince(gifStartedAt)
+        }
+        gifStartedAt = nil
+        gifTimer?.invalidate()
+        gifTimer = nil
+    }
+
     /// 把当前截图（含已渲染标注）钉到屏幕上。
     func pinCurrentImage() {
         guard let cgImage = renderedImage() else { return }
@@ -609,6 +705,27 @@ struct CaptureView: View {
                 .background(Color(nsColor: .controlBackgroundColor))
             }
 
+            if model.isGIFRecording {
+                HStack(spacing: 8) {
+                    Circle().fill(.red).frame(width: 8, height: 8)
+                    Text(Loc.s("gif.active"))
+                        .font(.callout.weight(.medium))
+                    Text(model.gifRecordingDurationText)
+                        .font(.system(.callout, design: .monospaced).weight(.semibold))
+                    Spacer()
+                    Button {
+                        Task { await model.toggleGIFRecording() }
+                    } label: {
+                        Label(Loc.s("gif.stop"), systemImage: "stop.circle.fill")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.red.opacity(0.10))
+            }
+
             if model.isRecording {
                 HStack(spacing: 8) {
                     Circle().fill(.red).frame(width: 8, height: 8)
@@ -771,6 +888,27 @@ struct CaptureView: View {
         }
     }
 
+    /// GIF 录制控件：录制中显示停止（红色）；否则触发区域框选并开始 GIF 录制。
+    @ViewBuilder
+    private var gifControl: some View {
+        if model.isGIFRecording {
+            Button {
+                Task { await model.toggleGIFRecording() }
+            } label: {
+                Label(Loc.s("gif.stop"), systemImage: "stop.circle.fill")
+            }
+            .tint(Color.red)
+        } else {
+            Button {
+                Task { await model.toggleGIFRecording() }
+            } label: {
+                Label(Loc.s("gif.record"), systemImage: "circle.hexagongrid.circle")
+            }
+            .disabled(model.isCapturing || model.isRecording)
+            .help(Loc.s("gif.record.help"))
+        }
+    }
+
     /// 保存控件：主按钮保存；右侧下拉列出最近保存记录。
     private var saveControl: some View {
         HStack(spacing: 2) {
@@ -843,6 +981,7 @@ struct CaptureView: View {
             Divider().frame(height: 22)
 
             recordingControl
+            gifControl
 
             Spacer(minLength: 12)
             Text("⌘⇧2")

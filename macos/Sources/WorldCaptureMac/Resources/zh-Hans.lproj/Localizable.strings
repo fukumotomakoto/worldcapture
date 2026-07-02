@@ -47,6 +47,12 @@
 "record.active" = "正在录制屏幕与系统音频";
 "record.saved" = "录制已保存：%@";
 
+/* GIF 录制 */
+"gif.record" = "GIF";
+"gif.record.help" = "框选区域并录制为动图 GIF（最长 30 秒）";
+"gif.stop" = "停止 GIF";
+"gif.active" = "正在录制 GIF（最长 30 秒）";
+
 /* 捕获来源 */
 "capture.region" = "区域";
 "capture.main" = "主屏幕";
@@ -120,6 +126,7 @@
 "error.ok" = "好";
 "error.unknown" = "未知错误";
 "error.scrollEmpty" = "滚动截屏未获取到内容。";
+"error.gifEmpty" = "GIF 录制未获取到帧。";
 "error.noOwnWindow" = "找不到可截取的本应用窗口。";
 
 /* 菜单栏 */

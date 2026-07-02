@@ -47,6 +47,12 @@
 "record.active" = "Recording screen and system audio";
 "record.saved" = "Recording saved: %@";
 
+/* GIF recording */
+"gif.record" = "GIF";
+"gif.record.help" = "Select a region and record it as an animated GIF (up to 30s)";
+"gif.stop" = "Stop GIF";
+"gif.active" = "Recording GIF (up to 30s)";
+
 /* Capture sources */
 "capture.region" = "Region";
 "capture.main" = "Main screen";
@@ -120,6 +126,7 @@
 "error.ok" = "OK";
 "error.unknown" = "Unknown error";
 "error.scrollEmpty" = "Scrolling capture returned no content.";
+"error.gifEmpty" = "GIF recording captured no frames.";
 "error.noOwnWindow" = "Couldn't find this app's window to capture.";
 
 /* Menu bar */
