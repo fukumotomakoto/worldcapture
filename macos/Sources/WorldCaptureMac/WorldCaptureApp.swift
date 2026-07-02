@@ -9,11 +9,11 @@ struct WorldCaptureApp: App {
     var body: some Scene {
         WindowGroup {
             CaptureView(model: model)
-                .frame(minWidth: 1280, minHeight: 560)
+                .frame(minWidth: 900, minHeight: 580)
                 .background(MinimizeOnClose())
         }
         .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: 1280, height: 640)
+        .defaultSize(width: 960, height: 640)
         .commands {
             CommandGroup(after: .appInfo) {
                 Button(Loc.s("menu.checkUpdates")) { updater.checkForUpdates() }

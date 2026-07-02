@@ -61,6 +61,8 @@
 "gif.active" = "正在录制 GIF（最长 30 秒）";
 
 /* 捕获来源 */
+"capture.group.shot" = "截图";
+"capture.group.record" = "录制";
 "capture.region" = "区域";
 "capture.main" = "主屏幕";
 "capture.fullscreen" = "全屏幕";

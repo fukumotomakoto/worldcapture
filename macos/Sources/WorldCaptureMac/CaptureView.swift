@@ -1123,65 +1123,80 @@ struct CaptureView: View {
 
     // MARK: - 捕获来源工具栏
 
+    /// 捕获工具栏：分「截图 / 录制」两行，避免单行按钮过多、过宽。
     private var captureBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                Task { await model.captureRegion() }
-            } label: {
-                Label(Loc.s("capture.region"), systemImage: "selection.pin.in.out")
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                groupLabel(Loc.s("capture.group.shot"))
+
+                Button {
+                    Task { await model.captureRegion() }
+                } label: {
+                    Label(Loc.s("capture.region"), systemImage: "selection.pin.in.out")
+                }
+                .disabled(model.isCapturing)
+
+                fullScreenControl
+
+                Button {
+                    model.sourcePicker = .window
+                } label: {
+                    Label(Loc.s("capture.window"), systemImage: "macwindow")
+                }
+                .disabled(model.isCapturing)
+                .help(Loc.s("capture.window.help"))
+
+                Button {
+                    Task { await model.captureOwnWindow() }
+                } label: {
+                    Label(Loc.s("capture.self"), systemImage: "macwindow.on.rectangle")
+                }
+                .disabled(model.isCapturing)
+                .help(Loc.s("capture.self.help"))
+
+                Button {
+                    Task { await model.captureScrolling() }
+                } label: {
+                    Label(Loc.s("capture.scroll"), systemImage: "arrow.down.doc")
+                }
+                .disabled(model.isCapturing)
+                .help(Loc.s("capture.scroll.help"))
+
+                Button {
+                    model.sourcePicker = .scrollWindow
+                } label: {
+                    Label(Loc.s("capture.scrollWindow"), systemImage: "arrow.down.doc.fill")
+                }
+                .disabled(model.isCapturing)
+                .help(Loc.s("capture.scrollWindow.help"))
+
+                Spacer(minLength: 12)
+                Text("⌘⇧2")
+                    .font(.callout.monospaced())
+                    .foregroundStyle(.secondary)
+                    .help(Loc.s("region.shortcut.help"))
             }
-            .disabled(model.isCapturing)
 
-            fullScreenControl
-
-            Button {
-                model.sourcePicker = .window
-            } label: {
-                Label(Loc.s("capture.window"), systemImage: "macwindow")
+            HStack(spacing: 10) {
+                groupLabel(Loc.s("capture.group.record"))
+                recordingControl
+                regionRecordControl
+                windowRecordControl
+                gifControl
+                Spacer(minLength: 12)
             }
-            .disabled(model.isCapturing)
-            .help(Loc.s("capture.window.help"))
-
-            Button {
-                Task { await model.captureOwnWindow() }
-            } label: {
-                Label(Loc.s("capture.self"), systemImage: "macwindow.on.rectangle")
-            }
-            .disabled(model.isCapturing)
-            .help(Loc.s("capture.self.help"))
-
-            Button {
-                Task { await model.captureScrolling() }
-            } label: {
-                Label(Loc.s("capture.scroll"), systemImage: "arrow.down.doc")
-            }
-            .disabled(model.isCapturing)
-            .help(Loc.s("capture.scroll.help"))
-
-            Button {
-                model.sourcePicker = .scrollWindow
-            } label: {
-                Label(Loc.s("capture.scrollWindow"), systemImage: "arrow.down.doc.fill")
-            }
-            .disabled(model.isCapturing)
-            .help(Loc.s("capture.scrollWindow.help"))
-
-            Divider().frame(height: 22)
-
-            recordingControl
-            regionRecordControl
-            windowRecordControl
-            gifControl
-
-            Spacer(minLength: 12)
-            Text("⌘⇧2")
-                .font(.callout.monospaced())
-                .foregroundStyle(.secondary)
-                .help(Loc.s("region.shortcut.help"))
         }
         .labelStyle(.titleAndIcon)
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
+    }
+
+    /// 工具栏分组前缀标签（固定宽度，让两行按钮左对齐）。
+    private func groupLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .frame(width: 40, alignment: .leading)
     }
 
     /// 全屏幕截图：单屏直接截主屏；多屏时在内容区内嵌屏幕缩略图供选择（不用下拉菜单）。

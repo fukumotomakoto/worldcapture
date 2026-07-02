@@ -61,6 +61,8 @@
 "gif.active" = "GIF を録画中（最長30秒）";
 
 /* キャプチャ対象 */
+"capture.group.shot" = "撮影";
+"capture.group.record" = "録画";
 "capture.region" = "範囲";
 "capture.main" = "メイン画面";
 "capture.fullscreen" = "画面全体";

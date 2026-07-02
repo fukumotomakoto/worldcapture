@@ -61,6 +61,8 @@
 "gif.active" = "Recording GIF (up to 30s)";
 
 /* Capture sources */
+"capture.group.shot" = "Shot";
+"capture.group.record" = "Record";
 "capture.region" = "Region";
 "capture.main" = "Main screen";
 "capture.fullscreen" = "Full screen";
