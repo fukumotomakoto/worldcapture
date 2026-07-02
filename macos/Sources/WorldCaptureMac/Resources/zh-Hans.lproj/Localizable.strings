@@ -69,6 +69,8 @@
 "capture.window.help" = "以缩略图选择要截取的窗口";
 "capture.scroll" = "滚动长图";
 "capture.scroll.help" = "选择区域后自动滚动并拼接成长截图";
+"capture.scrollWindow" = "滚动窗口";
+"capture.scrollWindow.help" = "选择一个窗口，自动滚动并拼接整窗长图";
 "capture.self" = "本窗口";
 "capture.self.help" = "截取 WorldCapture 自身窗口";
 "window.menu" = "窗口";
@@ -79,6 +81,7 @@
 "picker.screen.title" = "选择要截取的屏幕";
 "picker.record.title" = "选择要录制的屏幕";
 "picker.recordWindow.title" = "选择要录制的窗口";
+"picker.scrollWindow.title" = "选择要滚动长截的窗口";
 "thumbnail.picker" = "缩略图选择";
 "thumbnail.picker.help" = "以缩略图选择窗口或整个屏幕";
 "region.shortcut.help" = "区域截屏快捷键";
@@ -136,6 +139,7 @@
 "error.scrollEmpty" = "滚动截屏未获取到内容。";
 "error.gifEmpty" = "GIF 录制未获取到帧。";
 "error.noOwnWindow" = "找不到可截取的本应用窗口。";
+"error.windowUnavailable" = "该窗口已不可用。";
 
 /* 菜单栏 */
 "menu.region" = "区域截屏";

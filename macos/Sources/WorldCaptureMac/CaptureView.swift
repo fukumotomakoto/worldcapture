@@ -63,6 +63,7 @@ final class CaptureViewModel: ObservableObject {
         case captureScreen
         case recordScreen
         case recordWindow
+        case scrollWindow
     }
 
     struct DisplayOption: Identifiable, Hashable {
@@ -174,6 +175,65 @@ final class CaptureViewModel: ObservableObject {
                 scroll: {
                     ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
                     try? await Task.sleep(nanoseconds: 500_000_000) // 等待界面滚动渲染稳定（含懒加载内容）
+                }
+            )
+            restoreWindows()
+            isCapturing = false
+            guard let stitched = result.image else {
+                errorMessage = Loc.s("error.scrollEmpty")
+                return
+            }
+            image = NSImage(cgImage: stitched, size: .zero)
+            annotations = []
+            selectedAnnotationIDs = []
+            presentCapturePreview()
+        } catch {
+            restoreWindows()
+            isCapturing = false
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 全窗口长图：选一个窗口，自动滚动并拼接整窗内容（不用手绘窄选区，取全窗口取景）。
+    func captureScrollingWindow(windowID: CGWindowID) async {
+        guard AccessibilityPermission.isTrusted else {
+            hasAccessibilityPermission = false
+            AccessibilityPermission.requestPrompt()
+            return
+        }
+        hasAccessibilityPermission = true
+        sourcePicker = nil
+
+        // 取窗口 frame（全局 CG 坐标，左上原点）以确定滚动落点与步长。
+        let windowFrame: CGRect
+        do {
+            let list = try await capturer.availableWindows()
+            guard let window = list.first(where: { $0.id == windowID }) else {
+                errorMessage = Loc.s("error.windowUnavailable")
+                return
+            }
+            windowFrame = window.frame
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+
+        // 隐藏本应用窗口，避免遮挡目标窗口导致滚动事件落到我们自己身上。
+        let restoreWindows = hideOwnWindows()
+        isCapturing = true
+        errorMessage = nil
+
+        let capturer = self.capturer
+        let scrollPoint = CGPoint(x: windowFrame.midX, y: windowFrame.midY)
+        let scrollPixels = max(40, Int(windowFrame.height * 0.6))
+        let engine = ScrollCaptureEngine()
+
+        do {
+            let result = try await engine.run(
+                capture: { try await capturer.captureWindow(id: windowID) },
+                scroll: {
+                    ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
+                    try? await Task.sleep(nanoseconds: 500_000_000)
                 }
             )
             restoreWindows()
@@ -1098,6 +1158,14 @@ struct CaptureView: View {
             .disabled(model.isCapturing)
             .help(Loc.s("capture.scroll.help"))
 
+            Button {
+                model.sourcePicker = .scrollWindow
+            } label: {
+                Label(Loc.s("capture.scrollWindow"), systemImage: "arrow.down.doc.fill")
+            }
+            .disabled(model.isCapturing)
+            .help(Loc.s("capture.scrollWindow.help"))
+
             Divider().frame(height: 22)
 
             recordingControl
@@ -1265,6 +1333,7 @@ struct CaptureView: View {
         case .captureScreen: return Loc.s("picker.screen.title")
         case .recordScreen: return Loc.s("picker.record.title")
         case .recordWindow: return Loc.s("picker.recordWindow.title")
+        case .scrollWindow: return Loc.s("picker.scrollWindow.title")
         }
     }
 
@@ -1273,13 +1342,14 @@ struct CaptureView: View {
             Color(nsColor: .windowBackgroundColor)
             if let mode = model.sourcePicker {
                 CaptureSourcePicker(
-                    kind: (mode == .window || mode == .recordWindow) ? .window : .screen,
+                    kind: (mode == .window || mode == .recordWindow || mode == .scrollWindow) ? .window : .screen,
                     title: sourcePickerTitle(mode),
                     onPickWindow: { id in
                         model.sourcePicker = nil
                         Task {
                             switch mode {
                             case .recordWindow: await model.beginWindowRecording(windowID: id)
+                            case .scrollWindow: await model.captureScrollingWindow(windowID: id)
                             default: await model.captureWindow(id: id)
                             }
                         }
@@ -1290,7 +1360,7 @@ struct CaptureView: View {
                             switch mode {
                             case .captureScreen: await model.captureDisplayFull(id: id)
                             case .recordScreen: await model.beginRecording(displayID: id)
-                            case .window, .recordWindow: break
+                            case .window, .recordWindow, .scrollWindow: break
                             }
                         }
                     },

@@ -69,6 +69,8 @@
 "capture.window.help" = "Pick a window to capture from thumbnails";
 "capture.scroll" = "Scrolling";
 "capture.scroll.help" = "Select a region, then auto-scroll and stitch a long screenshot";
+"capture.scrollWindow" = "Scroll Window";
+"capture.scrollWindow.help" = "Pick a window, then auto-scroll and stitch the whole window into a long shot";
 "capture.self" = "This window";
 "capture.self.help" = "Capture WorldCapture's own window";
 "window.menu" = "Window";
@@ -78,6 +80,7 @@
 "picker.screen.title" = "Pick a screen to capture";
 "picker.record.title" = "Pick a screen to record";
 "picker.recordWindow.title" = "Pick a window to record";
+"picker.scrollWindow.title" = "Pick a window to scroll-capture";
 "window.none" = "No windows available";
 "thumbnail.picker" = "Thumbnails";
 "thumbnail.picker.help" = "Pick a window or whole screen by thumbnail";
@@ -136,6 +139,7 @@
 "error.scrollEmpty" = "Scrolling capture returned no content.";
 "error.gifEmpty" = "GIF recording captured no frames.";
 "error.noOwnWindow" = "Couldn't find this app's window to capture.";
+"error.windowUnavailable" = "That window is no longer available.";
 
 /* Menu bar */
 "menu.region" = "Capture region";

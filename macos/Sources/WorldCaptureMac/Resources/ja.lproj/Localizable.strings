@@ -69,6 +69,8 @@
 "capture.window.help" = "サムネイルから取得するウィンドウを選択";
 "capture.scroll" = "スクロール長尺";
 "capture.scroll.help" = "範囲を選ぶと自動スクロールして長尺画像に連結";
+"capture.scrollWindow" = "ウインドウ長尺";
+"capture.scrollWindow.help" = "ウインドウを選ぶと自動スクロールして全体を長尺画像に連結";
 "capture.self" = "本ウィンドウ";
 "capture.self.help" = "WorldCapture 自身のウィンドウを取得";
 "window.menu" = "ウィンドウ";
@@ -78,6 +80,7 @@
 "picker.screen.title" = "取得する画面を選択";
 "picker.record.title" = "録画する画面を選択";
 "picker.recordWindow.title" = "録画するウインドウを選択";
+"picker.scrollWindow.title" = "長尺キャプチャするウインドウを選択";
 "window.none" = "利用可能なウィンドウなし";
 "thumbnail.picker" = "サムネイル選択";
 "thumbnail.picker.help" = "サムネイルでウィンドウや画面全体を選択";
@@ -136,6 +139,7 @@
 "error.scrollEmpty" = "スクロール撮影で内容を取得できませんでした。";
 "error.gifEmpty" = "GIF 録画でフレームを取得できませんでした。";
 "error.noOwnWindow" = "キャプチャできる本アプリのウィンドウが見つかりません。";
+"error.windowUnavailable" = "そのウインドウは利用できなくなりました。";
 
 /* メニューバー */
 "menu.region" = "範囲を撮影";
