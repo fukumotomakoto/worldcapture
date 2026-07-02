@@ -140,6 +140,7 @@
 "error.ok" = "OK";
 "error.unknown" = "Unknown error";
 "error.scrollEmpty" = "Scrolling capture returned no content.";
+"error.scrollNoProgress" = "Scrolling didn't advance — only one screen was captured. Grant WorldCapture access in System Settings › Privacy & Security › Accessibility and restart the app. If that's already set, the window may be shorter than one screen or not scrollable.";
 "error.gifEmpty" = "GIF recording captured no frames.";
 "error.noOwnWindow" = "Couldn't find this app's window to capture.";
 "error.windowUnavailable" = "That window is no longer available.";

@@ -140,6 +140,7 @@
 "error.ok" = "好";
 "error.unknown" = "未知错误";
 "error.scrollEmpty" = "滚动截屏未获取到内容。";
+"error.scrollNoProgress" = "滚动未推进，只截到一屏。请确认已在「系统设置 › 隐私与安全性 › 辅助功能」授予 WorldCapture 权限并重启应用；若权限没问题，则可能是该窗口内容不足一屏或不可滚动。";
 "error.gifEmpty" = "GIF 录制未获取到帧。";
 "error.noOwnWindow" = "找不到可截取的本应用窗口。";
 "error.windowUnavailable" = "该窗口已不可用。";

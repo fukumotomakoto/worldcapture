@@ -140,6 +140,7 @@
 "error.ok" = "OK";
 "error.unknown" = "不明なエラー";
 "error.scrollEmpty" = "スクロール撮影で内容を取得できませんでした。";
+"error.scrollNoProgress" = "スクロールが進まず、1画面のみ取得しました。「システム設定 › プライバシーとセキュリティ › アクセシビリティ」で WorldCapture を許可し、アプリを再起動してください。設定済みの場合、そのウインドウが1画面未満かスクロール不可の可能性があります。";
 "error.gifEmpty" = "GIF 録画でフレームを取得できませんでした。";
 "error.noOwnWindow" = "キャプチャできる本アプリのウィンドウが見つかりません。";
 "error.windowUnavailable" = "そのウインドウは利用できなくなりました。";

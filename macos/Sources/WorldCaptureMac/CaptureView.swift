@@ -187,6 +187,7 @@ final class CaptureViewModel: ObservableObject {
             annotations = []
             selectedAnnotationIDs = []
             presentCapturePreview()
+            if result.frameCount <= 1 { errorMessage = Loc.s("error.scrollNoProgress") }
         } catch {
             restoreWindows()
             isCapturing = false
@@ -220,6 +221,9 @@ final class CaptureViewModel: ObservableObject {
 
         // 隐藏本应用窗口，避免遮挡目标窗口导致滚动事件落到我们自己身上。
         let restoreWindows = hideOwnWindows()
+        // 把目标窗口所在应用带到前台，确保合成滚轮事件命中它而非其它遮挡窗口。
+        activateWindowOwner(windowID)
+        try? await Task.sleep(nanoseconds: 250_000_000)
         isCapturing = true
         errorMessage = nil
 
@@ -246,11 +250,20 @@ final class CaptureViewModel: ObservableObject {
             annotations = []
             selectedAnnotationIDs = []
             presentCapturePreview()
+            if result.frameCount <= 1 { errorMessage = Loc.s("error.scrollNoProgress") }
         } catch {
             restoreWindows()
             isCapturing = false
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// 把某窗口所属应用激活到前台（滚动长图前调用，确保滚轮事件命中它）。
+    private func activateWindowOwner(_ windowID: CGWindowID) {
+        guard let infos = CGWindowListCopyWindowInfo([.optionIncludingWindow], windowID) as? [[String: Any]],
+              let pid = infos.first?[kCGWindowOwnerPID as String] as? pid_t,
+              let app = NSRunningApplication(processIdentifier: pid) else { return }
+        app.activate()
     }
 
     func refreshAccessibilityPermission() {
