@@ -412,6 +412,24 @@ final class CaptureViewModel: ObservableObject {
 
     /// 录制指定显示器：先选输出路径，再开始录制。
     func beginRecording(displayID: CGDirectDisplayID) async {
+        await beginRecording(displayID: displayID, region: nil)
+    }
+
+    /// 录制区域：先框选区域，再选输出路径开始录制该选区。
+    func beginRegionRecording() async {
+        guard !isRecording, !isGIFRecording else { return }
+        sourcePicker = nil
+        let restoreWindows = hideOwnWindows()
+        guard let selection = await regionSelector.selectRegion() else {
+            restoreWindows()
+            return
+        }
+        restoreWindows()
+        await beginRecording(displayID: selection.displayID, region: selection.region)
+    }
+
+    /// 录制核心：区域可选；是否录麦克风读设置。先选输出路径再开录。
+    private func beginRecording(displayID: CGDirectDisplayID, region: CaptureRegion?) async {
         guard !isRecording else { return }
         sourcePicker = nil
         let panel = NSSavePanel()
@@ -420,7 +438,12 @@ final class CaptureViewModel: ObservableObject {
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         do {
-            try await screenRecorder.startRecording(displayID: displayID, to: url)
+            try await screenRecorder.startRecording(
+                displayID: displayID,
+                region: region,
+                includeMicrophone: RecordingPreferences.includeMicrophone,
+                to: url
+            )
             lastRecordingURL = url
             isRecording = true
             startRecordingTimer()
@@ -888,6 +911,20 @@ struct CaptureView: View {
         }
     }
 
+    /// 区域录制控件：框选区域并录制该选区为视频（录制中隐藏，用统一的停止横幅）。
+    @ViewBuilder
+    private var regionRecordControl: some View {
+        if !model.isRecording {
+            Button {
+                Task { await model.beginRegionRecording() }
+            } label: {
+                Label(Loc.s("record.region"), systemImage: "rectangle.dashed.badge.record")
+            }
+            .disabled(model.isCapturing || model.isGIFRecording)
+            .help(Loc.s("record.region.help"))
+        }
+    }
+
     /// GIF 录制控件：录制中显示停止（红色）；否则触发区域框选并开始 GIF 录制。
     @ViewBuilder
     private var gifControl: some View {
@@ -981,6 +1018,7 @@ struct CaptureView: View {
             Divider().frame(height: 22)
 
             recordingControl
+            regionRecordControl
             gifControl
 
             Spacer(minLength: 12)

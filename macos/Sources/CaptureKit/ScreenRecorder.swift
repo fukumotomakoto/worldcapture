@@ -28,7 +28,15 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
     }
 
     /// 录制指定显示器；找不到该 ID 时回退到主显示器或第一块可用显示器。
-    public func startRecording(displayID: CGDirectDisplayID, to outputURL: URL) async throws {
+    /// - Parameters:
+    ///   - region: 非 nil 时只录该选区（否则录整块显示器原生像素）。
+    ///   - includeMicrophone: 是否把麦克风声音一并录入（需麦克风权限，macOS 15+）。
+    public func startRecording(
+        displayID: CGDirectDisplayID,
+        region: CaptureRegion? = nil,
+        includeMicrophone: Bool = false,
+        to outputURL: URL
+    ) async throws {
         guard !isRecording else { throw CaptureError.recordingAlreadyActive }
 
         let content: SCShareableContent
@@ -63,9 +71,16 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         }
 
         let streamConfiguration = SCStreamConfiguration()
+        // 区域录制：限定 sourceRect（点坐标），目标像素取选区像素，保持与显示器相同的清晰度。
+        if let region {
+            streamConfiguration.sourceRect = region.sourceRect
+            pixelWidth = max(1, Int((region.sourceRect.width * scale).rounded()))
+            pixelHeight = max(1, Int((region.sourceRect.height * scale).rounded()))
+        }
         streamConfiguration.width = max(1, pixelWidth)
         streamConfiguration.height = max(1, pixelHeight)
         streamConfiguration.captureResolution = .best
+        streamConfiguration.captureMicrophone = includeMicrophone
         streamConfiguration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
         streamConfiguration.queueDepth = 8
         streamConfiguration.pixelFormat = kCVPixelFormatType_32BGRA

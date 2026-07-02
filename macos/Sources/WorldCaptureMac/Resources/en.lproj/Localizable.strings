@@ -42,6 +42,8 @@
 
 /* Recording */
 "record.screen" = "Record";
+"record.region" = "Record Region";
+"record.region.help" = "Select a region and record it as a video";
 "record.stop" = "Stop";
 "record.pick.help" = "Choose a display to record";
 "record.active" = "Recording screen and system audio";
@@ -147,6 +149,9 @@
 "settings.savePath.ask" = "Ask every time";
 "settings.shortcuts" = "Shortcuts";
 "settings.shortcuts.note" = "Current: ⌘⇧2 region capture (not yet customizable).";
+"settings.section.recording" = "Recording";
+"settings.mic" = "Include microphone audio";
+"settings.mic.note" = "When on, screen recordings include your microphone (grant Microphone permission on first use).";
 "settings.section.updates" = "Updates";
 "settings.autoUpdate" = "Automatically check for updates";
 

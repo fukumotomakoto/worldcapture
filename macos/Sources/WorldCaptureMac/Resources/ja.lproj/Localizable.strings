@@ -42,6 +42,8 @@
 
 /* 録画 */
 "record.screen" = "画面録画";
+"record.region" = "範囲録画";
+"record.region.help" = "範囲を選んで動画として録画";
 "record.stop" = "停止";
 "record.pick.help" = "録画するディスプレイを選択";
 "record.active" = "画面とシステム音声を録画中";
@@ -147,6 +149,9 @@
 "settings.savePath.ask" = "毎回確認";
 "settings.shortcuts" = "ショートカット";
 "settings.shortcuts.note" = "現在：⌘⇧2 範囲撮影（カスタマイズ未対応）。";
+"settings.section.recording" = "録画";
+"settings.mic" = "マイクの音声を含める";
+"settings.mic.note" = "オンにすると画面録画にマイク音声が入ります（初回はマイク権限の許可が必要）。";
 "settings.section.updates" = "アップデート";
 "settings.autoUpdate" = "アップデートを自動的に確認";
 
