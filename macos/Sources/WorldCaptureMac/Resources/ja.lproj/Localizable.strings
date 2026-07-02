@@ -44,6 +44,8 @@
 "record.screen" = "画面録画";
 "record.region" = "範囲録画";
 "record.region.help" = "範囲を選んで動画として録画";
+"record.window" = "ウインドウ録画";
+"record.window.help" = "サムネイルでウインドウを選んで録画";
 "record.stop" = "停止";
 "record.pick.help" = "録画するディスプレイを選択";
 "record.active" = "画面とシステム音声を録画中";
@@ -72,6 +74,7 @@
 "picker.window.title" = "取得するウィンドウを選択";
 "picker.screen.title" = "取得する画面を選択";
 "picker.record.title" = "録画する画面を選択";
+"picker.recordWindow.title" = "録画するウインドウを選択";
 "window.none" = "利用可能なウィンドウなし";
 "thumbnail.picker" = "サムネイル選択";
 "thumbnail.picker.help" = "サムネイルでウィンドウや画面全体を選択";

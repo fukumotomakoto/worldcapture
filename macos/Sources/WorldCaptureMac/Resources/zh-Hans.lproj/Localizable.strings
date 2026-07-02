@@ -44,6 +44,8 @@
 "record.screen" = "录制屏幕";
 "record.region" = "录制区域";
 "record.region.help" = "框选一块区域并录制为视频";
+"record.window" = "录制窗口";
+"record.window.help" = "以缩略图选择一个窗口并录制它";
 "record.stop" = "停止录制";
 "record.pick.help" = "选择要录制的显示器";
 "record.active" = "正在录制屏幕与系统音频";
@@ -73,6 +75,7 @@
 "picker.window.title" = "选择要截取的窗口";
 "picker.screen.title" = "选择要截取的屏幕";
 "picker.record.title" = "选择要录制的屏幕";
+"picker.recordWindow.title" = "选择要录制的窗口";
 "thumbnail.picker" = "缩略图选择";
 "thumbnail.picker.help" = "以缩略图选择窗口或整个屏幕";
 "region.shortcut.help" = "区域截屏快捷键";

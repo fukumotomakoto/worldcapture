@@ -44,6 +44,8 @@
 "record.screen" = "Record";
 "record.region" = "Record Region";
 "record.region.help" = "Select a region and record it as a video";
+"record.window" = "Record Window";
+"record.window.help" = "Pick a window by thumbnail and record it";
 "record.stop" = "Stop";
 "record.pick.help" = "Choose a display to record";
 "record.active" = "Recording screen and system audio";
@@ -72,6 +74,7 @@
 "picker.window.title" = "Pick a window to capture";
 "picker.screen.title" = "Pick a screen to capture";
 "picker.record.title" = "Pick a screen to record";
+"picker.recordWindow.title" = "Pick a window to record";
 "window.none" = "No windows available";
 "thumbnail.picker" = "Thumbnails";
 "thumbnail.picker.help" = "Pick a window or whole screen by thumbnail";

@@ -56,11 +56,12 @@ final class CaptureViewModel: ObservableObject {
     /// 可录制的显示器（多屏时供选择，单屏时直接录主屏）。
     @Published var availableDisplays: [DisplayOption] = []
 
-    /// 内嵌选择器的用途：选窗口、选屏幕截图、选屏幕录制。
+    /// 内嵌选择器的用途：选窗口截图、选屏幕截图、选屏幕录制、选窗口录制。
     enum SourcePickerMode {
         case window
         case captureScreen
         case recordScreen
+        case recordWindow
     }
 
     struct DisplayOption: Identifiable, Hashable {
@@ -426,6 +427,29 @@ final class CaptureViewModel: ObservableObject {
         }
         restoreWindows()
         await beginRecording(displayID: selection.displayID, region: selection.region)
+    }
+
+    /// 录制指定窗口：选输出路径后录制该窗口（跟随窗口，不含桌面其余部分）。
+    func beginWindowRecording(windowID: CGWindowID) async {
+        guard !isRecording, !isGIFRecording else { return }
+        sourcePicker = nil
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.mpeg4Movie]
+        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).mp4"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            try await screenRecorder.startWindowRecording(
+                windowID: windowID,
+                includeMicrophone: RecordingPreferences.includeMicrophone,
+                to: url
+            )
+            lastRecordingURL = url
+            isRecording = true
+            startRecordingTimer()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     /// 录制核心：区域可选；是否录麦克风读设置。先选输出路径再开录。
@@ -925,6 +949,20 @@ struct CaptureView: View {
         }
     }
 
+    /// 窗口录制控件：以缩略图网格选择一个窗口并录制它（录制中隐藏，用统一的停止横幅）。
+    @ViewBuilder
+    private var windowRecordControl: some View {
+        if !model.isRecording {
+            Button {
+                model.sourcePicker = .recordWindow
+            } label: {
+                Label(Loc.s("record.window"), systemImage: "macwindow.badge.plus")
+            }
+            .disabled(model.isCapturing || model.isGIFRecording)
+            .help(Loc.s("record.window.help"))
+        }
+    }
+
     /// GIF 录制控件：录制中显示停止（红色）；否则触发区域框选并开始 GIF 录制。
     @ViewBuilder
     private var gifControl: some View {
@@ -1019,6 +1057,7 @@ struct CaptureView: View {
 
             recordingControl
             regionRecordControl
+            windowRecordControl
             gifControl
 
             Spacer(minLength: 12)
@@ -1180,6 +1219,7 @@ struct CaptureView: View {
         case .window: return Loc.s("picker.window.title")
         case .captureScreen: return Loc.s("picker.screen.title")
         case .recordScreen: return Loc.s("picker.record.title")
+        case .recordWindow: return Loc.s("picker.recordWindow.title")
         }
     }
 
@@ -1188,11 +1228,16 @@ struct CaptureView: View {
             Color(nsColor: .windowBackgroundColor)
             if let mode = model.sourcePicker {
                 CaptureSourcePicker(
-                    kind: mode == .window ? .window : .screen,
+                    kind: (mode == .window || mode == .recordWindow) ? .window : .screen,
                     title: sourcePickerTitle(mode),
                     onPickWindow: { id in
                         model.sourcePicker = nil
-                        Task { await model.captureWindow(id: id) }
+                        Task {
+                            switch mode {
+                            case .recordWindow: await model.beginWindowRecording(windowID: id)
+                            default: await model.captureWindow(id: id)
+                            }
+                        }
                     },
                     onPickDisplay: { id in
                         model.sourcePicker = nil
@@ -1200,7 +1245,7 @@ struct CaptureView: View {
                             switch mode {
                             case .captureScreen: await model.captureDisplayFull(id: id)
                             case .recordScreen: await model.beginRecording(displayID: id)
-                            case .window: break
+                            case .window, .recordWindow: break
                             }
                         }
                     },

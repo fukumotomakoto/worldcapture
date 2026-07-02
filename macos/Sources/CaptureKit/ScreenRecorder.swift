@@ -79,25 +79,61 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         }
         streamConfiguration.width = max(1, pixelWidth)
         streamConfiguration.height = max(1, pixelHeight)
-        streamConfiguration.captureResolution = .best
-        streamConfiguration.captureMicrophone = includeMicrophone
-        streamConfiguration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
-        streamConfiguration.queueDepth = 8
-        streamConfiguration.pixelFormat = kCVPixelFormatType_32BGRA
-        streamConfiguration.colorSpaceName = CGColorSpace.sRGB
-        streamConfiguration.showsCursor = true
-        streamConfiguration.capturesAudio = true
-        streamConfiguration.excludesCurrentProcessAudio = true
-        streamConfiguration.sampleRate = 48_000
-        streamConfiguration.channelCount = 2
+        Self.applyCommonConfiguration(to: streamConfiguration, includeMicrophone: includeMicrophone)
+        try await beginStream(filter: filter, configuration: streamConfiguration, to: outputURL)
+    }
 
+    /// 录制单个窗口（跟随该窗口，不含桌面其余部分）。
+    public func startWindowRecording(
+        windowID: CGWindowID,
+        includeMicrophone: Bool = false,
+        to outputURL: URL
+    ) async throws {
+        guard !isRecording else { throw CaptureError.recordingAlreadyActive }
+
+        let content: SCShareableContent
+        do {
+            content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        } catch {
+            throw CaptureError.permissionDenied
+        }
+        guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
+            throw CaptureError.windowUnavailable
+        }
+
+        let filter = SCContentFilter(desktopIndependentWindow: window)
+        let scale = CGFloat(filter.pointPixelScale)
+        let streamConfiguration = SCStreamConfiguration()
+        streamConfiguration.width = max(1, Int((filter.contentRect.width * scale).rounded()))
+        streamConfiguration.height = max(1, Int((filter.contentRect.height * scale).rounded()))
+        Self.applyCommonConfiguration(to: streamConfiguration, includeMicrophone: includeMicrophone)
+        try await beginStream(filter: filter, configuration: streamConfiguration, to: outputURL)
+    }
+
+    /// 录制流的公共配置（音频、像素格式、帧率、光标）。width/height/sourceRect 由调用方设定。
+    private static func applyCommonConfiguration(to configuration: SCStreamConfiguration, includeMicrophone: Bool) {
+        configuration.captureResolution = .best
+        configuration.captureMicrophone = includeMicrophone
+        configuration.minimumFrameInterval = CMTime(value: 1, timescale: 60)
+        configuration.queueDepth = 8
+        configuration.pixelFormat = kCVPixelFormatType_32BGRA
+        configuration.colorSpaceName = CGColorSpace.sRGB
+        configuration.showsCursor = true
+        configuration.capturesAudio = true
+        configuration.excludesCurrentProcessAudio = true
+        configuration.sampleRate = 48_000
+        configuration.channelCount = 2
+    }
+
+    /// 用给定过滤器+配置创建 MP4 录制输出并开始采集。
+    private func beginStream(filter: SCContentFilter, configuration: SCStreamConfiguration, to outputURL: URL) async throws {
         let outputConfiguration = SCRecordingOutputConfiguration()
         outputConfiguration.outputURL = outputURL
         outputConfiguration.outputFileType = .mp4
         outputConfiguration.videoCodecType = .h264
 
         let recordingOutput = SCRecordingOutput(configuration: outputConfiguration, delegate: self)
-        let stream = SCStream(filter: filter, configuration: streamConfiguration, delegate: self)
+        let stream = SCStream(filter: filter, configuration: configuration, delegate: self)
         do {
             try stream.addRecordingOutput(recordingOutput)
         } catch {
