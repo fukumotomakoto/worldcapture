@@ -50,9 +50,17 @@ async function startCapture() {
 
 async function sendToNative(imageDataUrl) {
   // In Safari this is routed to SafariWebExtensionHandler in the containing app.
-  const resp = await browser.runtime.sendNativeMessage(NATIVE_APP_ID, {
-    type: "import",
-    image: imageDataUrl,
-  });
-  return resp || { ok: true };
+  try {
+    const resp = await browser.runtime.sendNativeMessage(NATIVE_APP_ID, {
+      type: "import",
+      image: imageDataUrl,
+    });
+    if (resp && resp.ok) return resp;
+    throw new Error(resp && resp.error ? resp.error : "native returned not-ok");
+  } catch (e) {
+    // Dev fallback: when loaded as a TEMPORARY extension there's no containing
+    // app to receive the image, so open it in a new tab for inspection/save.
+    await browser.tabs.create({ url: imageDataUrl });
+    return { ok: true, fallback: "opened-in-tab" };
+  }
 }
