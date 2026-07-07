@@ -1,8 +1,14 @@
 // WorldCapture Web — full-page capture (injected on demand).
-// Scrolls the page a viewport at a time, asks the background to grab each
-// viewport via captureVisibleTab, neutralizes fixed/sticky elements after the
-// first frame (so headers/footers/sidebars don't repeat — the DOM advantage
-// raster screen-capture can't get), then stitches everything onto a canvas.
+//
+// The DOM-aware, three-phase capture that beats native raster:
+//  1) Pre-scroll to the bottom to trigger lazy-loading / infinite feeds, and
+//     re-measure the REAL page height (it grows as content loads).
+//  2) Pick a pixel ratio that keeps the stitched canvas within Safari's
+//     ~16384px per-dimension limit (else toDataURL returns blank on long pages);
+//     short pages stay at full devicePixelRatio for sharpness.
+//  3) Scroll top→bottom, captureVisibleTab each viewport, stitch onto the canvas.
+//     Only SHORT fixed bars (nav/footer/floating buttons) are hidden after the
+//     first frame — tall fixed/sticky sidebars are kept so their content isn't lost.
 
 (async () => {
   const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -22,64 +28,97 @@
     });
 
   const doc = document.documentElement;
-  const dpr = window.devicePixelRatio || 1;
   const viewportH = window.innerHeight;
   const fullWidth = doc.clientWidth;
-  const fullHeight = Math.max(
-    document.body ? document.body.scrollHeight : 0,
-    doc.scrollHeight,
-    document.body ? document.body.offsetHeight : 0,
-    doc.offsetHeight
-  );
+
+  const docHeight = () =>
+    Math.max(
+      document.body ? document.body.scrollHeight : 0,
+      doc.scrollHeight,
+      document.body ? document.body.offsetHeight : 0,
+      doc.offsetHeight
+    );
 
   const originalScrollY = window.scrollY;
   const originalScrollBehavior = doc.style.scrollBehavior;
   doc.style.scrollBehavior = "auto";
 
-  // Collect fixed/sticky elements to hide after the first frame.
-  const pinned = [];
-  const all = document.querySelectorAll("*");
-  for (const el of all) {
-    const pos = getComputedStyle(el).position;
-    if (pos === "fixed" || pos === "sticky") {
-      pinned.push({ el, visibility: el.style.visibility });
-    }
-  }
-  const hidePinned = () => pinned.forEach((p) => (p.el.style.visibility = "hidden"));
-  const restorePinned = () => pinned.forEach((p) => (p.el.style.visibility = p.visibility));
+  // Cap the number of viewports so a truly-infinite feed still terminates.
+  const MAX_FRAMES = 40;
+  // Safari canvas per-dimension safe cap (limit is ~16384; stay under it).
+  const MAX_DIM = 16000;
 
   try {
-    const shots = [];
-    let y = 0;
-    let first = true;
-    // Guard against runaway loops on very tall/virtualized pages.
-    const maxFrames = 60;
-    while (y < fullHeight && shots.length < maxFrames) {
-      window.scrollTo(0, y);
-      await delay(first ? 200 : 130); // let sticky settle / lazy content paint
-      const dataUrl = await grab();
-      shots.push({ y: Math.min(y, fullHeight - viewportH), dataUrl });
-      if (first) {
-        hidePinned(); // header captured once; keep it out of later frames
-        first = false;
+    // ---- Phase 1: pre-scroll to load lazy content, measure the real height ----
+    let measuredHeight = docHeight();
+    let prev = -1;
+    let stable = 0;
+    for (let i = 0; i < MAX_FRAMES; i++) {
+      window.scrollTo(0, docHeight());
+      await delay(200);
+      const h = docHeight();
+      if (h === prev) {
+        if (++stable >= 2) break; // height settled → everything loaded
+      } else {
+        stable = 0;
       }
-      y += viewportH;
-      // Respect captureVisibleTab rate limits.
-      await delay(150);
+      prev = h;
     }
+    measuredHeight = docHeight();
+
+    // ---- Phase 2: choose a pixel ratio that keeps the canvas valid ----
+    let dpr = window.devicePixelRatio || 1;
+    dpr = Math.min(dpr, MAX_DIM / measuredHeight, MAX_DIM / Math.max(1, fullWidth));
+    dpr = Math.max(dpr, 0.5);
+    let fullHeight = measuredHeight;
+    if (fullHeight * dpr > MAX_DIM) fullHeight = Math.floor(MAX_DIM / dpr); // hard truncate on extreme pages
 
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(fullWidth * dpr);
     canvas.height = Math.round(fullHeight * dpr);
     const ctx = canvas.getContext("2d");
-    for (const shot of shots) {
-      const img = await loadImage(shot.dataUrl);
-      ctx.drawImage(img, 0, Math.round(shot.y * dpr));
+
+    // Elements to hide after the first frame: only SHORT position:fixed bars,
+    // so tall fixed/sticky sidebars keep their (unique) content.
+    const pinned = [];
+    for (const el of document.querySelectorAll("*")) {
+      if (getComputedStyle(el).position !== "fixed") continue;
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 0 && rect.height < viewportH * 0.6) {
+        pinned.push({ el, visibility: el.style.visibility });
+      }
     }
+
+    // ---- Phase 3: capture top→bottom and stitch ----
+    window.scrollTo(0, 0);
+    await delay(200);
+    let y = 0;
+    let first = true;
+    while (y < fullHeight) {
+      const drawY = Math.min(y, fullHeight - viewportH);
+      window.scrollTo(0, drawY);
+      await delay(first ? 160 : 120);
+      const dataUrl = await grab();
+      const img = await loadImage(dataUrl);
+      ctx.drawImage(
+        img,
+        0,
+        Math.round(drawY * dpr),
+        Math.round(fullWidth * dpr),
+        Math.round(viewportH * dpr)
+      );
+      if (first) {
+        pinned.forEach((p) => (p.el.style.visibility = "hidden"));
+        first = false;
+      }
+      y += viewportH;
+      await delay(150); // respect captureVisibleTab rate limits
+    }
+
+    pinned.forEach((p) => (p.el.style.visibility = p.visibility));
     const finalDataUrl = canvas.toDataURL("image/png");
     await browser.runtime.sendMessage({ cmd: "final", image: finalDataUrl });
   } finally {
-    restorePinned();
     doc.style.scrollBehavior = originalScrollBehavior;
     window.scrollTo(0, originalScrollY);
   }
