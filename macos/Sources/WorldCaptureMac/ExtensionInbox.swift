@@ -14,11 +14,14 @@ final class ExtensionInbox {
 
     private var started = false
 
-    /// ~/Library/Application Support/WorldCapture/inbox
-    private var inboxURL: URL? {
-        FileManager.default
-            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("WorldCapture/inbox", isDirectory: true)
+    /// 沙盒扩展把整页 PNG 写入自身容器；非沙盒的主应用直接读该容器路径（免 App Group）。
+    /// 扩展侧用 `.applicationSupportDirectory`，沙盒会重定向到 Container/Data/Library/Application Support。
+    private var inboxURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(
+                "Library/Containers/io.worldcapture.app.Extension/Data/Library/Application Support/WorldCapture/inbox",
+                isDirectory: true
+            )
     }
 
     func start() {
@@ -43,11 +46,10 @@ final class ExtensionInbox {
 
     /// 取出收件箱中所有 PNG，逐个回调后删除。
     func drain() {
-        guard let inboxURL,
-              let files = try? FileManager.default.contentsOfDirectory(
-                  at: inboxURL,
-                  includingPropertiesForKeys: nil
-              ) else { return }
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: inboxURL,
+            includingPropertiesForKeys: nil
+        ) else { return }
 
         // 文件名含毫秒时间戳，按名排序即时间序。
         let pngs = files.filter { $0.pathExtension.lowercased() == "png" }

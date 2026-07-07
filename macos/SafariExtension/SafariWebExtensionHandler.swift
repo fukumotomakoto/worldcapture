@@ -8,13 +8,14 @@ import SafariServices
 /// Safari 传入消息的固定键名。
 private let messageKey = "message"
 
-/// 与主应用共享的落图收件箱与跨进程通知名（须与主应用侧一致）。
-/// 说明：扩展与主应用均非沙盒，故直接用用户 Application Support 下的共享路径交接，
-/// 免去 App Group 需在开发者门户注册的签名负担。
+/// 落图收件箱与跨进程通知名。
+/// 本扩展是沙盒进程（Safari Web Extension 强制沙盒），`.applicationSupportDirectory` 会被重定向到
+/// 自身容器 Container/Data/Library/Application Support。非沙盒的主应用直接读该容器路径取图，
+/// 免去 App Group 及其门户注册的签名负担。
 private enum Shared {
     static let notification = "io.worldcapture.extension.import"
 
-    /// ~/Library/Application Support/WorldCapture/inbox
+    /// 沙盒容器内的 .../WorldCapture/inbox
     static var inbox: URL? {
         FileManager.default
             .urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
