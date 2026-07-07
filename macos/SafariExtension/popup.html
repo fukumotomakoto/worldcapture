@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        width: 240px;
+        margin: 0;
+        padding: 16px;
+        font: 13px -apple-system, system-ui, sans-serif;
+      }
+      h1 { font-size: 14px; margin: 0 0 4px; }
+      p { margin: 0 0 12px; opacity: 0.6; font-size: 12px; }
+      button {
+        width: 100%;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        background: #007aff;
+        color: #fff;
+      }
+      button:disabled { opacity: 0.5; }
+      #status { margin-top: 10px; font-size: 12px; opacity: 0.7; min-height: 16px; }
+    </style>
+  </head>
+  <body>
+    <h1>WorldCapture</h1>
+    <p>Capture the full page and open it in WorldCapture.</p>
+    <button id="capture">Capture full page</button>
+    <div id="status"></div>
+    <script src="popup.js"></script>
+  </body>
+</html>

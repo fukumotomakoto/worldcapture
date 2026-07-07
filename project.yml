@@ -51,6 +51,8 @@ targets:
     dependencies:
       - target: CaptureKit
       - package: Sparkle
+      - target: SafariExtension
+        embed: true
     info:
       path: macos/App/Info.plist
       properties:
@@ -80,6 +82,35 @@ targets:
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         ENABLE_HARDENED_RUNTIME: YES
+
+  SafariExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: macos/SafariExtension/SafariWebExtensionHandler.swift
+      - path: macos/SafariExtension/manifest.json
+        buildPhase: resources
+      - path: macos/SafariExtension/background.js
+        buildPhase: resources
+      - path: macos/SafariExtension/content.js
+        buildPhase: resources
+      - path: macos/SafariExtension/popup.html
+        buildPhase: resources
+      - path: macos/SafariExtension/popup.js
+        buildPhase: resources
+      - path: macos/SafariExtension/images
+        type: folder
+        buildPhase: resources
+    entitlements:
+      path: macos/SafariExtension/SafariExtension.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.app.Extension
+        PRODUCT_NAME: WorldCapture Web
+        INFOPLIST_FILE: macos/SafariExtension/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_HARDENED_RUNTIME: YES
+        SWIFT_VERSION: "6.0"
 
   CaptureKitTests:
     type: bundle.unit-test

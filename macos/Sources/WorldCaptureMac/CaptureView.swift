@@ -841,6 +841,18 @@ final class CaptureViewModel: ObservableObject {
         isCropping = false
     }
 
+    /// 载入外部传入的截图（如 Safari 扩展经 App Group 投递的整页截图），进入编辑。
+    func loadExternalImage(_ image: NSImage) {
+        guard !isRecording else { return }
+        sourcePicker = nil
+        isCropping = false
+        self.image = image
+        annotations = []
+        selectedAnnotationIDs = []
+        errorMessage = nil
+        presentCapturePreview()
+    }
+
     /// 进入裁切模式：默认裁切框为整图，取消当前选中。
     func beginCrop() {
         guard image != nil, !isCropping else { return }
@@ -1111,6 +1123,8 @@ struct CaptureView: View {
             model.installGlobalHotKey()
             model.refreshScreenPermission(requestIfNeeded: true)
             model.loadDisplays()
+            ExtensionInbox.shared.onImage = { [weak model] image in model?.loadExternalImage(image) }
+            ExtensionInbox.shared.start()
             await model.loadWindows()
         }
         .onAppear { preview.start() }
