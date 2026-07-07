@@ -8,6 +8,8 @@ struct CaptureSourcePicker: View {
 
     let kind: Kind
     let title: String
+    /// 可选提示横幅（如“固定侧栏页面建议改用滚动长图”），nil 则不显示。
+    var hint: String? = nil
     let onPickWindow: (CGWindowID) -> Void
     let onPickDisplay: (CGDirectDisplayID) -> Void
     let onClose: () -> Void
@@ -52,6 +54,21 @@ struct CaptureSourcePicker: View {
             .padding(20)
 
             Divider()
+
+            if let hint {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "lightbulb")
+                        .foregroundStyle(.yellow)
+                    Text(hint)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(Color(nsColor: .textBackgroundColor).opacity(0.4))
+            }
 
             ScrollView {
                 if isLoading {

@@ -84,6 +84,7 @@
 "picker.record.title" = "选择要录制的屏幕";
 "picker.recordWindow.title" = "选择要录制的窗口";
 "picker.scrollWindow.title" = "选择要滚动长截的窗口";
+"picker.scrollWindow.hint" = "整窗滚动会把固定的左右侧栏重复叠入长图。若页面有固定侧栏，建议改用「滚动长图」框选真正滚动的那一列。";
 "thumbnail.picker" = "缩略图选择";
 "thumbnail.picker.help" = "以缩略图选择窗口或整个屏幕";
 "region.shortcut.help" = "区域截屏快捷键";

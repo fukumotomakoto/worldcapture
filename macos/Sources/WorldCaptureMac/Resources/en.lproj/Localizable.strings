@@ -83,6 +83,7 @@
 "picker.record.title" = "Pick a screen to record";
 "picker.recordWindow.title" = "Pick a window to record";
 "picker.scrollWindow.title" = "Pick a window to scroll-capture";
+"picker.scrollWindow.hint" = "Full-window scrolling repeats fixed left/right sidebars in the stitched image. For pages with fixed sidebars, use “Scrolling Region” instead and drag over just the column that actually scrolls.";
 "window.none" = "No windows available";
 "thumbnail.picker" = "Thumbnails";
 "thumbnail.picker.help" = "Pick a window or whole screen by thumbnail";

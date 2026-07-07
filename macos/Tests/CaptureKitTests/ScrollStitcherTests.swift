@@ -119,6 +119,35 @@ private func makeSourceImage(width: Int, height: Int, inverted: Bool = false) ->
     #expect(bestVerticalShift(a, b) == nil)
 }
 
+/// 左右为**固定纹理**侧栏（仅随行变化、两帧相同），中间列为随 `contentFromRow` 滚动的内容。
+private func sidebarGray(width: Int, height: Int, centerX0: Int, centerX1: Int, contentFromRow: Int) -> GrayImage {
+    var pixels = [UInt8](repeating: 0, count: width * height)
+    for y in 0..<height {
+        for x in 0..<width {
+            let value: Int = (x >= centerX0 && x < centerX1)
+                ? ((contentFromRow + y) * 37) % 256   // 中间滚动内容
+                : (y * 23) % 256                       // 固定纹理侧栏（不含 contentFromRow）
+            pixels[y * width + x] = UInt8(value)
+        }
+    }
+    return GrayImage(width: width, height: height, pixels: pixels)
+}
+
+@Test func sideInsetIgnoresFixedSidebars() throws {
+    let w = 90, h = 130, c0 = 30, c1 = 60
+    let a = sidebarGray(width: w, height: h, centerX0: c0, centerX1: c1, contentFromRow: 0)
+    let b = sidebarGray(width: w, height: h, centerX0: c0, centerX1: c1, contentFromRow: 15)  // 中列下移 15
+
+    // 不排除侧栏：固定纹理侧栏（占 2/3 宽）在 d=0 完美对齐，污染整宽相关性，得不到干净的真实位移。
+    let biased = try #require(bestVerticalShift(a, b, columnStep: 1))
+    #expect(!(biased.shift == 15 && biased.score < 0.001))
+
+    // 排除左右各 30 列（只留中间滚动列）：得到正确位移 15、近零分数。这就是 Yahoo 修复的核心。
+    let correct = try #require(bestVerticalShift(a, b, columnStep: 1, sideInset: 30))
+    #expect(correct.shift == 15)
+    #expect(correct.score < 0.001)
+}
+
 // MARK: - 拼接
 
 @Test func stitchesOverlappingFramesIntoTallImage() throws {
@@ -198,6 +227,52 @@ private func makeSourceImage(width: Int, height: Int, inverted: Bool = false) ->
     #expect(stitcher.append(frame(at: delta)) == .appended(newRows: delta))
     #expect(stitcher.append(frame(at: 2 * delta)) == .appended(newRows: delta))
     #expect(stitcher.frameCount == 3)
+}
+
+/// 逐行**伪随机**灰度（非周期、非线性，避免亮度偏移被某个位移“吸收”成假匹配）。
+private func hashByte(_ n: Int) -> Int {
+    var x = UInt32(truncatingIfNeeded: n &* 2_654_435_761)
+    x ^= x >> 15
+    x = x &* 2_246_822_519
+    x ^= x >> 13
+    return Int(x & 0xFF)
+}
+
+/// 从 `position` 起的逐行伪随机灰度图，整体叠加 `brightness` 亮度偏移（模拟“脏匹配”：内容对齐但有色差）。
+private func hashFrame(width: Int, height: Int, position: Int, brightness: Int) -> CGImage {
+    var bytes = [UInt8](repeating: 0, count: width * height * 4)
+    for y in 0..<height {
+        let base = min(255, max(0, hashByte(position + y) + brightness))
+        for x in 0..<width {
+            let i = (y * width + x) * 4
+            bytes[i] = UInt8(base); bytes[i + 1] = UInt8(base)
+            bytes[i + 2] = UInt8(base); bytes[i + 3] = 255
+        }
+    }
+    let provider = CGDataProvider(data: Data(bytes) as CFData)!
+    return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32,
+                   bytesPerRow: width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                   bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                   provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)!
+}
+
+@Test func endOfPageSmallDirtyShiftStopsWithoutJitter() {
+    let w = 16, h = 120   // height/20 = 6 → 位移 4 属“小位移”
+    let a = hashFrame(width: w, height: h, position: 0, brightness: 0)
+    let dirty = hashFrame(width: w, height: h, position: 4, brightness: 15)  // 小位移 + 色差脏匹配（分数落在 0.045~0.08）
+    var stitcher = ScrollStitcher(options: .init(columnStep: 1))
+    #expect(stitcher.append(a) == .first)
+    #expect(stitcher.append(dirty) == .duplicate)   // 收尾防抖：判为到底，不追加抖动半帧
+    #expect(stitcher.frameCount == 1)
+}
+
+@Test func endOfPageSmallCleanShiftStillAppends() {
+    let w = 16, h = 120
+    let a = hashFrame(width: w, height: h, position: 0, brightness: 0)
+    let clean = hashFrame(width: w, height: h, position: 4, brightness: 0)  // 小位移但干净 → 仍追加
+    var stitcher = ScrollStitcher(options: .init(columnStep: 1))
+    #expect(stitcher.append(a) == .first)
+    #expect(stitcher.append(clean) == .appended(newRows: 4))
 }
 
 @Test func reportsNoOverlapForUnrelatedFrame() {

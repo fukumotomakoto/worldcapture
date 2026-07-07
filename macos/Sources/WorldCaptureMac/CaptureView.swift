@@ -2,6 +2,49 @@ import AppKit
 import CaptureKit
 import SwiftUI
 
+/// 滚动后自适应等待画面稳定：轮询截帧，一旦相邻两帧近乎一致（滚动惯性停止、懒加载渲染完成）
+/// 立即返回该帧，取代固定 500ms 死等。静止页 ~180ms 返回，动画/懒加载页最多等 `maxWait`。
+/// 返回稳定后的最新帧（截图失败则 nil，调用方各自兜底）。
+/// 设为文件级函数（不捕获 `self`）以满足传入 `@Sendable` 闭包时的并发要求。
+private func waitUntilStable(
+    base: UInt64 = 110_000_000,
+    poll: UInt64 = 70_000_000,
+    maxWait: UInt64 = 650_000_000,
+    capture: @Sendable () async throws -> CGImage
+) async -> CGImage? {
+    try? await Task.sleep(nanoseconds: base)
+    var last = try? await capture()
+    var waited = base
+    while waited < maxWait {
+        try? await Task.sleep(nanoseconds: poll)
+        waited += poll
+        guard let next = try? await capture() else { break }
+        if let previous = last, ContentRegionDetector.isStable(previous, next) { return next }
+        last = next
+    }
+    return last
+}
+
+/// 把等宽的多张图自上而下垂直拼成一张（用于全窗口长图组合：固定顶带 + 长 body + 固定底带）。
+/// CoreGraphics 原点在左下，故从画布顶部（高 y）往下依次绘制。
+private func stackVertically(_ images: [CGImage]) -> CGImage? {
+    guard let width = images.first?.width else { return nil }
+    let totalHeight = images.reduce(0) { $0 + $1.height }
+    guard totalHeight > 0,
+          let context = CGContext(
+            data: nil, width: width, height: totalHeight,
+            bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+          ) else { return nil }
+    var y = totalHeight
+    for image in images {
+        y -= image.height
+        context.draw(image, in: CGRect(x: 0, y: y, width: width, height: image.height))
+    }
+    return context.makeImage()
+}
+
 @MainActor
 final class CaptureViewModel: ObservableObject {
     @Published var image: NSImage?
@@ -165,8 +208,8 @@ final class CaptureViewModel: ObservableObject {
         let region = selection.region
         let displayID = selection.displayID
         let scrollPoint = appKitToCG(CGPoint(x: selection.globalRect.midX, y: selection.globalRect.midY))
-        // 每步滚动约视口高度的 60%，留约 40% 重叠供拼接对齐。
-        let scrollPixels = max(40, Int(selection.globalRect.height * 0.6))
+        // 每步滚动约视口高度的 70%，留约 30% 重叠供拼接对齐。
+        let scrollPixels = max(40, Int(selection.globalRect.height * 0.7))
         let engine = ScrollCaptureEngine()
 
         do {
@@ -174,7 +217,8 @@ final class CaptureViewModel: ObservableObject {
                 capture: { try await capturer.captureDisplay(id: displayID, region: region) },
                 scroll: {
                     ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
-                    try? await Task.sleep(nanoseconds: 500_000_000) // 等待界面滚动渲染稳定（含懒加载内容）
+                    // 自适应等待滚动/懒加载稳定，取代固定 500ms 死等（引擎随后会正式采帧）。
+                    _ = await waitUntilStable { try await capturer.captureDisplay(id: displayID, region: region) }
                 }
             )
             restoreWindows()
@@ -229,39 +273,67 @@ final class CaptureViewModel: ObservableObject {
 
         let capturer = self.capturer
         let scrollPoint = CGPoint(x: windowFrame.midX, y: windowFrame.midY)
-        let scrollPixels = max(40, Int(windowFrame.height * 0.5))
 
         do {
-            // 1) 采两帧，检测「真正滚动的内容区域」，排除固定的浏览器边框/侧栏/留白，
-            //    否则整窗逐帧拼接会把这些固定部分重复叠成乱图。
+            // 1) 采两帧探测「滚动行带」：中间随滚动逐行变化的区域。其上是固定顶带（浏览器工具栏/
+            //    吸顶导航），其下是固定底带（固定页脚/广告）。**保留全宽、只按行分离**，这样左/中/右
+            //    多列同时滚动的页面（如 Yahoo）全宽都能拼进来，而固定带不参与拼接、不被重复叠加。
+            //    探测步长需足够大以让内容行明显变化（太小会漏检固定带，导致回退整帧→工具栏被重复）。
+            let probePixels = max(40, Int(windowFrame.height * 0.33))
             let first = try await capturer.captureWindow(id: windowID)
-            ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
-            try? await Task.sleep(nanoseconds: 500_000_000)
-            let second = try await capturer.captureWindow(id: windowID)
-            let region = ContentRegionDetector.changedRect(first, second)
+            ScrollEventSender.scrollDown(at: scrollPoint, pixels: probePixels)
+            let second: CGImage
+            if let settled = await waitUntilStable(capture: { try await capturer.captureWindow(id: windowID) }) {
+                second = settled
+            } else {
+                second = try await capturer.captureWindow(id: windowID)
+            }
+            let band = ContentRegionDetector.scrollingRowBand(first, second)
+            let fullWidth = first.width
+            let fullHeight = first.height
 
-            func crop(_ image: CGImage) -> CGImage {
-                guard let region, let cropped = image.cropping(to: region) else { return image }
+            // 纵向裁到滚动行带、保留全宽；band 为 nil（整窗滚动、无固定带）则用整帧。
+            func cropBody(_ image: CGImage) -> CGImage {
+                guard let band,
+                      let cropped = image.cropping(to: CGRect(x: 0, y: band.0, width: fullWidth, height: band.1 - band.0))
+                else { return image }
                 return cropped
             }
 
-            // 2) 只拼接裁剪后的内容区域。先塞入已采的前两帧，再继续滚动。
-            var stitcher = ScrollStitcher()
-            _ = stitcher.append(crop(first))
+            // 检测「真正在滚动的那一列」的水平范围，把**对齐**限制在它上（保留全宽用于输出）。
+            // 否则 Yahoo 那类宽的固定左右侧栏会把整宽相关性带偏 → 误判未滚动只截一屏。
+            // 坐标要换算到 cropBody 后的图（行带裁剪只动 y、不动 x，故 x 范围不变）。
+            let alignColumns = ContentRegionDetector.scrollingColumnRange(first, second)
+
+            // 步长按滚动行带高度的 72% 推进（保证 ~28% 重叠供对齐；band 为设备像素，除以 backing
+            // scale 换算回 wheel 用的点单位）。比原来的 0.5 整窗更少帧、更快，且带内重叠稳定。
+            let scale = Double(fullWidth) / max(1, Double(windowFrame.width))
+            let bandHeightPts = band.map { Double($0.1 - $0.0) / scale } ?? Double(windowFrame.height)
+            let stepPixels = max(40, Int(bandHeightPts * 0.72))
+
+            // 2) 只拼接滚动行带（全宽）。先塞入已采的前两帧，再继续滚动。
+            var stitcher = ScrollStitcher(options: .init(alignColumns: alignColumns))
+            _ = stitcher.append(cropBody(first))
             var nonProgress = 0
-            switch stitcher.append(crop(second)) {
+            switch stitcher.append(cropBody(second)) {
             case .first, .appended: nonProgress = 0
             case .duplicate, .noOverlap, .invalid: nonProgress = 1
             }
 
             let maxFrames = 60
             var framesUsed = 2
+            var lastFrame = second
             while framesUsed < maxFrames, nonProgress < 2 {
-                ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                let frame = try await capturer.captureWindow(id: windowID)
+                ScrollEventSender.scrollDown(at: scrollPoint, pixels: stepPixels)
+                let frame: CGImage
+                if let settled = await waitUntilStable(capture: { try await capturer.captureWindow(id: windowID) }) {
+                    frame = settled
+                } else {
+                    frame = try await capturer.captureWindow(id: windowID)
+                }
                 framesUsed += 1
-                switch stitcher.append(crop(frame)) {
+                lastFrame = frame
+                switch stitcher.append(cropBody(frame)) {
                 case .first, .appended: nonProgress = 0
                 case .duplicate, .noOverlap, .invalid: nonProgress += 1
                 }
@@ -269,11 +341,30 @@ final class CaptureViewModel: ObservableObject {
 
             restoreWindows()
             isCapturing = false
-            guard let stitched = stitcher.makeImage() else {
+            guard let body = stitcher.makeImage() else {
                 errorMessage = Loc.s("error.scrollEmpty")
                 return
             }
-            image = NSImage(cgImage: stitched, size: .zero)
+
+            // 3) 组合：frame0 的固定顶带（一次）+ 全宽长 body + 固定底带（一次）。
+            //    顶栏/底栏只出现一次，滚动内容拼到全长 —— 逼近 GoFullPage 的整页取景。
+            //    顶带默认固定（浏览器 chrome/吸顶导航天然不动）。底带必须**验证确为固定**
+            //    （frame0 底带 ≈ 末帧同区）才追加：否则像 Amazon 那种无固定页脚的页面，会把
+            //    首屏底部的陈旧内容贴到真页脚之下形成脏边（此前 #7 的问题）。
+            var parts: [CGImage] = []
+            if let band, band.0 > 0, let top = first.cropping(to: CGRect(x: 0, y: 0, width: fullWidth, height: band.0)) {
+                parts.append(top)
+            }
+            parts.append(body)
+            if let band, band.1 < fullHeight,
+               let bottomFirst = first.cropping(to: CGRect(x: 0, y: band.1, width: fullWidth, height: fullHeight - band.1)),
+               let bottomLast = lastFrame.cropping(to: CGRect(x: 0, y: band.1, width: fullWidth, height: fullHeight - band.1)),
+               ContentRegionDetector.isStable(bottomFirst, bottomLast) {
+                parts.append(bottomFirst)
+            }
+            let composed = parts.count == 1 ? body : (stackVertically(parts) ?? body)
+
+            image = NSImage(cgImage: composed, size: .zero)
             annotations = []
             selectedAnnotationIDs = []
             presentCapturePreview()
@@ -1406,6 +1497,7 @@ struct CaptureView: View {
                 CaptureSourcePicker(
                     kind: (mode == .window || mode == .recordWindow || mode == .scrollWindow) ? .window : .screen,
                     title: sourcePickerTitle(mode),
+                    hint: mode == .scrollWindow ? Loc.s("picker.scrollWindow.hint") : nil,
                     onPickWindow: { id in
                         model.sourcePicker = nil
                         Task {

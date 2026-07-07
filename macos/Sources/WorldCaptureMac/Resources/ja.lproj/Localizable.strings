@@ -83,6 +83,7 @@
 "picker.record.title" = "録画する画面を選択";
 "picker.recordWindow.title" = "録画するウインドウを選択";
 "picker.scrollWindow.title" = "長尺キャプチャするウインドウを選択";
+"picker.scrollWindow.hint" = "ウインドウ全体のスクロールでは、固定された左右のサイドバーが長尺画像に繰り返し写り込みます。固定サイドバーのあるページでは「スクロール長尺」で実際にスクロールする列だけを範囲選択することをおすすめします。";
 "window.none" = "利用可能なウィンドウなし";
 "thumbnail.picker" = "サムネイル選択";
 "thumbnail.picker.help" = "サムネイルでウィンドウや画面全体を選択";
