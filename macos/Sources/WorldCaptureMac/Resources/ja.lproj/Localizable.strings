@@ -64,6 +64,7 @@
 "capture.group.shot" = "撮影";
 "capture.group.record" = "録画";
 "capture.region" = "範囲";
+"capture.region.help" = "範囲を選んでスクリーンショット（Esc か右クリックで取消）";
 "capture.main" = "メイン画面";
 "capture.fullscreen" = "画面全体";
 "capture.fullscreen.help" = "画面全体を取得（複数ディスプレイ時は選択可）";
@@ -166,6 +167,10 @@
 "settings.language" = "表示言語";
 "settings.language.system" = "システムに従う";
 "settings.language.restartNote" = "言語の変更はアプリを再起動すると反映されます。";
+"settings.labelStyle" = "ボタン表示";
+"settings.labelStyle.iconAndText" = "アイコン + 文字";
+"settings.labelStyle.iconOnly" = "アイコンのみ";
+"settings.labelStyle.note" = "アイコンのみにすると言語による文字幅でレイアウトが崩れません。ボタンにカーソルを合わせると説明が表示されます。";
 "settings.savePath" = "既定の保存先";
 "settings.savePath.ask" = "毎回確認";
 "settings.shortcuts" = "ショートカット";

@@ -957,6 +957,9 @@ struct CaptureView: View {
     @StateObject private var preview = PreviewGestureController()
     @State private var showRecentSaves = false
     @State private var panActive = false
+    @AppStorage(ToolbarLabelStyle.storageKey) private var toolbarLabelStyle: ToolbarLabelStyle = .iconAndText
+
+    private var toolbarLabel: AdaptiveLabelStyle { AdaptiveLabelStyle(iconOnly: toolbarLabelStyle == .iconOnly) }
 
     static func swatchColor(_ hex: String) -> Color {
         let c = RGBAColor(hex: hex)
@@ -1160,6 +1163,7 @@ struct CaptureView: View {
                 }
                 .keyboardShortcut("c", modifiers: [.command, .shift])
                 .disabled(model.image == nil)
+                .help(Loc.s("action.copy"))
 
                 Button {
                     Task { await model.extractText() }
@@ -1178,7 +1182,7 @@ struct CaptureView: View {
                 }
                 .help(Loc.s("library.open.help"))
             }
-            .labelStyle(.titleAndIcon)
+            .labelStyle(toolbarLabel)
             // 头部动作按钮保持完整标签（尤其日文更长），窄窗时优先压缩左侧副标题而非截断按钮。
             .fixedSize(horizontal: true, vertical: false)
             .layoutPriority(1)
@@ -1269,6 +1273,7 @@ struct CaptureView: View {
                 Label(Loc.s("action.save"), systemImage: "square.and.arrow.down")
             }
             .disabled(model.image == nil)
+            .help(Loc.s("action.save"))
 
             Button {
                 showRecentSaves.toggle()
@@ -1306,6 +1311,7 @@ struct CaptureView: View {
                     Label(Loc.s("capture.region"), systemImage: "selection.pin.in.out")
                 }
                 .disabled(model.isCapturing)
+                .help(Loc.s("capture.region.help"))
 
                 fullScreenControl
 
@@ -1357,7 +1363,7 @@ struct CaptureView: View {
                 Spacer(minLength: 12)
             }
         }
-        .labelStyle(.titleAndIcon)
+        .labelStyle(toolbarLabel)
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
     }
@@ -1467,6 +1473,7 @@ struct CaptureView: View {
             }
             .keyboardShortcut(.delete, modifiers: [])
             .disabled(!model.hasSelection)
+            .help(Loc.s("anno.delete"))
 
             Button {
                 model.undoAnnotation()
@@ -1475,6 +1482,7 @@ struct CaptureView: View {
             }
             .keyboardShortcut("z", modifiers: .command)
             .disabled(model.annotations.isEmpty)
+            .help(Loc.s("anno.undo"))
 
             Button {
                 model.clearAnnotations()
@@ -1482,6 +1490,7 @@ struct CaptureView: View {
                 Label(Loc.s("anno.clear"), systemImage: "xmark")
             }
             .disabled(model.annotations.isEmpty)
+            .help(Loc.s("anno.clear"))
 
             Spacer()
             Text(Loc.s("anno.hint"))
@@ -1490,7 +1499,7 @@ struct CaptureView: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
         }
-        .labelStyle(.titleAndIcon)
+        .labelStyle(toolbarLabel)
         .padding(.horizontal, 24)
         .padding(.top, 6)
         .padding(.bottom, 12)

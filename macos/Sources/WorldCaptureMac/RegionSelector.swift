@@ -62,9 +62,9 @@ final class RegionSelector {
                 panel.orderFrontRegardless()
             }
 
-            // 全局 Esc 监听：任意屏（含非 key 遮罩）按 Esc 都能取消。
-            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                if event.keyCode == 53 {
+            // 全局取消监听：任意屏（含非 key 遮罩）按 Esc 或点鼠标右键都能取消。
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .rightMouseDown]) { [weak self] event in
+                if event.type == .rightMouseDown || (event.type == .keyDown && event.keyCode == 53) {
                     self?.finish(with: nil)
                     return nil
                 }

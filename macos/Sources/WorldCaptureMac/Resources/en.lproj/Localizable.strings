@@ -64,6 +64,7 @@
 "capture.group.shot" = "Shot";
 "capture.group.record" = "Record";
 "capture.region" = "Region";
+"capture.region.help" = "Drag to select a region to capture (Esc or right-click to cancel)";
 "capture.main" = "Main screen";
 "capture.fullscreen" = "Full screen";
 "capture.fullscreen.help" = "Capture the whole screen (pick a display when there are several)";
@@ -166,6 +167,10 @@
 "settings.language" = "Language";
 "settings.language.system" = "System default";
 "settings.language.restartNote" = "Relaunch the app for the language change to take effect.";
+"settings.labelStyle" = "Button style";
+"settings.labelStyle.iconAndText" = "Icon + label";
+"settings.labelStyle.iconOnly" = "Icon only";
+"settings.labelStyle.note" = "Icon-only keeps the layout stable across languages; hover a button to see its label.";
 "settings.savePath" = "Default save location";
 "settings.savePath.ask" = "Ask every time";
 "settings.shortcuts" = "Shortcuts";

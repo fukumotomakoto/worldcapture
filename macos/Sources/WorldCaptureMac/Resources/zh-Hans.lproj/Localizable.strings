@@ -64,6 +64,7 @@
 "capture.group.shot" = "截图";
 "capture.group.record" = "录制";
 "capture.region" = "区域";
+"capture.region.help" = "框选一块区域截图（按 Esc 或点右键取消）";
 "capture.main" = "主屏幕";
 "capture.fullscreen" = "全屏幕";
 "capture.fullscreen.help" = "截取整个屏幕（多屏时可选择哪个屏幕）";
@@ -166,6 +167,10 @@
 "settings.language" = "界面语言";
 "settings.language.system" = "跟随系统";
 "settings.language.restartNote" = "切换语言后需重新启动应用才会生效。";
+"settings.labelStyle" = "按钮样式";
+"settings.labelStyle.iconAndText" = "图标 + 文字";
+"settings.labelStyle.iconOnly" = "纯图标";
+"settings.labelStyle.note" = "纯图标可让界面布局不随语言长短变化，鼠标悬停按钮即显示文字说明。";
 "settings.savePath" = "默认保存位置";
 "settings.savePath.ask" = "每次询问";
 "settings.shortcuts" = "快捷键";
