@@ -104,6 +104,12 @@
 "anno.text" = "テキスト";
 "anno.number" = "番号";
 "anno.mosaic" = "モザイク";
+"anno.freehand" = "フリーハンド";
+"crop.button" = "トリミング";
+"crop.button.help" = "画像を切り抜く：範囲を指定して適用";
+"crop.hint" = "四隅をドラッグして範囲を調整、または空白部分で選び直し";
+"crop.apply" = "適用";
+"crop.cancel" = "キャンセル";
 "anno.color.help" = "注釈の色";
 "anno.width.help" = "線の太さ";
 "width.thin" = "細";

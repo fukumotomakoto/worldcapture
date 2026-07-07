@@ -104,7 +104,13 @@
 "anno.text" = "文字";
 "anno.number" = "序号";
 "anno.mosaic" = "马赛克";
+"anno.freehand" = "自由笔";
 "anno.color.help" = "标注颜色";
+"crop.button" = "裁切";
+"crop.button.help" = "裁剪图片：拖拽裁切框后应用";
+"crop.hint" = "拖拽四角调整裁切范围，或在空白处重新框选";
+"crop.apply" = "应用";
+"crop.cancel" = "取消";
 "anno.width.help" = "线宽";
 "width.thin" = "细";
 "width.mid" = "中";

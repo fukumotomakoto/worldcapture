@@ -58,6 +58,9 @@ final class CaptureViewModel: ObservableObject {
     @Published var annotationText = Loc.s("anno.text.default")
     @Published var annotationColorHex = CaptureAnnotation.defaultColorHex
     @Published var annotationLineWidth: Double = 1
+    /// 裁切模式：进行中标志与裁切框（归一化，左上原点）。
+    @Published var isCropping = false
+    @Published var cropRect = CGRect(x: 0, y: 0, width: 1, height: 1)
 
     static let palette = ["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#007AFF", "#FFFFFF", "#000000"]
     static let lineWidthPresets: [(nameKey: String, value: Double)] = [("width.thin", 0.6), ("width.mid", 1.0), ("width.thick", 1.8)]
@@ -835,6 +838,37 @@ final class CaptureViewModel: ObservableObject {
         recordingDuration = 0
         sourcePicker = nil
         annotationTool = .rectangle
+        isCropping = false
+    }
+
+    /// 进入裁切模式：默认裁切框为整图，取消当前选中。
+    func beginCrop() {
+        guard image != nil, !isCropping else { return }
+        selectedAnnotationIDs = []
+        cropRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+        isCropping = true
+    }
+
+    func cancelCrop() {
+        isCropping = false
+    }
+
+    /// 应用裁切：按裁切框裁剪底图（像素级），并把已有标注重映射到新坐标系（越界者丢弃）。
+    func applyCrop() {
+        defer { isCropping = false }
+        guard let image, let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        let r = cropRect
+        // CGImage.cropping 的坐标系原点在左上，与归一化空间一致。
+        let px = CGRect(
+            x: r.minX * CGFloat(original.width),
+            y: r.minY * CGFloat(original.height),
+            width: r.width * CGFloat(original.width),
+            height: r.height * CGFloat(original.height)
+        ).integral
+        guard px.width >= 1, px.height >= 1, let cropped = original.cropping(to: px) else { return }
+        annotations = annotations.compactMap { $0.remapped(toCropRegion: r) }
+        selectedAnnotationIDs = []
+        self.image = NSImage(cgImage: cropped, size: .zero)
     }
 
     /// 重启本应用：拉起一个新实例后退出当前进程（常用于授予辅助功能权限后让其对本进程生效）。
@@ -1359,13 +1393,14 @@ struct CaptureView: View {
                 Text(Loc.s("anno.rect")).tag(AnnotationKind.rectangle)
                 Text(Loc.s("anno.ellipse")).tag(AnnotationKind.ellipse)
                 Text(Loc.s("anno.arrow")).tag(AnnotationKind.arrow)
+                Text(Loc.s("anno.freehand")).tag(AnnotationKind.freehand)
                 Text(Loc.s("anno.text")).tag(AnnotationKind.text)
                 Text(Loc.s("anno.number")).tag(AnnotationKind.number)
                 Text(Loc.s("anno.mosaic")).tag(AnnotationKind.mosaic)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 384)
+            .frame(width: 448)
 
             Divider().frame(height: 20)
 
@@ -1416,6 +1451,14 @@ struct CaptureView: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 220)
                 .disabled(!isTextFieldEditable)
+
+            Button {
+                model.beginCrop()
+            } label: {
+                Label(Loc.s("crop.button"), systemImage: "crop")
+            }
+            .disabled(model.image == nil || model.isCropping)
+            .help(Loc.s("crop.button.help"))
 
             Button {
                 model.deleteSelectedAnnotation()
@@ -1493,7 +1536,14 @@ struct CaptureView: View {
     private var contentArea: some View {
         ZStack {
             Color(nsColor: .windowBackgroundColor)
-            if let mode = model.sourcePicker {
+            if model.isCropping, let image = model.image {
+                CropOverlay(
+                    image: image,
+                    region: $model.cropRect,
+                    onApply: { model.applyCrop() },
+                    onCancel: { model.cancelCrop() }
+                )
+            } else if let mode = model.sourcePicker {
                 CaptureSourcePicker(
                     kind: (mode == .window || mode == .recordWindow || mode == .scrollWindow) ? .window : .screen,
                     title: sourcePickerTitle(mode),

@@ -52,6 +52,17 @@ public enum AnnotationRenderer {
                 ))
             case .arrow:
                 drawArrow(in: context, start: start, end: end)
+            case .freehand:
+                guard let pts = annotation.points, pts.count >= 2 else {
+                    if let only = annotation.points?.first {
+                        let p = point(only, image: image)
+                        context.fillEllipse(in: CGRect(x: p.x - 1, y: p.y - 1, width: 2, height: 2))
+                    }
+                    break
+                }
+                context.move(to: point(pts[0], image: image))
+                for p in pts.dropFirst() { context.addLine(to: point(p, image: image)) }
+                context.strokePath()
             case .text:
                 drawText(
                     annotation.label?.isEmpty == false ? annotation.label! : "说明",

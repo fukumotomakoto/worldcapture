@@ -87,7 +87,8 @@ struct AnnotationCanvas: View {
         let point = normalized(location, in: imageRect)
         return .create(CaptureAnnotation(
             kind: tool, start: point, end: point,
-            label: labelForCurrentTool, colorHex: colorHex, lineWidth: lineWidth
+            label: labelForCurrentTool, colorHex: colorHex, lineWidth: lineWidth,
+            points: tool == .freehand ? [point] : nil
         ))
     }
 
@@ -95,7 +96,9 @@ struct AnnotationCanvas: View {
         switch session {
         case let .create(draft):
             var updated = draft
-            updated.end = normalized(clamped(location, to: imageRect), in: imageRect)
+            let point = normalized(clamped(location, to: imageRect), in: imageRect)
+            updated.end = point
+            if draft.kind == .freehand { updated.points = (draft.points ?? []) + [point] }
             session = .create(updated)
         case let .move(origins, from):
             let dx = (location.x - from.x) / imageRect.width
@@ -121,6 +124,8 @@ struct AnnotationCanvas: View {
         switch annotation.kind {
         case .text, .number:
             return true
+        case .freehand:
+            return (annotation.points?.count ?? 0) >= 2
         case .rectangle, .ellipse, .arrow, .mosaic:
             let bounds = annotation.normalizedBounds
             return bounds.width >= 0.01 || bounds.height >= 0.01
@@ -159,7 +164,7 @@ struct AnnotationCanvas: View {
             ]
         case .rectangle, .ellipse, .mosaic:
             return corners(of: annotation, imageRect: imageRect).enumerated().map { ($0.offset, $0.element) }
-        case .text, .number:
+        case .text, .number, .freehand:
             return []
         }
     }
@@ -193,7 +198,7 @@ struct AnnotationCanvas: View {
             }
             updated.start = anchor
             updated.end = dragged
-        case .text, .number:
+        case .text, .number, .freehand:
             break
         }
         return updated
@@ -266,8 +271,14 @@ struct AnnotationCanvas: View {
                 height: abs(end.y - start.y)
             )
             context.fill(Path(rect), with: .color(.gray.opacity(0.55)))
+        case .freehand:
+            if let pts = annotation.points, let head = pts.first {
+                path.move(to: screenPoint(head, in: imageRect))
+                for p in pts.dropFirst() { path.addLine(to: screenPoint(p, in: imageRect)) }
+            }
         }
-        if annotation.kind == .rectangle || annotation.kind == .ellipse || annotation.kind == .arrow {
+        if annotation.kind == .rectangle || annotation.kind == .ellipse
+            || annotation.kind == .arrow || annotation.kind == .freehand {
             context.stroke(
                 path,
                 with: .color(color),

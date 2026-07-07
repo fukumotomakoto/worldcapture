@@ -104,6 +104,12 @@
 "anno.text" = "Text";
 "anno.number" = "Number";
 "anno.mosaic" = "Mosaic";
+"anno.freehand" = "Pen";
+"crop.button" = "Crop";
+"crop.button.help" = "Crop the image: drag the box, then apply";
+"crop.hint" = "Drag the corners to adjust, or drag on empty space to reselect";
+"crop.apply" = "Apply";
+"crop.cancel" = "Cancel";
 "anno.color.help" = "Annotation color";
 "anno.width.help" = "Line width";
 "width.thin" = "Thin";

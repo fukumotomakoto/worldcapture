@@ -142,6 +142,83 @@ import Testing
     #expect(plain.resolvedLineWidth == 1)
 }
 
+@Test func freehandBoundsCoverAllPathPoints() {
+    let pen = CaptureAnnotation(
+        kind: .freehand,
+        start: NormalizedPoint(x: 0.2, y: 0.5),
+        end: NormalizedPoint(x: 0.7, y: 0.4),
+        points: [
+            NormalizedPoint(x: 0.2, y: 0.5),
+            NormalizedPoint(x: 0.5, y: 0.3),
+            NormalizedPoint(x: 0.7, y: 0.4),
+        ]
+    )
+    let b = pen.normalizedBounds
+    #expect(abs(b.minX - 0.2) < 0.0001)
+    #expect(abs(b.minY - 0.3) < 0.0001)
+    #expect(abs(b.maxX - 0.7) < 0.0001)
+    #expect(abs(b.maxY - 0.5) < 0.0001)
+}
+
+@Test func freehandHitTestFollowsThePath() {
+    let pen = CaptureAnnotation(
+        kind: .freehand,
+        start: NormalizedPoint(x: 0.1, y: 0.1),
+        end: NormalizedPoint(x: 0.9, y: 0.1),
+        points: [NormalizedPoint(x: 0.1, y: 0.1), NormalizedPoint(x: 0.9, y: 0.1)]
+    )
+    #expect(pen.hitTest(NormalizedPoint(x: 0.5, y: 0.105), tolerance: 0.02))
+    #expect(!pen.hitTest(NormalizedPoint(x: 0.5, y: 0.4), tolerance: 0.02))
+}
+
+@Test func freehandTranslatesEveryPoint() {
+    let pen = CaptureAnnotation(
+        kind: .freehand,
+        start: NormalizedPoint(x: 0.2, y: 0.2),
+        end: NormalizedPoint(x: 0.4, y: 0.4),
+        points: [NormalizedPoint(x: 0.2, y: 0.2), NormalizedPoint(x: 0.4, y: 0.4)]
+    )
+    let moved = pen.translated(by: (dx: 0.1, dy: 0.1))
+    let pts = try! #require(moved.points)
+    #expect(pts.count == 2)
+    #expect(abs(pts[0].x - 0.3) < 0.0001 && abs(pts[0].y - 0.3) < 0.0001)
+    #expect(abs(pts[1].x - 0.5) < 0.0001 && abs(pts[1].y - 0.5) < 0.0001)
+}
+
+@Test func freehandRoundTripsThroughJSON() throws {
+    let pen = CaptureAnnotation(
+        kind: .freehand,
+        start: NormalizedPoint(x: 0.2, y: 0.2),
+        end: NormalizedPoint(x: 0.4, y: 0.4),
+        points: [NormalizedPoint(x: 0.2, y: 0.2), NormalizedPoint(x: 0.4, y: 0.4)]
+    )
+    #expect(try JSONDecoder().decode(CaptureAnnotation.self, from: try JSONEncoder().encode(pen)) == pen)
+}
+
+@Test func remapScalesAnnotationIntoCropRegion() {
+    // 裁切框取右下四分之一 (0.5,0.5)-(1,1)：其中心 (0.75,0.75) 映射到新图中心 (0.5,0.5)。
+    let dot = CaptureAnnotation(
+        kind: .rectangle,
+        start: NormalizedPoint(x: 0.6, y: 0.6),
+        end: NormalizedPoint(x: 0.9, y: 0.9)
+    )
+    let mapped = dot.remapped(toCropRegion: CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5))
+    let m = try! #require(mapped)
+    #expect(abs(m.start.x - 0.2) < 0.0001)
+    #expect(abs(m.start.y - 0.2) < 0.0001)
+    #expect(abs(m.end.x - 0.8) < 0.0001)
+    #expect(abs(m.end.y - 0.8) < 0.0001)
+}
+
+@Test func remapDropsAnnotationFullyOutsideCropRegion() {
+    let far = CaptureAnnotation(
+        kind: .rectangle,
+        start: NormalizedPoint(x: 0.0, y: 0.0),
+        end: NormalizedPoint(x: 0.2, y: 0.2)
+    )
+    #expect(far.remapped(toCropRegion: CGRect(x: 0.5, y: 0.5, width: 0.5, height: 0.5)) == nil)
+}
+
 @Test func rendererPreservesImageDimensions() throws {
     let context = try #require(CGContext(
         data: nil,
