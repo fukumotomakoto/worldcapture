@@ -103,6 +103,10 @@ targets:
         buildPhase: resources
     entitlements:
       path: macos/SafariExtension/SafariExtension.entitlements
+      properties:
+        # Safari Web Extension 强制沙盒；否则 pkd 拒绝注册、Safari 里看不到。
+        # 写在这里让 `xcodegen generate` 每次都把沙盒键写回，防止被外部清空。
+        com.apple.security.app-sandbox: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.app.Extension
