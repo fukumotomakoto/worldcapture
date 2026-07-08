@@ -643,10 +643,8 @@ final class CaptureViewModel: ObservableObject {
     func beginWindowRecording(windowID: CGWindowID) async {
         guard !isRecording, !isGIFRecording else { return }
         sourcePicker = nil
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.mpeg4Movie]
-        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).mp4"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // 自动存入默认目录 ~/Documents/WorldCapture/Videos。
+        let url = OutputLocation.file(for: .video, name: "WorldCapture-\(Self.timestamp())", ext: "mp4")
 
         do {
             try await screenRecorder.startWindowRecording(
@@ -666,10 +664,8 @@ final class CaptureViewModel: ObservableObject {
     private func beginRecording(displayID: CGDirectDisplayID, region: CaptureRegion?) async {
         guard !isRecording else { return }
         sourcePicker = nil
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.mpeg4Movie]
-        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).mp4"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        // 自动存入默认目录 ~/Documents/WorldCapture/Videos。
+        let url = OutputLocation.file(for: .video, name: "WorldCapture-\(Self.timestamp())", ext: "mp4")
 
         do {
             try await screenRecorder.startRecording(
@@ -747,10 +743,8 @@ final class CaptureViewModel: ObservableObject {
                 return
             }
 
-            let panel = NSSavePanel()
-            panel.allowedContentTypes = [.gif]
-            panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp()).gif"
-            guard panel.runModal() == .OK, let url = panel.url else { return }
+            // 自动存入默认目录 ~/Documents/WorldCapture/Videos（GIF 属录制产物）。
+            let url = OutputLocation.file(for: .video, name: "WorldCapture-\(Self.timestamp())", ext: "gif")
 
             let frames = GIFEncoder.frames(from: captured, fallbackFPS: Self.gifFPS)
             let data = try GIFEncoder.encode(frames: frames)
@@ -814,13 +808,9 @@ final class CaptureViewModel: ObservableObject {
             return
         }
 
-        let panel = NSSavePanel()
-        // 面板底部出现「文件格式」下拉，用户可选 PNG/JPEG/TIFF/PDF；扩展名随之更新。
-        panel.allowedContentTypes = ImageFormat.allCases.map(\.utType)
-        panel.nameFieldStringValue = "WorldCapture-\(Self.timestamp())"
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        let format = ImageFormat(fileExtension: url.pathExtension) ?? .png
+        // 自动存入默认目录 ~/Documents/WorldCapture/Images（不再逐次弹窗手选）。
+        let format: ImageFormat = .png
+        let url = OutputLocation.file(for: .image, name: "WorldCapture-\(Self.timestamp())", ext: format.fileExtension)
         do {
             try ImageEncoder.encode(cgImage, as: format).write(to: url, options: .atomic)
             HistoryStore.shared.record(url, kind: .image)

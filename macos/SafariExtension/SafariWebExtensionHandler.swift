@@ -65,6 +65,7 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
             return false
         }
 
+        os_log("wrote %{public}@ (%d bytes), posting notify", log: log, type: .info, url.lastPathComponent, data.count)
         // 通知常驻的主应用（菜单栏）即时拉取；未运行时主应用启动时也会扫描收件箱。
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
