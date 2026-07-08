@@ -15,6 +15,7 @@
 "action.ocr.help" = "Recognize text in the current screenshot (runs on-device, nothing uploaded)";
 "ocr.title" = "Extracted Text";
 "ocr.empty" = "No text was found in this screenshot";
+"ocr.translate" = "Translate";
 "ocr.copyAll" = "Copy All";
 "ocr.copied" = "Copied";
 "ocr.close" = "Close";

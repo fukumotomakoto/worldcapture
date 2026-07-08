@@ -15,6 +15,7 @@
 "action.ocr.help" = "現在のスクショ内の文字を認識（オンデバイス処理・アップロードなし）";
 "ocr.title" = "抽出したテキスト";
 "ocr.empty" = "このスクショから文字は検出されませんでした";
+"ocr.translate" = "翻訳";
 "ocr.copyAll" = "すべてコピー";
 "ocr.copied" = "コピー済み";
 "ocr.close" = "閉じる";

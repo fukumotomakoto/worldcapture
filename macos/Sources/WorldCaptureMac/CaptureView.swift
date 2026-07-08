@@ -1,6 +1,7 @@
 import AppKit
 import CaptureKit
 import SwiftUI
+import Translation
 
 /// 滚动后自适应等待画面稳定：轮询截帧，一旦相邻两帧近乎一致（滚动惯性停止、懒加载渲染完成）
 /// 立即返回该帧，取代固定 500ms 死等。静止页 ~180ms 返回，动画/懒加载页最多等 `maxWait`。
@@ -1798,6 +1799,7 @@ private struct OCRResultView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var copied = false
+    @State private var showTranslation = false
 
     private var isEmpty: Bool { text.isEmpty }
 
@@ -1835,6 +1837,12 @@ private struct OCRResultView: View {
             Divider()
 
             HStack(spacing: 10) {
+                Button {
+                    showTranslation = true
+                } label: {
+                    Label(Loc.s("ocr.translate"), systemImage: "character.book.closed")
+                }
+                .disabled(isEmpty)
                 Spacer()
                 Button(Loc.s("ocr.close")) { dismiss() }
                     .keyboardShortcut(.cancelAction)
@@ -1853,5 +1861,7 @@ private struct OCRResultView: View {
             .padding(.vertical, 14)
         }
         .frame(width: 460, height: 380)
+        // Apple 本地翻译面板（macOS 15+，纯本地/免费/离线；系统处理语言下载与目标语选择）。
+        .translationPresentation(isPresented: $showTranslation, text: text)
     }
 }
