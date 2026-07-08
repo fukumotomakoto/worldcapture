@@ -98,6 +98,10 @@ targets:
         buildPhase: resources
       - path: macos/SafariExtension/popup.js
         buildPhase: resources
+      - path: macos/SafariExtension/result.html
+        buildPhase: resources
+      - path: macos/SafariExtension/result.js
+        buildPhase: resources
       - path: macos/SafariExtension/images
         type: folder
         buildPhase: resources

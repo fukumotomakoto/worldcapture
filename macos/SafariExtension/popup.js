@@ -8,7 +8,7 @@ button.addEventListener("click", async () => {
   try {
     const r = await browser.runtime.sendMessage({ cmd: "start" });
     if (r && r.ok) {
-      status.textContent = "Sent to WorldCapture.";
+      status.textContent = "Capturing… result opens in a new tab.";
     } else {
       status.textContent = "Failed: " + ((r && r.error) || "unknown");
     }

@@ -14,6 +14,9 @@ let lastCaptureAt = 0;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// The most recent stitched full-page PNG, held for the result page to fetch.
+let pendingResult = null;
+
 async function activeTab() {
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   return tab;
@@ -52,9 +55,27 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  // From content.js: the stitched full-page PNG is ready — hand off to native.
+  // From content.js: the stitched full-page PNG is ready. Show it in the browser
+  // (standalone result page) — the hand-off to the native app is then an opt-in
+  // button there, not a hard dependency.
   if (msg.cmd === "final") {
-    sendToNative(msg.image)
+    pendingResult = msg.image;
+    browser.tabs
+      .create({ url: browser.runtime.getURL("result.html"), active: true })
+      .then(() => sendResponse({ ok: true }))
+      .catch((e) => sendResponse({ ok: false, error: String(e) }));
+    return true;
+  }
+
+  // From result.js: fetch the image to display.
+  if (msg.cmd === "getResult") {
+    sendResponse({ image: pendingResult });
+    return false;
+  }
+
+  // From result.js: user clicked "Open in WorldCapture" — hand off to native.
+  if (msg.cmd === "openInApp") {
+    sendToNative(msg.image || pendingResult)
       .then((r) => sendResponse(r))
       .catch((e) => sendResponse({ ok: false, error: String(e) }));
     return true;
@@ -73,18 +94,15 @@ async function startCapture() {
 }
 
 async function sendToNative(imageDataUrl) {
-  // In Safari this is routed to SafariWebExtensionHandler in the containing app.
-  try {
-    const resp = await browser.runtime.sendNativeMessage(NATIVE_APP_ID, {
-      type: "import",
-      image: imageDataUrl,
-    });
-    if (resp && resp.ok) return resp;
-    throw new Error(resp && resp.error ? resp.error : "native returned not-ok");
-  } catch (e) {
-    // Dev fallback: when loaded as a TEMPORARY extension there's no containing
-    // app to receive the image, so open it in a new tab for inspection/save.
-    await browser.tabs.create({ url: imageDataUrl });
-    return { ok: true, fallback: "opened-in-tab" };
-  }
+  // Routed to SafariWebExtensionHandler in the containing app, which writes the
+  // PNG to its inbox and notifies the main app. Unavailable when loaded as a
+  // temporary extension (no containing app) — we surface that honestly rather
+  // than trying the old data:-URL tab fallback, which Safari blocks.
+  if (!imageDataUrl) throw new Error("no image");
+  const resp = await browser.runtime.sendNativeMessage(NATIVE_APP_ID, {
+    type: "import",
+    image: imageDataUrl,
+  });
+  if (resp && resp.ok) return { ok: true };
+  throw new Error(resp && resp.error ? resp.error : "native returned not-ok");
 }
