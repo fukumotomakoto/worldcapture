@@ -52,11 +52,44 @@
         padding: 6px 10px; font-weight: 500; font-size: 12px;
       }
       .zoom button.on { background: #007aff; color: #fff; font-weight: 600; }
+      select {
+        font: 12px -apple-system, system-ui, sans-serif;
+        padding: 5px 8px;
+        border-radius: 8px;
+        border: 1px solid #d1d1d6;
+        background: rgba(120,120,128,0.12);
+        color: inherit;
+      }
       .stage {
         padding: 24px;
         text-align: center;
         overflow: auto;
         background: #e5e5ea;
+      }
+      .ocr {
+        border-top: 1px solid #d1d1d6;
+        padding: 14px 16px;
+        background: rgba(120,120,128,0.06);
+      }
+      .ocr[hidden] { display: none; }
+      .ocr-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+      .ocr-head .t { font-weight: 600; font-size: 13px; }
+      #ocrText {
+        width: 100%;
+        min-height: 120px;
+        box-sizing: border-box;
+        font: 13px ui-monospace, SFMono-Regular, Menlo, monospace;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #d1d1d6;
+        background: Canvas;
+        color: inherit;
+        resize: vertical;
+      }
+      @media (prefers-color-scheme: dark) {
+        .bar { border-color: #3a3a3c; }
+        select, #ocrText { border-color: #3a3a3c; }
+        .ocr { border-color: #3a3a3c; }
       }
       #shot {
         display: inline-block;
@@ -80,11 +113,28 @@
       </span>
       <span class="spacer"></span>
       <span id="status"></span>
+      <select id="ocrLang" title="识别语言">
+        <option value="chi_sim+eng">简体中文 + En</option>
+        <option value="jpn+eng">日本語 + En</option>
+        <option value="chi_tra+eng">繁體中文 + En</option>
+        <option value="eng">English</option>
+      </select>
+      <button id="ocr" class="secondary" disabled>提取文字</button>
       <button id="copy" class="secondary" disabled>Copy</button>
       <button id="download" disabled>Download PNG</button>
       <button id="open" class="secondary" disabled>Open in WorldCapture</button>
     </div>
     <div class="stage"><img id="shot" alt="Full-page capture" /></div>
+    <div class="ocr" id="ocrPanel" hidden>
+      <div class="ocr-head">
+        <span class="t">提取的文字</span>
+        <span id="ocrStatus" style="opacity:.6;font-size:12px;"></span>
+        <span class="spacer" style="flex:1"></span>
+        <button id="ocrCopy" class="secondary">复制全部</button>
+      </div>
+      <textarea id="ocrText" spellcheck="false" placeholder="识别结果…"></textarea>
+    </div>
+    <script src="vendor/tesseract/tesseract.min.js"></script>
     <script src="result.js"></script>
   </body>
 </html>

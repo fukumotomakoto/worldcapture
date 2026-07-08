@@ -105,6 +105,9 @@ targets:
       - path: macos/SafariExtension/images
         type: folder
         buildPhase: resources
+      - path: macos/SafariExtension/vendor
+        type: folder
+        buildPhase: resources
     entitlements:
       path: macos/SafariExtension/SafariExtension.entitlements
       properties:

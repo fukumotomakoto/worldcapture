@@ -20,6 +20,9 @@
       "32": "images/toolbar-32.png"
     }
   },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; object-src 'self'"
+  },
   "permissions": [
     "activeTab",
     "scripting",

@@ -51,6 +51,7 @@
     const badge = scale ? ` · ${scale}×` : "";
     dims.textContent = `${img.naturalWidth} × ${img.naturalHeight}${badge}`;
     copyBtn.disabled = downloadBtn.disabled = openBtn.disabled = false;
+    if (window.Tesseract) document.getElementById("ocr").disabled = false;
   };
 
   downloadBtn.addEventListener("click", () => {
@@ -70,6 +71,59 @@
       setStatus("Copied");
     } catch (e) {
       setStatus("Copy unavailable");
+    }
+  });
+
+  // In-browser OCR (standalone, no app needed) via bundled Tesseract.js.
+  const ocrBtn = document.getElementById("ocr");
+  const ocrLang = document.getElementById("ocrLang");
+  const ocrPanel = document.getElementById("ocrPanel");
+  const ocrText = document.getElementById("ocrText");
+  const ocrStatus = document.getElementById("ocrStatus");
+  const ocrCopy = document.getElementById("ocrCopy");
+  let ocrBusy = false;
+
+  ocrBtn.addEventListener("click", async () => {
+    if (ocrBusy || !window.Tesseract) return;
+    ocrBusy = true;
+    ocrBtn.disabled = true;
+    ocrPanel.hidden = false;
+    ocrText.value = "";
+    ocrStatus.textContent = "初始化…";
+    const base = browser.runtime.getURL("vendor/tesseract/");
+    let worker;
+    try {
+      worker = await window.Tesseract.createWorker(ocrLang.value, 1, {
+        workerPath: base + "worker.min.js",
+        corePath: base,
+        langPath: base + "lang",
+        gzip: true,
+        logger: (m) => {
+          if (m.status === "recognizing text") {
+            ocrStatus.textContent = `识别中… ${Math.round((m.progress || 0) * 100)}%`;
+          } else if (m.status) {
+            ocrStatus.textContent = m.status;
+          }
+        },
+      });
+      const { data } = await worker.recognize(dataUrl);
+      ocrText.value = (data.text || "").trim();
+      ocrStatus.textContent = ocrText.value ? "完成" : "未识别到文字";
+    } catch (e) {
+      ocrStatus.textContent = "识别失败：" + String(e && e.message ? e.message : e);
+    } finally {
+      if (worker) { try { await worker.terminate(); } catch (_) {} }
+      ocrBusy = false;
+      ocrBtn.disabled = false;
+    }
+  });
+
+  ocrCopy.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(ocrText.value);
+      ocrStatus.textContent = "已复制";
+    } catch (e) {
+      ocrStatus.textContent = "复制失败";
     }
   });
 
