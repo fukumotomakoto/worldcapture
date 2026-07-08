@@ -59,7 +59,7 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // (standalone result page) — the hand-off to the native app is then an opt-in
   // button there, not a hard dependency.
   if (msg.cmd === "final") {
-    pendingResult = msg.image;
+    pendingResult = { image: msg.image, cssWidth: msg.cssWidth, scale: msg.scale };
     browser.tabs
       .create({ url: browser.runtime.getURL("result.html"), active: true })
       .then(() => sendResponse({ ok: true }))
@@ -67,15 +67,15 @@ browser.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     return true;
   }
 
-  // From result.js: fetch the image to display.
+  // From result.js: fetch the image (+ metadata) to display.
   if (msg.cmd === "getResult") {
-    sendResponse({ image: pendingResult });
+    sendResponse(pendingResult || {});
     return false;
   }
 
   // From result.js: user clicked "Open in WorldCapture" — hand off to native.
   if (msg.cmd === "openInApp") {
-    sendToNative(msg.image || pendingResult)
+    sendToNative(msg.image || (pendingResult && pendingResult.image))
       .then((r) => sendResponse(r))
       .catch((e) => sendResponse({ ok: false, error: String(e) }));
     return true;

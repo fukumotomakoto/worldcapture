@@ -3,18 +3,18 @@
 // Single-pass, DOM-aware capture (mirrors GoFullPage's proven path, with its
 // weak spots fixed):
 //  1) ONE scroll traversal top→bottom. The scroll itself triggers lazy-load;
-//     each step settles via rAF + a short delay before grabbing. (No second
-//     "pre-scroll" pass — that was the visible "scrolls twice" behaviour.)
-//  2) Fixed/sticky are HIDDEN (visibility, layout preserved) selectively so
-//     each renders exactly once: headers on the first frame, footers on the
-//     last, everything hidden on the middle frames — never repeated, never
-//     lost. (position:fixed→absolute was tried and rejected upstream; it
-//     mislocates bottom-fixed elements and relative-parent children.)
+//     each step settles via rAF + a short delay before grabbing.
+//  2) Fixed/sticky are neutralized selectively so each renders exactly once:
+//     headers on the first frame, footers on the last, everything hidden on the
+//     middle frames — never repeated, never lost. FIXED elements are hidden with
+//     display:none (out of flow → no reflow, and children can't override the
+//     hide); STICKY with visibility:hidden (in flow → keep its space). Fixed/
+//     sticky are RE-SCANNED every frame so elements that only become fixed after
+//     scrolling (back-to-top bars, floating share rails) are caught too.
 //  3) DPR is MEASURED from the first captured frame (image.width ÷ CSS width),
 //     not trusted from devicePixelRatio, so zoom/emulation stay sharp and 1:1.
 //  4) Height is capped at Safari's per-dimension canvas limit; the tail of an
-//     infinite feed is truncated rather than downscaled into blur. (Tiling the
-//     overflow into multiple images is a follow-up.)
+//     infinite feed is truncated rather than downscaled into blur.
 
 (async () => {
   const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,43 +64,56 @@
   const originalScrollBehavior = doc.style.scrollBehavior;
   doc.style.scrollBehavior = "auto";
 
-  // Settle at the top, then enumerate fixed/sticky ONCE and classify each as a
-  // header (sticks near the top) or footer (sits in the lower viewport).
+  // Remember every element we touch so we can restore it exactly afterward.
+  const touched = new Map();
+  const remember = (el) => {
+    if (touched.has(el)) return;
+    touched.set(el, {
+      display: el.style.display,
+      displayPrio: el.style.getPropertyPriority("display"),
+      vis: el.style.visibility,
+      visPrio: el.style.getPropertyPriority("visibility"),
+    });
+  };
+  const hideEl = (el, isFixed) => {
+    remember(el);
+    if (isFixed) el.style.setProperty("display", "none", "important");
+    else el.style.setProperty("visibility", "hidden", "important");
+  };
+  const showEl = (el) => {
+    const p = touched.get(el);
+    if (!p) return;
+    if (p.display) el.style.setProperty("display", p.display, p.displayPrio);
+    else el.style.removeProperty("display");
+    if (p.vis) el.style.setProperty("visibility", p.vis, p.visPrio);
+    else el.style.removeProperty("visibility");
+  };
+  const restore = () => touched.forEach((_p, el) => showEl(el));
+
+  // Re-scan the whole DOM for fixed/sticky and hide/show per phase. A fixed
+  // element's viewport rect is stable across scroll, so we can classify it as a
+  // header (near top) or footer (lower viewport) on any frame.
+  // phase: "single" (page fits one frame) | "first" | "middle" | "last".
+  const applyPhase = (phase) => {
+    for (const el of document.querySelectorAll("*")) {
+      const pos = getComputedStyle(el).position;
+      const isFixed = pos === "fixed";
+      const isSticky = pos === "sticky";
+      if (!isFixed && !isSticky) continue;
+      const footer = el.getBoundingClientRect().top >= viewportH * 0.6;
+      let hidden;
+      if (phase === "single") hidden = false; // show everything, no repeats possible
+      else if (phase === "first") hidden = footer; // headers appear once, at top
+      else if (phase === "last") hidden = !footer; // footers appear once, at bottom
+      else hidden = true; // middle frames: hide all so nothing repeats
+      if (hidden) hideEl(el, isFixed);
+      else showEl(el);
+    }
+  };
+
   window.scrollTo(0, 0);
   await raf();
   await delay(120);
-
-  const tracked = [];
-  for (const el of document.querySelectorAll("*")) {
-    const pos = getComputedStyle(el).position;
-    if (pos === "fixed" || pos === "sticky") {
-      const rect = el.getBoundingClientRect();
-      tracked.push({
-        el,
-        footer: rect.top >= viewportH * 0.6,
-        prevVis: el.style.visibility,
-        prevPrio: el.style.getPropertyPriority("visibility"),
-      });
-    }
-  }
-
-  const setVis = (rec, hidden) => {
-    if (hidden) rec.el.style.setProperty("visibility", "hidden", "important");
-    else if (rec.prevVis) rec.el.style.setProperty("visibility", rec.prevVis, rec.prevPrio);
-    else rec.el.style.removeProperty("visibility");
-  };
-  // phase: "single" (whole page fits one frame) | "first" | "middle" | "last".
-  const applyVisibility = (phase) => {
-    for (const rec of tracked) {
-      let hidden;
-      if (phase === "single") hidden = false; // show everything, no repeats possible
-      else if (phase === "first") hidden = rec.footer; // headers appear once, at top
-      else if (phase === "last") hidden = !rec.footer; // footers appear once, at bottom
-      else hidden = true; // middle frames: hide all so nothing repeats
-      setVis(rec, hidden);
-    }
-  };
-  const restore = () => tracked.forEach((rec) => setVis(rec, false));
 
   try {
     // Single pass: scroll top→bottom, settling + grabbing each viewport. Height
@@ -114,7 +127,7 @@
       const drawY = atBottom ? Math.max(0, dh - viewportH) : y;
       const phase = first && atBottom ? "single" : first ? "first" : atBottom ? "last" : "middle";
 
-      applyVisibility(phase);
+      applyPhase(phase);
       window.scrollTo(0, drawY);
       await settle();
       frames.push({ drawY, dataUrl: await grab() });
@@ -150,7 +163,12 @@
     window.scrollTo(0, originalScrollY);
 
     const finalDataUrl = canvas.toDataURL("image/png");
-    await browser.runtime.sendMessage({ cmd: "final", image: finalDataUrl });
+    await browser.runtime.sendMessage({
+      cmd: "final",
+      image: finalDataUrl,
+      cssWidth: fullWidth,
+      scale: Math.round((scale || dprEstimate) * 100) / 100,
+    });
   } catch (e) {
     restore();
     doc.style.scrollBehavior = originalScrollBehavior;

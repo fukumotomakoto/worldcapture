@@ -14,9 +14,11 @@
   const setStatus = (t) => (status.textContent = t || "");
 
   let dataUrl = null;
+  let scale = null;
   try {
     const r = await browser.runtime.sendMessage({ cmd: "getResult" });
     dataUrl = r && r.image;
+    scale = r && r.scale;
   } catch (e) {
     setStatus("Load failed");
   }
@@ -26,9 +28,28 @@
     return;
   }
 
+  // Zoom control. On a Retina display the capture is 2× device pixels, so "50%"
+  // shows it at true native density (crispest); "适应宽度" fits the window.
+  const applyZoom = (mode) => {
+    if (mode === "fit") {
+      img.style.width = "";
+      img.style.maxWidth = "100%";
+    } else {
+      img.style.maxWidth = "none";
+      img.style.width = Math.round(img.naturalWidth * parseFloat(mode)) + "px";
+    }
+    document.querySelectorAll("#zoom button").forEach((b) => {
+      b.classList.toggle("on", b.dataset.zoom === mode);
+    });
+  };
+  document.querySelectorAll("#zoom button").forEach((b) => {
+    b.addEventListener("click", () => applyZoom(b.dataset.zoom));
+  });
+
   img.src = dataUrl;
   img.onload = () => {
-    dims.textContent = `${img.naturalWidth} × ${img.naturalHeight}`;
+    const badge = scale ? ` · ${scale}×` : "";
+    dims.textContent = `${img.naturalWidth} × ${img.naturalHeight}${badge}`;
     copyBtn.disabled = downloadBtn.disabled = openBtn.disabled = false;
   };
 

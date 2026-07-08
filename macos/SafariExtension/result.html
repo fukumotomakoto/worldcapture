@@ -46,13 +46,21 @@
       button.secondary { background: rgba(120,120,128,0.16); color: inherit; }
       button:disabled { opacity: 0.4; cursor: default; }
       #status { font-size: 12px; opacity: 0.7; min-width: 60px; }
+      .zoom { display: inline-flex; border-radius: 8px; overflow: hidden; background: rgba(120,120,128,0.16); }
+      .zoom button {
+        background: transparent; color: inherit; border-radius: 0;
+        padding: 6px 10px; font-weight: 500; font-size: 12px;
+      }
+      .zoom button.on { background: #007aff; color: #fff; font-weight: 600; }
       .stage {
         padding: 24px;
-        display: flex;
-        justify-content: center;
+        text-align: center;
+        overflow: auto;
         background: #e5e5ea;
       }
       #shot {
+        display: inline-block;
+        vertical-align: top;
         max-width: 100%;
         height: auto;
         box-shadow: 0 4px 24px rgba(0,0,0,0.18);
@@ -65,6 +73,11 @@
   <body>
     <div class="bar">
       <span class="title">WorldCapture<small id="dims"></small></span>
+      <span class="zoom" id="zoom">
+        <button data-zoom="fit" class="on">适应宽度</button>
+        <button data-zoom="0.5">50%</button>
+        <button data-zoom="1">100%</button>
+      </span>
       <span class="spacer"></span>
       <span id="status"></span>
       <button id="copy" class="secondary" disabled>Copy</button>
