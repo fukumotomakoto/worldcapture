@@ -514,6 +514,18 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
+    /// 菜单栏「截取文字（OCR）」：选区截图后直接识别并写入剪贴板；结果同时显示在编辑器 OCR 面板。
+    /// 借鉴 iScreen Shoter 最受好评的能力（截图→取字一步到位）。
+    func captureRegionAndExtractText() async {
+        let before = image
+        await captureRegion()
+        guard image !== before else { return } // 用户取消了选区
+        await extractText()
+        if let text = ocrResult?.text, !text.isEmpty {
+            copyText(text)
+        }
+    }
+
     /// 把 OCR 识别出的文字写入剪贴板（纯文本）。
     func copyText(_ text: String) {
         let pasteboard = NSPasteboard.general

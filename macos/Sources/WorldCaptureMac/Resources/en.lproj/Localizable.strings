@@ -154,9 +154,20 @@
 "error.windowUnavailable" = "That window is no longer available.";
 
 /* Menu bar */
+"menu.section.capture" = "Capture";
+"menu.section.record" = "Record";
 "menu.region" = "Capture region";
-"menu.main" = "Capture main screen";
+"menu.main" = "Capture full screen";
 "menu.window" = "Capture window";
+"menu.scrolling" = "Scrolling capture";
+"menu.ocr" = "Capture text (OCR)";
+"menu.delay" = "Delayed capture";
+"menu.delay.seconds" = "%d s";
+"record.gif" = "Record GIF";
+"record.gif.stop" = "Stop GIF";
+"menu.recent" = "Recent captures";
+"menu.recent.empty" = "None yet";
+"menu.settings" = "Settings…";
 "menu.showMain" = "Show main window";
 "menu.checkUpdates" = "Check for Updates…";
 "menu.quit" = "Quit WorldCapture";

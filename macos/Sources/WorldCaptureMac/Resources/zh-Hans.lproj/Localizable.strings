@@ -154,9 +154,20 @@
 "error.windowUnavailable" = "该窗口已不可用。";
 
 /* 菜单栏 */
+"menu.section.capture" = "截图";
+"menu.section.record" = "录制";
 "menu.region" = "区域截屏";
-"menu.main" = "截取主屏幕";
+"menu.main" = "全屏截图";
 "menu.window" = "截取窗口";
+"menu.scrolling" = "滚动截屏";
+"menu.ocr" = "截取文字（OCR）";
+"menu.delay" = "延时截屏";
+"menu.delay.seconds" = "%d 秒";
+"record.gif" = "录制 GIF";
+"record.gif.stop" = "停止 GIF";
+"menu.recent" = "最近截图";
+"menu.recent.empty" = "暂无";
+"menu.settings" = "设置…";
 "menu.showMain" = "显示主窗口";
 "menu.checkUpdates" = "检查更新…";
 "menu.quit" = "退出 WorldCapture";

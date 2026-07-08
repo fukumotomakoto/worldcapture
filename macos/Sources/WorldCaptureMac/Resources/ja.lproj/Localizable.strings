@@ -154,9 +154,20 @@
 "error.windowUnavailable" = "そのウインドウは利用できなくなりました。";
 
 /* メニューバー */
+"menu.section.capture" = "撮影";
+"menu.section.record" = "録画";
 "menu.region" = "範囲を撮影";
-"menu.main" = "メイン画面を撮影";
+"menu.main" = "全画面を撮影";
 "menu.window" = "ウィンドウを撮影";
+"menu.scrolling" = "スクロール撮影";
+"menu.ocr" = "テキスト抽出（OCR）";
+"menu.delay" = "遅延撮影";
+"menu.delay.seconds" = "%d 秒";
+"record.gif" = "GIF を録画";
+"record.gif.stop" = "GIF を停止";
+"menu.recent" = "最近の撮影";
+"menu.recent.empty" = "なし";
+"menu.settings" = "設定…";
 "menu.showMain" = "メインウィンドウを表示";
 "menu.checkUpdates" = "アップデートを確認…";
 "menu.quit" = "WorldCapture を終了";
