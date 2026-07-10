@@ -36,7 +36,7 @@ WorldCapture 会申请屏幕录制、（可选）麦克风、（滚动长图所�
 WorldCapture 以 **MIT 许可**开源。以上承诺都可以通过审计源码来核实——这正是我们开源的原因之一。
 
 ### 联系方式
-有隐私相关问题，请通过项目仓库的 Issue 联系，或发送邮件至 <privacy@worldcapture.fukumoto.jp>。
+有隐私相关问题，请通过项目仓库的 Issue 联系，或发送邮件至 <worldcapture@fukumoto.jp>。
 
 ---
 
@@ -72,4 +72,4 @@ WorldCapture requests Screen Recording, (optional) Microphone, and Accessibility
 WorldCapture is open source under the **MIT License**. Every claim above can be verified by auditing the source — which is one reason we open-sourced it.
 
 ### Contact
-For privacy questions, please open an issue in the project repository, or email <privacy@worldcapture.fukumoto.jp>.
+For privacy questions, please open an issue in the project repository, or email <worldcapture@fukumoto.jp>.
