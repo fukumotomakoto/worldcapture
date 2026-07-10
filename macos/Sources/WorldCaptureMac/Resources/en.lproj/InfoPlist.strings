@@ -1,0 +1,7 @@
+/* Usage strings shown in the system permission prompts (TCC). Keys match Info.plist.
+   Screen Recording and Accessibility have no Info.plist key — the system supplies
+   that wording and it cannot be overridden here. */
+
+"NSMicrophoneUsageDescription" = "Records your narration into screen recordings. Audio is captured only while “Include microphone audio” is turned on, and recordings stay on this Mac.";
+
+"NSAudioCaptureUsageDescription" = "Records the audio playing on this Mac into your screen recordings. Recordings stay on this Mac and are never uploaded.";

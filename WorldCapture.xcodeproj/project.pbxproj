@@ -27,6 +27,7 @@
 		6A8E8D653B4F6DDECC9556FC /* ContentRegionDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0656E6778B8F2F163634AE6B /* ContentRegionDetectorTests.swift */; };
 		6B2477A2CD9D8A3AD793F74E /* CaptureWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2034FED0B0E9F451205D38DB /* CaptureWindow.swift */; };
 		6EDB8EE8BA7EB161D15783FD /* ImageEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91BC362292BD660B314858FB /* ImageEncoderTests.swift */; };
+		7010D2D1C7812EB60E3926CC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = DB1A5D495383855E9EB89C2D /* InfoPlist.strings */; };
 		746EA09C4B3224A1A8C149EB /* SafariExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FC4D9FB5A872525E6C56C9B5 /* SafariExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		76691E9AC47E6D03530A47A5 /* CapturePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6A5BD83F712DD43D7989C11 /* CapturePreview.swift */; };
 		79DE76B7B5234692966DBBB2 /* PinnedImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */; };
@@ -142,6 +143,7 @@
 		12E0C3C00F081615D450691B /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		16E36B5FF6396B4198F589BA /* popup.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = popup.html; sourceTree = "<group>"; };
 		195AE13EE4566D20BF379F2A /* ScreenCapturer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenCapturer.swift; sourceTree = "<group>"; };
+		1E64FAB5CE2C08B38095B3A6 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ja; path = ja.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1EEA26E33217A32D94CE1A38 /* CaptureSourcePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureSourcePicker.swift; sourceTree = "<group>"; };
 		2034FED0B0E9F451205D38DB /* CaptureWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureWindow.swift; sourceTree = "<group>"; };
 		2BAED7869FBA71100C71D1D3 /* result.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = result.js; sourceTree = "<group>"; };
@@ -149,6 +151,7 @@
 		3AC277EDDC93F6A133C68F64 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3FDCAF044689493E264DDFAF /* ContentRegionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentRegionDetector.swift; sourceTree = "<group>"; };
 		432BF3EA983C5A62F25725EF /* background.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = background.js; sourceTree = "<group>"; };
+		49C1215126AE43195709101A /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		49E3520644F36DE7341A98B7 /* CaptureRegion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureRegion.swift; sourceTree = "<group>"; };
 		4F99E3AF1E207218454DE2CD /* ImageEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageEncoder.swift; sourceTree = "<group>"; };
 		578364FA3A0B05C9B7A84EC7 /* SafariWebExtensionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafariWebExtensionHandler.swift; sourceTree = "<group>"; };
@@ -159,6 +162,7 @@
 		681BEE8887F18416F0D4FE1E /* TextRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
 		6945C9140E531B29ABAA4AA5 /* CaptureAnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAnnotationTests.swift; sourceTree = "<group>"; };
 		6B1F00B673C0655BB96F749A /* WorldCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		71AA8BD53F29E7EAC3AED0E7 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		71B867592A3751A22E86A6CD /* CaptureError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureError.swift; sourceTree = "<group>"; };
 		7DA42433A6EC09BD1F8F8C78 /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
 		7FF822FA161454E950CB0F64 /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
@@ -340,6 +344,7 @@
 		A6DE70E3C7F148F8D63D20D8 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				DB1A5D495383855E9EB89C2D /* InfoPlist.strings */,
 				A692316E4B0175FBD020A01E /* Localizable.strings */,
 			);
 			path = Resources;
@@ -497,6 +502,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7010D2D1C7812EB60E3926CC /* InfoPlist.strings in Resources */,
 				27970A52D8DB9D2331123786 /* Localizable.strings in Resources */,
 				7C8899173183CBBAFBA331EC /* PrivacyInfo.xcprivacy in Resources */,
 			);
@@ -627,6 +633,16 @@
 				12E0C3C00F081615D450691B /* zh-Hans */,
 			);
 			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		DB1A5D495383855E9EB89C2D /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				71AA8BD53F29E7EAC3AED0E7 /* en */,
+				1E64FAB5CE2C08B38095B3A6 /* ja */,
+				49C1215126AE43195709101A /* zh-Hans */,
+			);
+			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */

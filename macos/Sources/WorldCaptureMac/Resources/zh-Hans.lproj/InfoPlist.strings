@@ -1,0 +1,6 @@
+/* 系统权限弹窗里显示的用途说明（TCC）。key 与 Info.plist 中的键名一致。
+   屏幕录制与辅助功能没有对应的 Info.plist 键，其文案由系统提供，无法在此改写。 */
+
+"NSMicrophoneUsageDescription" = "用于把你的讲解声录进屏幕录像。仅在你开启「录制时包含麦克风声音」后才会录音，录音只保存在这台 Mac 上。";
+
+"NSAudioCaptureUsageDescription" = "用于把这台 Mac 正在播放的声音录进屏幕录像。录音只保存在本机，不会上传。";

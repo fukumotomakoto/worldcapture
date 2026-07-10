@@ -29,11 +29,11 @@
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.productivity</string>
 	<key>NSAudioCaptureUsageDescription</key>
-	<string>WorldCapture 需要访问系统音频，以便将电脑声音录入屏幕录像。</string>
+	<string>用于把这台 Mac 正在播放的声音录进屏幕录像。录音只保存在本机，不会上传。</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>WorldCapture 需要访问麦克风，以便在屏幕录像中加入讲解声音。</string>
+	<string>用于把你的讲解声录进屏幕录像。仅在你开启「录制时包含麦克风声音」后才会录音，录音只保存在这台 Mac 上。</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
 	<key>SUFeedURL</key>

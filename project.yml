@@ -64,8 +64,15 @@ targets:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.productivity
-        NSAudioCaptureUsageDescription: WorldCapture 需要访问系统音频，以便将电脑声音录入屏幕录像。
-        NSMicrophoneUsageDescription: WorldCapture 需要访问麦克风，以便在屏幕录像中加入讲解声音。
+        # TCC 用途文案。这里是开发语言(zh-Hans)的默认值，en/ja 由各 lproj 下的
+        # InfoPlist.strings 覆盖。屏幕录制与辅助功能没有对应的 Info.plist 键，
+        # 弹窗文案由系统提供，改不了；应用内的引导文案见 Localizable.strings 的 perm.* 。
+        #
+        # NSAudioCaptureUsageDescription 是独立于麦克风的 TCC 类别，只作用于 Core Audio
+        # process taps。本项目的系统音频走 ScreenCaptureKit 的 capturesAudio，随屏幕录制
+        # 权限授予，因此这条大概率不会弹窗；保留是为了将来若改用 taps 不至于漏掉。
+        NSAudioCaptureUsageDescription: 用于把这台 Mac 正在播放的声音录进屏幕录像。录音只保存在本机，不会上传。
+        NSMicrophoneUsageDescription: 用于把你的讲解声录进屏幕录像。仅在你开启「录制时包含麦克风声音」后才会录音，录音只保存在这台 Mac 上。
         NSHighResolutionCapable: true
         NSSupportsAutomaticGraphicsSwitching: true
         # Sparkle 自动更新（占位域名，官网定后替换 SUFeedURL）。

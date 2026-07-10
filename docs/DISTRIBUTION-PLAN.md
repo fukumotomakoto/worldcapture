@@ -77,7 +77,12 @@
 ### A. Developer ID 直分发（1.0 首发 · 必做）
 - [ ] ⏸ 应用图标全套（含 1024×1024）、关于页版权信息 — **待品牌设计稿**
 - [x] `PrivacyInfo.xcprivacy`（声明本地处理、无数据收集）— 已完成并验证
-- [ ] TCC 用途文案审校：屏幕录制、麦克风（已有）、辅助功能（滚动截图）——文案要让用户看懂*为什么*
+- [x] TCC 用途文案审校 — 已完成。麦克风/系统音频的用途说明重写为「为什么用 + 只存本机」，并补齐
+      zh-Hans/en/ja 三语 `InfoPlist.strings`（此前只有中文，英日用户会看到中文的权限弹窗）。
+      屏幕录制与辅助功能（滚动截图）**没有** Info.plist 用途键，弹窗文案由系统提供、无法改写；
+      应用内的引导文案在 `Localizable.strings` 的 `perm.*`。`NSAudioCaptureUsageDescription` 是
+      独立于麦克风的 TCC 类别，仅作用于 Core Audio process taps；本项目系统音频走 ScreenCaptureKit
+      的 `capturesAudio`（随屏幕录制权限授予），故该键实际不会弹窗，保留以备将来改用 taps。
 - [x] `release.sh` 扩展：DMG 打包 + DMG 公证装订 + Sparkle 签名 + appcast 生成（已验证）
 - [x] Sparkle 集成 + EdDSA 密钥生成；`Info.plist` 写入 feed URL + 公钥（经 project.yml）
 - [ ] **私钥离线备份**（`generate_keys -x`，存安全处不入库）
