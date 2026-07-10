@@ -37,7 +37,7 @@
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://worldcapture.io/appcast.xml</string>
+	<string>https://worldcapture.fukumoto.jp/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>S9o2kOwFSWxEpNJ9z43Jxa15FwBBjVG6lmKXu2Kw8yY=</string>
 </dict>

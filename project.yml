@@ -75,8 +75,11 @@ targets:
         NSMicrophoneUsageDescription: 用于把你的讲解声录进屏幕录像。仅在你开启「录制时包含麦克风声音」后才会录音，录音只保存在这台 Mac 上。
         NSHighResolutionCapable: true
         NSSupportsAutomaticGraphicsSwitching: true
-        # Sparkle 自动更新（占位域名，官网定后替换 SUFeedURL）。
-        SUFeedURL: https://worldcapture.io/appcast.xml
+        # Sparkle 自动更新的 feed 地址。这个值被编译进每一个已发布的二进制，想换只能靠
+        # 发新版本让用户升上来——而那次升级本身又依赖旧地址还活着。所以它是准不可逆的
+        # 长期承诺：用自有域名的子域名（托管可随时迁移，URL 不动），不要用 *.github.io
+        # 之类绑定账号/仓库名的地址。DMG 的下载地址是另一回事，见 scripts/release.sh。
+        SUFeedURL: https://worldcapture.fukumoto.jp/appcast.xml
         SUPublicEDKey: S9o2kOwFSWxEpNJ9z43Jxa15FwBBjVG6lmKXu2Kw8yY=
     entitlements:
       path: macos/App/WorldCapture.entitlements

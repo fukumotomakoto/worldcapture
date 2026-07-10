@@ -47,11 +47,21 @@ VERSION="${VERSION:-dev}"
 DMG="$BUILD/WorldCapture-$VERSION.dmg"
 
 # Sparkle 自动更新：appcast 输出目录（持久，跨版本累积发布记录）、
-# Sparkle 命令行工具目录（随 SPM artifact 落在 derivedDataPath 内）、
-# 下载托管前缀（appcast 里 enclosure URL 的基址，占位域名，按官网替换；可用环境变量覆盖）。
+# Sparkle 命令行工具目录（随 SPM artifact 落在 derivedDataPath 内）。
 APPCAST_DIR="$BUILD/appcast"
 SPARKLE_BIN="$BUILD/dd/SourcePackages/artifacts/sparkle/Sparkle/bin"
-DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-https://worldcapture.io/}"
+
+# 官网 / feed 的托管地址。appcast.xml 传到这里，必须与 Info.plist 的 SUFeedURL 同址。
+SITE_URL="${SITE_URL:-https://worldcapture.fukumoto.jp/}"
+
+# DMG 的下载前缀。它和 SUFeedURL 性质完全不同：
+#   · SUFeedURL 编译进二进制，几乎不可撤回 → 必须长寿（自有域名）。
+#   · 下载前缀只出现在每次重新生成的 appcast.xml 里，随时可改，且下载包的完整性由
+#     EdDSA 签名保证，不依赖来源可信 → 直接挂 GitHub Releases，省带宽和仓库体积。
+# generate_appcast 只对「新条目」套用这个前缀，已有条目原样保留（见其 --help），
+# 因此前缀里带版本 tag 是安全的：历史版本仍指向各自 tag 下的文件。
+GH_REPO="${GH_REPO:-fukumotomakoto/worldcapture}"
+DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-https://github.com/$GH_REPO/releases/download/v$VERSION/}"
 
 mkdir -p "$BUILD"
 
@@ -116,6 +126,7 @@ if [ -x "$SPARKLE_BIN/generate_appcast" ]; then
   /usr/bin/ditto "$DMG" "$APPCAST_DIR/$(basename "$DMG")"
   "$SPARKLE_BIN/generate_appcast" \
     --download-url-prefix "$DOWNLOAD_URL_PREFIX" \
+    --link "$SITE_URL" \
     "$APPCAST_DIR"
   echo "   appcast: $APPCAST_DIR/appcast.xml（enclosure 前缀 $DOWNLOAD_URL_PREFIX）"
 else
@@ -129,5 +140,9 @@ echo "   已签名+已公证+已装订 DMG: $DMG"
 echo "   （内部 App: $APP）"
 echo "   Sparkle appcast:          $APPCAST_DIR/appcast.xml"
 echo ""
-echo "   分发清单：把 DMG 与 appcast.xml 上传到托管，确保 appcast 里的 enclosure URL"
-echo "   与 Info.plist 的 SUFeedURL（$DOWNLOAD_URL_PREFIX...）一致。"
+echo "   分发清单（两处地址互不相干，别弄混）："
+echo "     1) DMG   → GitHub Release，tag v$VERSION"
+echo "        （appcast 里的 enclosure 已指向 $DOWNLOAD_URL_PREFIX）"
+echo "     2) appcast.xml → $SITE_URL"
+echo "        必须与 Info.plist 的 SUFeedURL 同址，否则老版本收不到更新。"
+echo "     3) $APPCAST_DIR/old_updates/ 不要上传。"

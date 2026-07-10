@@ -756,7 +756,7 @@ scripts/release.sh <profile> [signing-identity]
 
 更新链路两个关键配置写在 **Info.plist**（经 `project.yml` 的 `info.properties` 注入，**不要直接改 `macos/App/Info.plist`——它由 XcodeGen 生成、每次 `xcodegen generate` 会被覆盖**）：
 
-- `SUFeedURL` — appcast 地址。**当前为占位域名 `https://worldcapture.io/appcast.xml`，官网定后必须替换**。
+- `SUFeedURL` — appcast 地址，`https://worldcapture.fukumoto.jp/appcast.xml`。**这个值编译进每一个已发布的二进制，几乎不可撤回**：想换它只能发新版本让用户升上来，而那次升级本身又依赖旧地址还活着。因此它用自有域名的子域名做一层间接（托管随时可迁移，URL 不动），而不是 `*.github.io` 这类绑定账号/仓库名的地址。DMG 的下载地址是另一回事，见下。
 - `SUPublicEDKey` — EdDSA 验签公钥（`S9o2kOwFSWxEpNJ9z43Jxa15FwBBjVG6lmKXu2Kw8yY=`）。
 
 > 版本比较：Sparkle 用 bundle 的 `CFBundleVersion`/`CFBundleShortVersionString`。两者已改为引用 `$(MARKETING_VERSION)`/`$(CURRENT_PROJECT_VERSION)`（同样在 `project.yml`），与 DMG 命名保持单一来源；发版时只改 `project.yml` 里的版本号即可。
@@ -774,8 +774,9 @@ scripts/release.sh <profile> [signing-identity]
 `scripts/release.sh`（第 9 步）在公证装订后用 `generate_appcast` 扫描 `build/appcast/`、以钥匙串私钥 EdDSA 签名、生成/更新 `appcast.xml`：
 
 - `build/appcast/` **持久保留**（跨版本累积发布记录，Sparkle 据此判断可升级项）。
-- enclosure 下载前缀默认 `https://worldcapture.io/`，可用环境变量覆盖：`DOWNLOAD_URL_PREFIX=https://你的域名/ scripts/release.sh <profile>`。
-- **分发时**：把 `WorldCapture-<version>.dmg` 与 `appcast.xml` 一起上传托管，确保 appcast 里 enclosure 的 URL 与 `SUFeedURL` 同域可达。
+- enclosure 下载前缀默认指向 GitHub Releases 的当前 tag：`https://github.com/fukumotomakoto/worldcapture/releases/download/v<version>/`。它与 `SUFeedURL` **性质不同**——只写进每次重新生成的 `appcast.xml`，随时可改，且下载包的完整性由 EdDSA 签名保证、不依赖来源可信，所以直接挂 GitHub Releases，省带宽也省仓库体积。可用环境变量覆盖：`DOWNLOAD_URL_PREFIX=... GH_REPO=... SITE_URL=... scripts/release.sh <profile>`。
+- 前缀里带版本 tag 是安全的：`generate_appcast` 只对**新条目**套用该前缀，已有条目原样保留（见其 `--help`），历史版本仍指向各自 tag 下的文件。
+- **分发时**（两处地址互不相干）：`WorldCapture-<version>.dmg` 传到 GitHub Release 的 `v<version>` tag；`appcast.xml` 传到 `SUFeedURL` 所在地址（`worldcapture.fukumoto.jp`）——**这一处必须同址**，否则老版本收不到更新。`build/appcast/old_updates/` 不要上传。
 
 #### 仍需真机验证
 

@@ -25,7 +25,7 @@
 | 最低系统 | macOS 15.0 | 偏高，影响可触达用户数（见 §9 待决） |
 | 版本号 | 0.1.0 | 距 1.0 还需收尾，见 §8 |
 | **DMG 打包** | ✅ 已脚本化（待真机公证验证）| `release.sh` 已含 `hdiutil` 打包 + 签名 + 公证 + 装订 DMG（功能版）；带背景图布局留待后续 |
-| **自动更新** | ✅ 已集成（待真机联网验证）| Sparkle 2.9.3：`UpdaterController` + 菜单「检查更新…」；`release.sh` 第 9 步生成 EdDSA 签名的 appcast。**SUFeedURL 仍是占位域名，待官网替换** |
+| **自动更新** | ✅ 已集成（待真机联网验证）| Sparkle 2.9.3：`UpdaterController` + 菜单「检查更新…」；`release.sh` 第 9 步生成 EdDSA 签名的 appcast。SUFeedURL 已定为 `worldcapture.fukumoto.jp`，**待 DNS 与 Pages 托管落地** |
 | **官网 / 下载页** | ❌ 缺口 | 免费也要有承载下载、隐私政策、更新日志的站点 |
 | **隐私清单 PrivacyInfo** | ✅ 已完成 | `macos/App/PrivacyInfo.xcprivacy`：零收集、不追踪，仅声明 UserDefaults(CA92.1)；已验证落入 bundle |
 | **应用图标 / 视觉素材** | ⏸ 待定（设计）| 需品牌 1024 图标 + 官网/商店截图；属设计决定，未做 |
@@ -86,7 +86,14 @@
 - [x] `release.sh` 扩展：DMG 打包 + DMG 公证装订 + Sparkle 签名 + appcast 生成（已验证）
 - [x] Sparkle 集成 + EdDSA 密钥生成；`Info.plist` 写入 feed URL + 公钥（经 project.yml）
 - [ ] **私钥离线备份**（`generate_keys -x`，存安全处不入库）
-- [ ] **替换占位 `SUFeedURL`/`DOWNLOAD_URL_PREFIX` 为真实官网域名**
+- [x] **替换占位 `SUFeedURL`/`DOWNLOAD_URL_PREFIX`** — 已完成，且两者按性质分开：
+      `SUFeedURL = https://worldcapture.fukumoto.jp/appcast.xml`（编译进二进制、准不可逆，
+      故用自有子域名做一层间接，托管随时可迁移）；DMG 下载前缀改指 GitHub Releases 的
+      `v<version>` tag（只写进每次重新生成的 appcast，随时可改，完整性由 EdDSA 签名保证，
+      顺带省下带宽与仓库体积）。`generate_appcast` 只对新条目套用前缀，历史条目原样保留，
+      所以前缀里带版本 tag 是安全的。
+- [ ] **DNS + 托管落地**：`worldcapture.fukumoto.jp` CNAME → GitHub Pages，等 HTTPS 证书签发；
+      配置 `privacy@worldcapture.fukumoto.jp` 转发（PRIVACY.md 已引用该地址）
 - [x] 许可与隐私文案：`LICENSE`(MIT)、`PRIVACY.md`、`.github/FUNDING.yml`（赞助）
 - [ ] 官网：下载页 / 更新日志（链接到仓库的 PRIVACY/LICENSE）/ 系统要求
 - [ ] 下载与 appcast 托管（对象存储 + CDN；走 HTTPS）
