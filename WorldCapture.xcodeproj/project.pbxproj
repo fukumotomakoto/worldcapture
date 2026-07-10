@@ -49,6 +49,7 @@
 		AB6FD2FD32BDC32AA1099968 /* CaptureError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B867592A3751A22E86A6CD /* CaptureError.swift */; };
 		B4C93A63EFB246100A5060B3 /* images in Resources */ = {isa = PBXBuildFile; fileRef = 87ADC4E72431897DF0CAC33E /* images */; };
 		B852625B7CA072AF3B0C6331 /* CropOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D24606BCF9F0D5421481ABD /* CropOverlay.swift */; };
+		B905D50BD91158B24169C4ED /* MicrophonePermission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC333EDC565F45BC5375EB5 /* MicrophonePermission.swift */; };
 		BD1AC3879E9881295CCDB323 /* WindowCloseBehavior.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0280B28FCB763317D7EA0717 /* WindowCloseBehavior.swift */; };
 		BDD8F70A0B10561EA3D8A514 /* result.js in Resources */ = {isa = PBXBuildFile; fileRef = 2BAED7869FBA71100C71D1D3 /* result.js */; };
 		BE15E0C542E55282F5B3C9FF /* ScrollInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */; };
@@ -167,6 +168,7 @@
 		89BB00424BA8B71E1698E2EF /* CaptureWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureWindowTests.swift; sourceTree = "<group>"; };
 		89E43C75B3C67178F336FBA8 /* GIFRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFRecorder.swift; sourceTree = "<group>"; };
 		8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinnedImage.swift; sourceTree = "<group>"; };
+		8FC333EDC565F45BC5375EB5 /* MicrophonePermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophonePermission.swift; sourceTree = "<group>"; };
 		91B58CE6C6CABEACE35900FD /* ScrollCaptureEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCaptureEngineTests.swift; sourceTree = "<group>"; };
 		91BC362292BD660B314858FB /* ImageEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageEncoderTests.swift; sourceTree = "<group>"; };
 		98623A284F79C546DE4AEACC /* ExtensionInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionInbox.swift; sourceTree = "<group>"; };
@@ -307,6 +309,7 @@
 				C88BC9075DAB1F24F954E473 /* GIFEncoder.swift */,
 				89E43C75B3C67178F336FBA8 /* GIFRecorder.swift */,
 				4F99E3AF1E207218454DE2CD /* ImageEncoder.swift */,
+				8FC333EDC565F45BC5375EB5 /* MicrophonePermission.swift */,
 				5DEF979B964628A95C55BCA7 /* PNGEncoder.swift */,
 				EF29CEBE1E07720664D987B3 /* RGBAColor.swift */,
 				077B5295E4C18DE1F49D917D /* ScreenCapturePermission.swift */,
@@ -539,6 +542,7 @@
 				8D39C0AD9F430E213171A463 /* GIFEncoder.swift in Sources */,
 				F347A21AC16D48CBB16BC460 /* GIFRecorder.swift in Sources */,
 				38BE5CA4BDCC15B7924E05DA /* ImageEncoder.swift in Sources */,
+				B905D50BD91158B24169C4ED /* MicrophonePermission.swift in Sources */,
 				18D2AF3BB06602728C2EDDAD /* PNGEncoder.swift in Sources */,
 				7F03CCC55304F04D21521E1A /* RGBAColor.swift in Sources */,
 				C7D90B519339396704FC8C36 /* ScreenCapturePermission.swift in Sources */,

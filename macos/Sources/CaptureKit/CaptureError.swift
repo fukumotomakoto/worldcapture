@@ -4,6 +4,7 @@ public enum CaptureError: LocalizedError, Equatable {
     case noDisplayAvailable
     case windowUnavailable
     case permissionDenied
+    case microphonePermissionDenied
     case imageEncodingFailed
     case recordingAlreadyActive
     case recordingNotActive
@@ -17,6 +18,8 @@ public enum CaptureError: LocalizedError, Equatable {
             "目标窗口已经关闭或暂时无法捕获。"
         case .permissionDenied:
             "缺少屏幕录制权限。请在系统设置的隐私与安全性中允许 WorldCapture。"
+        case .microphonePermissionDenied:
+            "缺少麦克风权限。请在系统设置的隐私与安全性中允许 WorldCapture 使用麦克风，或在设置中关闭「录制时包含麦克风声音」。"
         case .imageEncodingFailed:
             "无法将捕获内容编码为 PNG。"
         case .recordingAlreadyActive:

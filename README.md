@@ -40,7 +40,7 @@ xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
 1. macOS 全屏捕获、区域选择、预览与 PNG 保存。✅
 2. 窗口识别、剪贴板和全局快捷键。✅
 3. 非破坏标注模型与编辑器：矩形、箭头、文字、序号和马赛克。✅
-4. ScreenCaptureKit 主屏幕录制、系统音频和 MP4 导出已实现；麦克风待完成。
+4. ScreenCaptureKit 主屏幕录制、系统音频、麦克风讲解声与 MP4 导出。✅
 5. Windows Graphics Capture / WASAPI 后端。
 
 ## 隐私

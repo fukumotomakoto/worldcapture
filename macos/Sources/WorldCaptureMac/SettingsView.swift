@@ -1,3 +1,5 @@
+import AppKit
+import CaptureKit
 import SwiftUI
 
 /// 工具栏按钮的标签样式：图标+文字，或纯图标（悬停显示文字提示）。
@@ -46,6 +48,7 @@ struct SettingsView: View {
     @ObservedObject var updater: UpdaterController
     @State private var language = AppLanguage.current
     @State private var includeMicrophone = RecordingPreferences.includeMicrophone
+    @State private var microphoneDenied = false
     @AppStorage(ToolbarLabelStyle.storageKey) private var toolbarLabelStyle: ToolbarLabelStyle = .iconAndText
 
     var body: some View {
@@ -84,13 +87,24 @@ struct SettingsView: View {
             }
 
             Section(Loc.s("settings.section.recording")) {
-                Toggle(Loc.s("settings.mic"), isOn: $includeMicrophone)
-                    .onChange(of: includeMicrophone) { _, newValue in
-                        RecordingPreferences.includeMicrophone = newValue
+                Toggle(Loc.s("settings.mic"), isOn: Binding(
+                    get: { includeMicrophone },
+                    set: { setMicrophone($0) }
+                ))
+                if microphoneDenied {
+                    HStack(spacing: 6) {
+                        Text(Loc.s("settings.mic.denied"))
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                        Button(Loc.s("settings.mic.openSettings")) { openMicrophoneSettings() }
+                            .buttonStyle(.link)
+                            .font(.caption)
                     }
-                Text(Loc.s("settings.mic.note"))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                } else {
+                    Text(Loc.s("settings.mic.note"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Section(Loc.s("settings.section.updates")) {
@@ -104,5 +118,38 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 340)
+        .onAppear { reconcileMicrophoneState() }
+    }
+
+    /// 开关打开时先申请麦克风权限，授权成功才真正开启；被拒则保持关闭并引导去系统设置。
+    /// 这样开关状态始终等于「真能录到声音」，而不是等录完才发现是段静音视频。
+    private func setMicrophone(_ enabled: Bool) {
+        guard enabled else {
+            includeMicrophone = false
+            RecordingPreferences.includeMicrophone = false
+            microphoneDenied = false
+            return
+        }
+        Task { @MainActor in
+            let granted = await MicrophonePermission.request()
+            includeMicrophone = granted
+            RecordingPreferences.includeMicrophone = granted
+            microphoneDenied = !granted
+        }
+    }
+
+    /// 偏好记着「开」，但用户后来在系统设置里收回了麦克风权限——把开关拨回去，别撒谎。
+    /// 只处理已明确拒绝的情况；尚未决定的留到打开开关或开录时再弹窗，不在进设置页时打扰。
+    private func reconcileMicrophoneState() {
+        guard includeMicrophone, MicrophonePermission.isDenied else { return }
+        includeMicrophone = false
+        RecordingPreferences.includeMicrophone = false
+        microphoneDenied = true
+    }
+
+    private func openMicrophoneSettings() {
+        guard let url = URL(string:
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") else { return }
+        NSWorkspace.shared.open(url)
     }
 }

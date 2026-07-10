@@ -190,6 +190,8 @@
 "settings.section.recording" = "Recording";
 "settings.mic" = "Include microphone audio";
 "settings.mic.note" = "When on, screen recordings include your microphone (grant Microphone permission on first use).";
+"settings.mic.denied" = "Microphone access denied — narration can't be recorded.";
+"settings.mic.openSettings" = "Open System Settings";
 "settings.section.updates" = "Updates";
 "settings.autoUpdate" = "Automatically check for updates";
 

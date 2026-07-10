@@ -190,6 +190,8 @@
 "settings.section.recording" = "録画";
 "settings.mic" = "マイクの音声を含める";
 "settings.mic.note" = "オンにすると画面録画にマイク音声が入ります（初回はマイク権限の許可が必要）。";
+"settings.mic.denied" = "マイクへのアクセスが拒否されています。音声を録音できません。";
+"settings.mic.openSettings" = "システム設定を開く";
 "settings.section.updates" = "アップデート";
 "settings.autoUpdate" = "アップデートを自動的に確認";
 

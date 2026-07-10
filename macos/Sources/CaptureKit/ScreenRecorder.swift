@@ -52,6 +52,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         to outputURL: URL
     ) async throws {
         guard !isRecording else { throw CaptureError.recordingAlreadyActive }
+        try await Self.ensureMicrophoneAccess(includeMicrophone)
 
         let content: SCShareableContent
         do {
@@ -104,6 +105,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         to outputURL: URL
     ) async throws {
         guard !isRecording else { throw CaptureError.recordingAlreadyActive }
+        try await Self.ensureMicrophoneAccess(includeMicrophone)
 
         let content: SCShareableContent
         do {
@@ -124,7 +126,19 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         try await beginSession(filter: filter, configuration: streamConfiguration, to: outputURL)
     }
 
+    /// 开录前确认麦克风权限：尚未决定时弹窗申请，被拒则明确报错。
+    /// 宁可让用户看见错误，也不要在无授权时静默录出一段没有讲解声的视频。
+    private static func ensureMicrophoneAccess(_ includeMicrophone: Bool) async throws {
+        guard includeMicrophone else { return }
+        guard await MicrophonePermission.request() else {
+            throw CaptureError.microphonePermissionDenied
+        }
+    }
+
     /// 录制流的公共配置（音频、像素格式、帧率、光标）。width/height/sourceRect 由调用方设定。
+    ///
+    /// SCRecordingOutput 把系统音频与麦克风混入同一条音轨：实测开启麦克风后输出仍只有
+    /// 一条 audio track。因此 mergeSegments 取第一条音轨即可，不会漏掉讲解声。
     private static func applyCommonConfiguration(to configuration: SCStreamConfiguration, includeMicrophone: Bool) {
         configuration.captureResolution = .best
         configuration.captureMicrophone = includeMicrophone
@@ -287,8 +301,17 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
                 try videoTrack?.insertTimeRange(range, of: videoSource, at: cursor)
             }
             if let audioSource = try await asset.loadTracks(withMediaType: .audio).first {
-                try? audioTrack?.insertTimeRange(range, of: audioSource, at: cursor)
+                // 按音轨自身的时间范围插入：它常比容器时长略短，硬套容器时长会越界失败。
+                // 失败必须抛出——从前这里吞掉错误，用户会拿到一段莫名其妙没有声音的录像。
+                let audioRange = try await audioSource.load(.timeRange)
+                do {
+                    try audioTrack?.insertTimeRange(audioRange, of: audioSource, at: cursor)
+                } catch {
+                    throw CaptureError.recordingFailed(
+                        "合并分段音频失败（\(url.lastPathComponent)）：\(errorDetails(error))")
+                }
             }
+            // 光标按容器时长推进：音轨若短一点，末尾留静音，画面与声音仍对齐。
             cursor = CMTimeAdd(cursor, duration)
         }
 

@@ -190,6 +190,8 @@
 "settings.section.recording" = "录制";
 "settings.mic" = "录制时包含麦克风声音";
 "settings.mic.note" = "开启后屏幕录像会录入麦克风讲解声（首次需授予麦克风权限）。";
+"settings.mic.denied" = "麦克风权限被拒绝，无法录入讲解声。";
+"settings.mic.openSettings" = "打开系统设置";
 "settings.section.updates" = "更新";
 "settings.autoUpdate" = "自动检查更新";
 

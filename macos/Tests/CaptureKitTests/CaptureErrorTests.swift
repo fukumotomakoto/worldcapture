@@ -5,6 +5,7 @@ import Testing
     #expect(CaptureError.noDisplayAvailable.errorDescription?.isEmpty == false)
     #expect(CaptureError.windowUnavailable.errorDescription?.contains("窗口") == true)
     #expect(CaptureError.permissionDenied.errorDescription?.contains("权限") == true)
+    #expect(CaptureError.microphonePermissionDenied.errorDescription?.contains("麦克风") == true)
     #expect(CaptureError.imageEncodingFailed.errorDescription?.contains("PNG") == true)
     #expect(CaptureError.recordingAlreadyActive.errorDescription?.contains("已经") == true)
     #expect(CaptureError.recordingNotActive.errorDescription?.contains("没有") == true)
