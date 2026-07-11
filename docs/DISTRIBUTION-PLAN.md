@@ -99,8 +99,13 @@
       `worldcapture.fukumoto.jp` CNAME → `fukumotomakoto.github.io`；域名已验证，
       Let's Encrypt 证书已签发，Enforce HTTPS 已开（http 301 → https）。
       注意：推送含 `CNAME` 文件的 gh-pages 后 Pages 会自动启用，无需手动开。
-- [ ] 邮箱转发：在 GMO 配 `worldcapture@fukumoto.jp`（PRIVACY.md 已引用该地址）。
+- [x] 联系邮箱 `worldcapture@fukumoto.jp`（PRIVACY.md 与官网都引用该地址）。
       **不能**用 `@worldcapture.fukumoto.jp`——作为 Pages CNAME 的子域名无法同时挂 MX。
+      ⚠️ **配 DNS 时踩过一次大坑**：お名前.com 的「DNSレコード設定」页底部有个默认勾选的
+      「ネームサーバーを 01〜04.dnsv.jp に変更する」，它在加 CNAME 的同时把整个 zone 从
+      GMO 服务器搬到了一个空 zone，**`fukumoto.jp` 的 MX / SPF / A / smtp / pop / imap / ftp 全部消失，
+      邮件中断约一天**。旧 zone 仍留在原 NS 上，可用 `dig @dns01.gmoserver.jp` 把原值捞回来补进新 zone
+      （不要切回旧 NS：NS 的 TTL 是 86400，要再断一天）。**改完必须 `dig @<权威NS>` 实测，不能信面板。**
 - [x] 许可与隐私文案：`LICENSE`(MIT)、`PRIVACY.md`、`.github/FUNDING.yml`（赞助）
 - [x] **第三方许可合规**：DMG 打包了 Tesseract.js + tessdata（Apache-2.0）与 Sparkle（MIT）。
       Apache-2.0 第 4 条要求随分发附上许可证副本 → `LICENSES/` + `THIRD-PARTY-NOTICES.md`，
@@ -108,8 +113,16 @@
 - [ ] 官网：下载页 / 更新日志（链接到仓库的 PRIVACY/LICENSE）/ 系统要求
 - [x] 下载与 appcast 托管：DMG → GitHub Releases（按 `v<version>` tag），appcast.xml → GitHub Pages。
       两者均走 HTTPS，无需自建对象存储 + CDN。
-- [ ] **首个 Release**：`SUFeedURL` 指向的 `/appcast.xml` 目前 404。已编译的二进制一检查更新就报错，
-      故 DMG 与 appcast.xml 必须同时上线，不可拆开发布。
+- [x] **首个 Release：v0.1.0 已发布**（2026-07-12）。DMG 与 appcast.xml 同时上线——两者不可拆：
+      `SUFeedURL` 编译进二进制，appcast 缺席时「检查更新」直接报错；而 appcast 的 enclosure
+      指向 Release 资产，Release 缺席时下载链接是死的。
+      已实测：feed 200 / enclosure 可下载 / **线上 DMG 与本地已公证包哈希一致** /
+      下回来的包 `spctl` 判为 `Notarized Developer ID` 且装订有效。
+- [x] 应用图标：复用 Safari 扩展的取景角标识，按 macOS 图标网格重绘（本体占画布 824/1024）。
+- [ ] ⚠️ **自动更新的完整链路尚未验证**：目前只证明了 Sparkle 能读到 feed、能下到包、包是真的。
+      「发现新版本 → 下载 → 验签 → 替换重启」这条路**从未跑通过**，因为线上只有 0.1.0 一个版本。
+      **发 0.1.1 时必须做这个测试**：装着 0.1.0，让它自己发现并升上去。这是唯一的验证时机，
+      一旦坏了，存量 0.1.0 用户是救不回来的。
 - [ ] 安装与升级回归测试（全新装、覆盖升级、TCC 权限保持）
 
 ### B. Mac App Store（后续 · 精简版）
