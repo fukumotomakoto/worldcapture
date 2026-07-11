@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>WorldCapture</title>
+        <item>
+            <title>0.1.0</title>
+            <pubDate>Sun, 12 Jul 2026 00:05:54 +0900</pubDate>
+            <link>https://worldcapture.fukumoto.jp/</link>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.0/WorldCapture-0.1.0.dmg" length="13986489" type="application/octet-stream" sparkle:edSignature="Zx3aQC8uQAns8m6sDwnRY/PB7pGTWKDpcihMboaSOpMYGWKbXwgWbrhOP9P/FIB6tDfGDK8VD4+30GAodIN5Ag=="/>
+        </item>
+    </channel>
+</rss>
