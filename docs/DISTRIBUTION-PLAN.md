@@ -85,7 +85,10 @@
       的 `capturesAudio`（随屏幕录制权限授予），故该键实际不会弹窗，保留以备将来改用 taps。
 - [x] `release.sh` 扩展：DMG 打包 + DMG 公证装订 + Sparkle 签名 + appcast 生成（已验证）
 - [x] Sparkle 集成 + EdDSA 密钥生成；`Info.plist` 写入 feed URL + 公钥（经 project.yml）
-- [ ] **私钥离线备份**（`generate_keys -x`，存安全处不入库）
+- [x] **私钥离线备份**（`generate_keys -x`）——已存于仓库外的安全目录（600 权限、被 gitignore 挡住）。
+      ⚠️ 导出时**切勿写到 `~/Desktop` 或 `~/Documents`**：本机开着 iCloud「桌面与文稿」同步，
+      密钥会直接上云，且 `-x` 导出的默认权限是 644。
+      ⚠️ 首发 Release 之后此密钥**无法再轮换**：存量二进制内嵌旧 `SUPublicEDKey`，新签名一律被拒。
 - [x] **替换占位 `SUFeedURL`/`DOWNLOAD_URL_PREFIX`** — 已完成，且两者按性质分开：
       `SUFeedURL = https://worldcapture.fukumoto.jp/appcast.xml`（编译进二进制、准不可逆，
       故用自有子域名做一层间接，托管随时可迁移）；DMG 下载前缀改指 GitHub Releases 的
