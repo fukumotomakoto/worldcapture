@@ -100,7 +100,7 @@ hdiutil create \
   "$DMG"
 rm -rf "$STAGING"
 
-echo "▸ 5/9 给 DMG 签名（$SIGN_ID）"
+echo "▸ 5/9 给 DMG 签名（${SIGN_ID}）"
 codesign --force --sign "$SIGN_ID" --timestamp "$DMG"
 
 echo "▸ 6/9 提交公证并等待（首次可能数分钟）"
@@ -128,7 +128,7 @@ if [ -x "$SPARKLE_BIN/generate_appcast" ]; then
     --download-url-prefix "$DOWNLOAD_URL_PREFIX" \
     --link "$SITE_URL" \
     "$APPCAST_DIR"
-  echo "   appcast: $APPCAST_DIR/appcast.xml（enclosure 前缀 $DOWNLOAD_URL_PREFIX）"
+  echo "   appcast: $APPCAST_DIR/appcast.xml（enclosure 前缀 ${DOWNLOAD_URL_PREFIX}）"
 else
   echo "   ⚠️ 未找到 $SPARKLE_BIN/generate_appcast，跳过 appcast 生成。"
   echo "      （需先 archive 解析 Sparkle SPM artifact；私钥须用 generate_keys 生成。）"
@@ -137,12 +137,12 @@ fi
 echo ""
 echo "✅ 完成"
 echo "   已签名+已公证+已装订 DMG: $DMG"
-echo "   （内部 App: $APP）"
+echo "   （内部 App: ${APP}）"
 echo "   Sparkle appcast:          $APPCAST_DIR/appcast.xml"
 echo ""
 echo "   分发清单（两处地址互不相干，别弄混）："
 echo "     1) DMG   → GitHub Release，tag v$VERSION"
-echo "        （appcast 里的 enclosure 已指向 $DOWNLOAD_URL_PREFIX）"
+echo "        （appcast 里的 enclosure 已指向 ${DOWNLOAD_URL_PREFIX}）"
 echo "     2) appcast.xml → $SITE_URL"
 echo "        必须与 Info.plist 的 SUFeedURL 同址，否则老版本收不到更新。"
 echo "     3) $APPCAST_DIR/old_updates/ 不要上传。"
