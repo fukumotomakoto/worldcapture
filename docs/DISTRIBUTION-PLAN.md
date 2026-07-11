@@ -92,11 +92,18 @@
       `v<version>` tag（只写进每次重新生成的 appcast，随时可改，完整性由 EdDSA 签名保证，
       顺带省下带宽与仓库体积）。`generate_appcast` 只对新条目套用前缀，历史条目原样保留，
       所以前缀里带版本 tag 是安全的。
-- [ ] **DNS + 托管落地**：`worldcapture.fukumoto.jp` CNAME → GitHub Pages，等 HTTPS 证书签发；
-      配置 `privacy@worldcapture.fukumoto.jp` 转发（PRIVACY.md 已引用该地址）
+- [x] **DNS + 托管落地**（已实测）：仓库转 public；`gh-pages` 分支 → GitHub Pages；
+      `worldcapture.fukumoto.jp` CNAME → `fukumotomakoto.github.io`；域名已验证，
+      Let's Encrypt 证书已签发，Enforce HTTPS 已开（http 301 → https）。
+      注意：推送含 `CNAME` 文件的 gh-pages 后 Pages 会自动启用，无需手动开。
+- [ ] 邮箱转发：在 GMO 配 `worldcapture@fukumoto.jp`（PRIVACY.md 已引用该地址）。
+      **不能**用 `@worldcapture.fukumoto.jp`——作为 Pages CNAME 的子域名无法同时挂 MX。
 - [x] 许可与隐私文案：`LICENSE`(MIT)、`PRIVACY.md`、`.github/FUNDING.yml`（赞助）
 - [ ] 官网：下载页 / 更新日志（链接到仓库的 PRIVACY/LICENSE）/ 系统要求
-- [ ] 下载与 appcast 托管（对象存储 + CDN；走 HTTPS）
+- [x] 下载与 appcast 托管：DMG → GitHub Releases（按 `v<version>` tag），appcast.xml → GitHub Pages。
+      两者均走 HTTPS，无需自建对象存储 + CDN。
+- [ ] **首个 Release**：`SUFeedURL` 指向的 `/appcast.xml` 目前 404。已编译的二进制一检查更新就报错，
+      故 DMG 与 appcast.xml 必须同时上线，不可拆开发布。
 - [ ] 安装与升级回归测试（全新装、覆盖升级、TCC 权限保持）
 
 ### B. Mac App Store（后续 · 精简版）
