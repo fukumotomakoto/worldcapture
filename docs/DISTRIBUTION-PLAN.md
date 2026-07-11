@@ -102,6 +102,9 @@
 - [ ] 邮箱转发：在 GMO 配 `worldcapture@fukumoto.jp`（PRIVACY.md 已引用该地址）。
       **不能**用 `@worldcapture.fukumoto.jp`——作为 Pages CNAME 的子域名无法同时挂 MX。
 - [x] 许可与隐私文案：`LICENSE`(MIT)、`PRIVACY.md`、`.github/FUNDING.yml`（赞助）
+- [x] **第三方许可合规**：DMG 打包了 Tesseract.js + tessdata（Apache-2.0）与 Sparkle（MIT）。
+      Apache-2.0 第 4 条要求随分发附上许可证副本 → `LICENSES/` + `THIRD-PARTY-NOTICES.md`，
+      且副本随代码打进 appex（`vendor/tesseract/LICENSE`）。上游均无 `NOTICE` 文件，故无需转载。
 - [ ] 官网：下载页 / 更新日志（链接到仓库的 PRIVACY/LICENSE）/ 系统要求
 - [x] 下载与 appcast 托管：DMG → GitHub Releases（按 `v<version>` tag），appcast.xml → GitHub Pages。
       两者均走 HTTPS，无需自建对象存储 + CDN。

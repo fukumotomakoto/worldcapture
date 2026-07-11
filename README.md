@@ -51,6 +51,9 @@ xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
 
 [MIT](LICENSE) 开源。源码公开，欢迎审计——这正是隐私工具开源的意义。
 
+发行版另打包了 Tesseract.js（浏览器端 OCR，Apache-2.0）与 Sparkle（自动更新，MIT）等第三方组件，
+其许可证与声明见 [第三方组件声明](THIRD-PARTY-NOTICES.md)。
+
 ## 赞助
 
 WorldCapture 是非商业的免费工具，靠赞助维持开发。若它对你有用，欢迎通过仓库的 **Sponsor** 按钮支持（GitHub Sponsors 开通后生效）。
