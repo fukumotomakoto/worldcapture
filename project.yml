@@ -46,6 +46,7 @@ targets:
     platform: macOS
     sources:
       - path: macos/Sources/WorldCaptureMac
+      - path: macos/App/Assets.xcassets
       - path: macos/App/PrivacyInfo.xcprivacy
         buildPhase: resources
     dependencies:
@@ -92,6 +93,8 @@ targets:
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
         ENABLE_HARDENED_RUNTIME: YES
+        # 图标沿用 Safari 扩展的取景角标识，按 macOS 图标网格重绘（本体占画布 824/1024）。
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   SafariExtension:
     type: app-extension

@@ -38,6 +38,7 @@
 		7F03CCC55304F04D21521E1A /* RGBAColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF29CEBE1E07720664D987B3 /* RGBAColor.swift */; };
 		7FCAA1AD26A1A1023790629A /* CaptureSourcePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EEA26E33217A32D94CE1A38 /* CaptureSourcePicker.swift */; };
 		81EF139153C95E5B38E4446F /* ScrollCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D300F98C4285B98344FE3979 /* ScrollCaptureEngine.swift */; };
+		83C16FA09E5C0EF1B1E4F8B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D137BB91289DE8944C6AAAA5 /* Assets.xcassets */; };
 		862C3AC53FA9B49C2EEDADDB /* ScrollCaptureEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B58CE6C6CABEACE35900FD /* ScrollCaptureEngineTests.swift */; };
 		895383AEE5B787D29F064AC7 /* CaptureWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89BB00424BA8B71E1698E2EF /* CaptureWindowTests.swift */; };
 		8D39C0AD9F430E213171A463 /* GIFEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88BC9075DAB1F24F954E473 /* GIFEncoder.swift */; };
@@ -191,6 +192,7 @@
 		C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollInput.swift; sourceTree = "<group>"; };
 		C88BC9075DAB1F24F954E473 /* GIFEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoder.swift; sourceTree = "<group>"; };
 		C9F39A5734A0080383990F5A /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
+		D137BB91289DE8944C6AAAA5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D300F98C4285B98344FE3979 /* ScrollCaptureEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCaptureEngine.swift; sourceTree = "<group>"; };
 		D837492665A35A97DA71BA99 /* vendor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = vendor; path = macos/SafariExtension/vendor; sourceTree = SOURCE_ROOT; };
 		D8A12BA446196978A62259FB /* AnnotationRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationRenderer.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 		34BD1E5749C4DC7A7D207AE4 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				D137BB91289DE8944C6AAAA5 /* Assets.xcassets */,
 				581077C8E6E779F5764EE47A /* PrivacyInfo.xcprivacy */,
 			);
 			name = App;
@@ -502,6 +505,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83C16FA09E5C0EF1B1E4F8B7 /* Assets.xcassets in Resources */,
 				7010D2D1C7812EB60E3926CC /* InfoPlist.strings in Resources */,
 				27970A52D8DB9D2331123786 /* Localizable.strings in Resources */,
 				7C8899173183CBBAFBA331EC /* PrivacyInfo.xcprivacy in Resources */,
