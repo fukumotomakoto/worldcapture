@@ -202,3 +202,17 @@
 "pin.remove" = "取消钉屏";
 "pin.clickThrough" = "点击穿透（鼠标点击落到下方窗口，可在菜单栏取消）";
 "pin.clickThrough.disableAll" = "取消钉屏点击穿透";
+
+/* 助手侧栏（内嵌 Claude / ChatGPT 网页，用户自己的账号） */
+"assistant.title" = "助手";
+"assistant.toggle.help" = "在右侧打开 Claude 或 ChatGPT 网页版（用你自己的账号，App 不上传任何数据）";
+"assistant.send" = "发给助手";
+"assistant.send.help" = "把当前截图复制到剪贴板并打开助手（Claude 会预填翻译提示），在输入框按 ⌘V 粘贴后发送";
+"assistant.hint.paste" = "截图已复制到剪贴板，点一下下面的输入框，按 ⌘V 粘贴后再发送。";
+"assistant.prompt" = "请把这张截图里的文字翻译成中文，尽量保留原有排版。";
+"assistant.back" = "后退";
+"assistant.home" = "回到对话首页";
+"assistant.reload" = "重新载入";
+"assistant.openBrowser" = "在浏览器中打开";
+"assistant.close" = "关闭助手侧栏";
+"assistant.hint.paste.noPrefill" = "截图已复制到剪贴板，点一下下面的输入框，按 ⌘V 粘贴，再输入你的要求（例如：翻译成中文）。";

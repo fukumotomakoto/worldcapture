@@ -500,6 +500,21 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
+    /// 把当前截图（含标注）交给助手侧栏：PNG 进剪贴板 + 预填翻译提示，由用户自己 ⌘V 粘贴发送。
+    func sendToAssistant() {
+        guard let cgImage = renderedImage() else { return }
+        do {
+            let data = try PNGEncoder.encode(cgImage)
+            AssistantController.shared.send(
+                pngData: data,
+                prompt: Loc.s("assistant.prompt"),
+                in: NSApp.keyWindow ?? NSApp.mainWindow
+            )
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     /// 对当前截图做本地 OCR（Vision，纯设备端）。识别在后台执行，完成后弹出结果面板；
     /// 用已渲染图（含标注）作为输入，使马赛克遮盖的文字不会被提取。
     func extractText() async {
@@ -970,6 +985,7 @@ struct CaptureView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var preview = PreviewGestureController()
+    @ObservedObject private var assistant = AssistantController.shared
     @State private var showRecentSaves = false
     @State private var panActive = false
     @AppStorage(ToolbarLabelStyle.storageKey) private var toolbarLabelStyle: ToolbarLabelStyle = .iconAndText
@@ -982,6 +998,18 @@ struct CaptureView: View {
     }
 
     var body: some View {
+        HStack(spacing: 0) {
+            mainColumn
+            if assistant.isVisible {
+                Divider()
+                AssistantPanel(controller: assistant) {
+                    assistant.hide(in: NSApp.keyWindow ?? NSApp.mainWindow)
+                }
+            }
+        }
+    }
+
+    private var mainColumn: some View {
         VStack(spacing: 0) {
             headerBar
             Divider()
@@ -1198,6 +1226,21 @@ struct CaptureView: View {
                     Label(Loc.s("library.open"), systemImage: "clock.arrow.circlepath")
                 }
                 .help(Loc.s("library.open.help"))
+
+                Button {
+                    model.sendToAssistant()
+                } label: {
+                    Label(Loc.s("assistant.send"), systemImage: "paperplane")
+                }
+                .disabled(model.image == nil)
+                .help(Loc.s("assistant.send.help"))
+
+                Button {
+                    assistant.toggle(in: NSApp.keyWindow ?? NSApp.mainWindow)
+                } label: {
+                    Label(Loc.s("assistant.title"), systemImage: "bubble.left.and.text.bubble.right")
+                }
+                .help(Loc.s("assistant.toggle.help"))
             }
             .labelStyle(toolbarLabel)
             // 头部动作按钮保持完整标签（尤其日文更长），窄窗时优先压缩左侧副标题而非截断按钮。

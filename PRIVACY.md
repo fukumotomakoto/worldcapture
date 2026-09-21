@@ -27,7 +27,14 @@ WorldCapture **唯一**会发起的网络请求，是**可选的自动更新检�
 - 这类请求按 HTTP 的固有机制，会让承载更新源的服务器看到标准连接信息（如 IP 地址、App 版本、macOS 版本、CPU 架构）；
 - 你可以在「设置 → 更新」中**关闭自动检查**；关闭后除非你手动点「检查更新」，否则不会有任何联网。
 
-除此之外，WorldCapture 不进行任何其他网络连接。
+除此之外，WorldCapture 自身不进行任何其他网络连接。
+
+### 助手侧栏（可选）：一个内嵌浏览器
+主窗口可以打开一个「助手」侧栏，里面是 **Claude（claude.ai）或 ChatGPT（chatgpt.com）的网页版**，用的是**你自己的账号**：
+- 它就是一个内嵌的浏览器视图。WorldCapture 不接入任何 AI 接口、不保存任何密钥，也**不会替你发送任何内容**；
+- 「发给助手」只把当前截图复制到**剪贴板**并预填一句提示，截图只有在你自己在对话框里粘贴并发送时才会离开这台 Mac；
+- 你在侧栏里输入或粘贴的内容，受所选服务（Anthropic 或 OpenAI）的隐私政策约束，与 WorldCapture 无关；
+- 侧栏的登录态存放在系统的网站数据存储里，和 Safari 的做法一致；不打开侧栏就不会有任何相关联网。
 
 ### 系统权限
 WorldCapture 会申请屏幕录制、（可选）麦克风、（滚动长图所需的）辅助功能权限。这些权限**仅用于在本机完成捕获**，不会因此向任何地方传输数据。
@@ -63,7 +70,14 @@ The **only** network request WorldCapture makes is the **optional automatic upda
 - As with any HTTP request, this lets the server hosting the feed see standard connection metadata (IP address, app version, macOS version, CPU architecture);
 - You can **turn automatic checks off** in Settings → Updates. After that, no network connection is made unless you manually click "Check for Updates."
 
-WorldCapture makes no other network connections.
+Beyond that, WorldCapture itself makes no other network connections.
+
+### Assistant sidebar (optional): an embedded browser
+The main window can open an "Assistant" sidebar that shows **the web version of Claude (claude.ai) or ChatGPT (chatgpt.com)**, signed in with **your own account**:
+- It is simply an embedded browser view. WorldCapture integrates no AI API, stores no keys, and **never sends anything on your behalf**;
+- "Send to Assistant" only copies the current screenshot to the **clipboard** and prefills a prompt; the screenshot leaves this Mac only when you paste it into the chat box and send it yourself;
+- Whatever you type or paste in the sidebar is governed by the chosen service's (Anthropic's or OpenAI's) privacy policy, not by WorldCapture;
+- The sidebar's sign-in state lives in the system website data store, exactly as Safari does; if you never open the sidebar, no related connection is made.
 
 ### System permissions
 WorldCapture requests Screen Recording, (optional) Microphone, and Accessibility (for scrolling capture) permissions. These are used **solely for on-device capture** and transmit nothing.

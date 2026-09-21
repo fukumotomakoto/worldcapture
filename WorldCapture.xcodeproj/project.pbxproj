@@ -21,6 +21,7 @@
 		50694496E43329643F36C39D /* CaptureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF23E9B671521DD1BEC9451 /* CaptureView.swift */; };
 		57E9B8F43455AB5103816886 /* GlobalHotKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = E863C6E6B8504C26DAFB5CB0 /* GlobalHotKey.swift */; };
 		62A910932E27DCAE4C33BAD0 /* ScrollStitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = B45B647F647A23E839B68AEB /* ScrollStitcher.swift */; };
+		62CCDD0C8D368DBBD2FF213B /* AssistantPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA11F5A01F52EDEB8163413 /* AssistantPanel.swift */; };
 		62FFEC4E9B3F9186F59D2225 /* CaptureRegion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49E3520644F36DE7341A98B7 /* CaptureRegion.swift */; };
 		63AE0DEEC9DAEB2B4AA6020E /* popup.js in Resources */ = {isa = PBXBuildFile; fileRef = 8260903B6BEC44E6D17573D9 /* popup.js */; };
 		658B6B56B5EECE2EED2A332B /* CaptureKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 9A422AFB8446162AB7E85862 /* CaptureKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -160,6 +161,7 @@
 		5A577B0A8255CB24BCBE91D6 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		5D24606BCF9F0D5421481ABD /* CropOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CropOverlay.swift; sourceTree = "<group>"; };
 		5DEF979B964628A95C55BCA7 /* PNGEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PNGEncoder.swift; sourceTree = "<group>"; };
+		5EA11F5A01F52EDEB8163413 /* AssistantPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantPanel.swift; sourceTree = "<group>"; };
 		681BEE8887F18416F0D4FE1E /* TextRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextRecognizer.swift; sourceTree = "<group>"; };
 		6945C9140E531B29ABAA4AA5 /* CaptureAnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAnnotationTests.swift; sourceTree = "<group>"; };
 		6B1F00B673C0655BB96F749A /* WorldCapture.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WorldCapture.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -245,6 +247,7 @@
 			isa = PBXGroup;
 			children = (
 				7DA42433A6EC09BD1F8F8C78 /* AnnotationCanvas.swift */,
+				5EA11F5A01F52EDEB8163413 /* AssistantPanel.swift */,
 				F6A5BD83F712DD43D7989C11 /* CapturePreview.swift */,
 				1EEA26E33217A32D94CE1A38 /* CaptureSourcePicker.swift */,
 				AAF23E9B671521DD1BEC9451 /* CaptureView.swift */,
@@ -586,6 +589,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A4A2642BC853C7FA29A87AAB /* AnnotationCanvas.swift in Sources */,
+				62CCDD0C8D368DBBD2FF213B /* AssistantPanel.swift in Sources */,
 				76691E9AC47E6D03530A47A5 /* CapturePreview.swift in Sources */,
 				7FCAA1AD26A1A1023790629A /* CaptureSourcePicker.swift in Sources */,
 				50694496E43329643F36C39D /* CaptureView.swift in Sources */,

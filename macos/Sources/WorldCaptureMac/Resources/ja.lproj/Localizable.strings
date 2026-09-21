@@ -202,3 +202,17 @@
 "pin.remove" = "ピンを解除";
 "pin.clickThrough" = "クリックスルー（下のウインドウにクリックが通る・解除はメニューバーから）";
 "pin.clickThrough.disableAll" = "ピンのクリックスルーを解除";
+
+/* アシスタントサイドバー（Claude / ChatGPT の Web 版を埋め込み、ユーザー自身のアカウント） */
+"assistant.title" = "アシスタント";
+"assistant.toggle.help" = "右側に Claude または ChatGPT の Web 版を開く（自分のアカウント。App は何もアップロードしない）";
+"assistant.send" = "アシスタントへ送る";
+"assistant.send.help" = "現在のスクショをクリップボードにコピーし、翻訳の指示を入力欄に用意する。入力欄で ⌘V を押して貼り付けてから送信";
+"assistant.hint.paste" = "スクショをコピーしました。下の入力欄をクリックし、⌘V で貼り付けてから送信してください。";
+"assistant.prompt" = "このスクリーンショットの文字を日本語に翻訳してください。元のレイアウトをできるだけ保ってください。";
+"assistant.back" = "戻る";
+"assistant.home" = "チャットのホームへ";
+"assistant.reload" = "再読み込み";
+"assistant.openBrowser" = "ブラウザで開く";
+"assistant.close" = "アシスタントを閉じる";
+"assistant.hint.paste.noPrefill" = "スクショをコピーしました。下の入力欄をクリックし、⌘V で貼り付けてから、依頼（例：日本語に翻訳）を入力してください。";
