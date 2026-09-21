@@ -73,9 +73,16 @@ private func line(_ text: String, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat
     // 两行英文的框，译成一行短中文：字号应贴近原行高，而不是撑满两行高。
     let box = CGRect(x: 0, y: 0, width: 600, height: 60)
     let layout = TranslationBlockLayout.layout(text: "设置已保存", in: box, lineHeight: 26, imageSize: CGSize(width: 900, height: 400))
-    #expect(layout.fontSize <= 26 * TranslationBlockLayout.fontScaleOfLineHeight + 0.01)
-    #expect(layout.fontSize > 26 * TranslationBlockLayout.fontScaleOfLineHeight - 1)
+    #expect(layout.fontSize == 26 * TranslationBlockLayout.fontScaleOfLineHeight)
     #expect(layout.rect == box)
+}
+
+@Test func singleLineBlockKeepsTheOriginalFontSizeAndGrowsItsBoxIfNeeded() {
+    // 一行英文的框只有 20px 高（比字号略小）：译文字号仍应等于行高，框按需要略微加高，而不是把字缩到六成。
+    let box = CGRect(x: 0, y: 0, width: 300, height: 20)
+    let layout = TranslationBlockLayout.layout(text: "没有相机。", in: box, lineHeight: 20, imageSize: CGSize(width: 900, height: 400))
+    #expect(layout.fontSize == 20)
+    #expect(layout.rect.height >= 20 && layout.rect.height <= 34)
 }
 
 @Test func layoutGrowsTheBoxDownwardInsteadOfShrinkingBelowTheFloor() {

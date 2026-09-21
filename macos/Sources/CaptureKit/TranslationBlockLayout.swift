@@ -10,14 +10,15 @@ import Foundation
 /// 渲染器和画布共用这里算出的字号，导出图和预览才一致。
 public enum TranslationBlockLayout {
     /// 文字与矩形边缘的留白（像素）。
-    public static let padding: CGFloat = 3
+    public static let padding: CGFloat = 2
     public static let minimumFontSize: CGFloat = 6
     public static let fontName = "PingFangSC-Regular"
 
     // MARK: - 字号
 
-    /// 译文字号相对原文行高的基准比例：OCR 的行框略大于字号，取 0.85 视觉上与原文同大。
-    public static let fontScaleOfLineHeight: CGFloat = 0.85
+    /// 译文字号相对原文行高的比例。Vision 给拉丁文的行框约为字号的 0.93 倍，中日文方块字的可见高度
+    /// 约为字号的 0.9 倍，所以 1.0 时译文看起来与原文同大。
+    public static let fontScaleOfLineHeight: CGFloat = 1.0
     /// 缩到基准的这个比例以下就不再缩字，改为把框向下加高。
     public static let minimumFontScale: CGFloat = 0.6
     /// 框最多加高到原高的这个倍数（再高会盖住下面的内容）。
@@ -28,18 +29,22 @@ public enum TranslationBlockLayout {
         public var fontSize: CGFloat
     }
 
-    /// 统一字号的排版：字号以原文行高为上限，装不下先缩、缩到下限再把框向下加高（不超过图像底边）。
+    /// 统一字号的排版：字号由原文行高决定（不由框高决定），框按译文需要的高度向下加高；
+    /// 只有加高到上限（原高 2.5 倍或图像底边）还装不下，才逐步缩字，缩到下限为止。
     public static func layout(text: String, in rect: CGRect, lineHeight: CGFloat, imageSize: CGSize) -> Layout {
         let base = max(minimumFontSize, lineHeight * fontScaleOfLineHeight)
         let floor = max(minimumFontSize, base * minimumFontScale)
-        let fitted = fittingFontSize(for: text, in: rect, maxFontSize: base)
-        if fitted >= floor { return Layout(rect: rect, fontSize: fitted) }
+        let width = max(1, rect.width - padding * 2)
+        let maxHeight = max(rect.height, min(rect.height * maximumGrowth, imageSize.height - rect.minY))
 
-        // 以下限字号算需要的高度，向下扩框。
-        let needed = layoutHeight(for: text, fontSize: floor, width: max(1, rect.width - padding * 2)) + padding * 2
-        let maxHeight = min(rect.height * maximumGrowth, max(rect.height, imageSize.height - rect.minY))
-        let grown = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: min(needed, maxHeight))
-        return Layout(rect: grown, fontSize: fittingFontSize(for: text, in: grown, maxFontSize: base))
+        var size = base
+        var needed = layoutHeight(for: text, fontSize: size, width: width) + padding * 2
+        while needed > maxHeight, size - 0.5 >= floor {
+            size -= 0.5
+            needed = layoutHeight(for: text, fontSize: size, width: width) + padding * 2
+        }
+        let height = min(maxHeight, max(rect.height, needed))
+        return Layout(rect: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: height), fontSize: size)
     }
 
     /// 能让 `text` 换行后装进 `rect` 的最大字号；上限为矩形高度（单行即整块高）或 `maxFontSize`。

@@ -122,10 +122,17 @@ private struct HistoryCell: View {
         ZStack {
             RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor))
             if let thumbnail {
-                Image(nsImage: thumbnail)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(4)
+                // 长图（滚动截屏）整图缩进 150pt 只剩一条竖线，改为顶部对齐、按宽填满后裁切，让标题区域可辨。
+                let isTall = thumbnail.size.height > thumbnail.size.width * 1.6
+                GeometryReader { proxy in
+                    Image(nsImage: thumbnail)
+                        .resizable()
+                        .interpolation(.high)
+                        .aspectRatio(contentMode: isTall ? .fill : .fit)
+                        .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+                        .clipped()
+                }
+                .padding(4)
             } else if loaded {
                 Image(systemName: entry.exists ? "photo" : "questionmark.square.dashed")
                     .font(.largeTitle)

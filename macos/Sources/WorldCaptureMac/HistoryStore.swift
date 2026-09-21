@@ -112,7 +112,7 @@ final class HistoryStore: ObservableObject {
     private struct ThumbnailBox: @unchecked Sendable { let image: NSImage }
 
     /// 异步生成（并缓存）一条历史的缩略图；文件缺失或解码失败返回 nil。
-    func thumbnail(for entry: HistoryEntry, maxDimension: CGFloat = 320) async -> NSImage? {
+    func thumbnail(for entry: HistoryEntry, maxDimension: CGFloat = 1024) async -> NSImage? {
         let key = entry.path as NSString
         if let cached = thumbnails.object(forKey: key) { return cached }
         guard entry.exists else { return nil }

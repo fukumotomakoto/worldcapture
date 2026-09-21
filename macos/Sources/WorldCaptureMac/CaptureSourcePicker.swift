@@ -109,7 +109,7 @@ struct CaptureSourcePicker: View {
         isLoading = true
         switch kind {
         case .window:
-            windows = (try? await capturer.availableWindows()) ?? []
+            windows = (try? await capturer.availableWindows(excludingWindowIDs: Self.ownHostWindowIDs())) ?? []
         case .screen:
             displays = NSScreen.screens.enumerated().compactMap { index, screen in
                 guard let id = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
@@ -164,5 +164,13 @@ private struct ThumbnailCell: View {
                 image = NSImage(cgImage: cgImage, size: .zero)
             }
         }
+    }
+}
+
+extension CaptureSourcePicker {
+    /// 承载选择器的主窗口不该出现在列表里（截到的会是选择器自己）。
+    static func ownHostWindowIDs() -> Set<CGWindowID> {
+        let candidates = [NSApp.keyWindow, NSApp.mainWindow].compactMap { $0 }
+        return Set(candidates.map { CGWindowID($0.windowNumber) })
     }
 }

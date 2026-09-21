@@ -5,11 +5,16 @@ import ScreenCaptureKit
 public protocol ScreenCapturing: Sendable {
     /// 截取指定显示器；找不到该 ID 时回退到第一块可用显示器。
     func captureDisplay(id displayID: CGDirectDisplayID, region: CaptureRegion?) async throws -> CGImage
-    func availableWindows() async throws -> [CaptureWindow]
+    /// 可截取的窗口列表。`excludingWindowIDs`：调用方自己的、不该出现在列表里的窗口（如承载选择器的主窗口）。
+    func availableWindows(excludingWindowIDs: Set<CGWindowID>) async throws -> [CaptureWindow]
     func captureWindow(id: CGWindowID) async throws -> CGImage
 }
 
 public extension ScreenCapturing {
+    func availableWindows() async throws -> [CaptureWindow] {
+        try await availableWindows(excludingWindowIDs: [])
+    }
+
     func captureMainDisplay(region: CaptureRegion? = nil) async throws -> CGImage {
         try await captureDisplay(id: CGMainDisplayID(), region: region)
     }
@@ -56,17 +61,17 @@ public struct ScreenCapturer: ScreenCapturing {
         )
     }
 
-    public func availableWindows() async throws -> [CaptureWindow] {
+    public func availableWindows(excludingWindowIDs: Set<CGWindowID>) async throws -> [CaptureWindow] {
         let content = try await shareableContent()
-        let currentProcess = pid_t(ProcessInfo.processInfo.processIdentifier)
 
+        // 本进程的窗口（历史库、钉屏）也列出来——用户要截它们；只排除调用方指定的窗口（主窗口正显示着选择器）。
         return content.windows
             .filter { window in
                 window.isOnScreen
                     && window.windowLayer >= 0 && window.windowLayer < 20  // 20 = Dock；浮动/模态面板（3、8、19）要能选到，见 2026-09-21 iTerm2 集成向导案例
                     && window.frame.width >= 100
                     && window.frame.height >= 80
-                    && window.owningApplication?.processID != currentProcess
+                    && !excludingWindowIDs.contains(window.windowID)
             }
             .map { window in
                 CaptureWindow(

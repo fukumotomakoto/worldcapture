@@ -265,7 +265,7 @@ final class CaptureViewModel: ObservableObject {
         // 取窗口 frame（全局 CG 坐标，左上原点）以确定滚动落点与步长。
         let windowFrame: CGRect
         do {
-            let list = try await capturer.availableWindows()
+            let list = try await capturer.availableWindows(excludingWindowIDs: CaptureSourcePicker.ownHostWindowIDs())
             guard let window = list.first(where: { $0.id == windowID }) else {
                 errorMessage = Loc.s("error.windowUnavailable")
                 return
@@ -429,7 +429,7 @@ final class CaptureViewModel: ObservableObject {
 
     func loadWindows() async {
         do {
-            windows = try await capturer.availableWindows()
+            windows = try await capturer.availableWindows(excludingWindowIDs: CaptureSourcePicker.ownHostWindowIDs())
             hasScreenPermission = true
             if !windows.contains(where: { $0.id == selectedWindowID }) {
                 selectedWindowID = windows.first?.id
@@ -1831,6 +1831,11 @@ struct CaptureView: View {
             )
             let fit = min(nativeScale, paneScale)
             let displaySize = CGSize(width: image.size.width * fit, height: image.size.height * fit)
+            // 缩放靠改布局尺寸而不是 scaleEffect：后者是先按适配尺寸栅格化再拉大，长图缩到 0.2 倍
+            // 再放大就糊成一团，译文块尤其明显。按真实尺寸排版，位图与文字都以原生分辨率绘制。
+            // 图层有 16k 像素上限，超大图在高倍缩放时把有效倍数封顶。
+            let maxSide = max(displaySize.width, displaySize.height) * displayScale
+            let zoom = min(preview.zoom, max(1, 12000 / max(1, maxSide)))
             ZStack {
                 Image(nsImage: image)
                     .resizable()
@@ -1848,8 +1853,7 @@ struct CaptureView: View {
                 )
                 .allowsHitTesting(!preview.isSpaceDown)
             }
-            .frame(width: displaySize.width, height: displaySize.height)
-            .scaleEffect(preview.zoom)
+            .frame(width: displaySize.width * zoom, height: displaySize.height * zoom)
             .offset(preview.pan)
             .frame(width: proxy.size.width, height: proxy.size.height)
             .contentShape(Rectangle())
