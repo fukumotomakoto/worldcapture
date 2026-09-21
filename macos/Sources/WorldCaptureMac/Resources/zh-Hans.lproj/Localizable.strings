@@ -225,3 +225,11 @@
 "ocr.translating" = "翻译中…";
 "ocr.translation.failed" = "翻译失败：%@";
 "ocr.copyTranslation" = "复制译文";
+
+/* 图上翻译（译文贴回原位） */
+"imageTranslate.button" = "翻译图片";
+"imageTranslate.help" = "识别截图里的文字并把译文贴回原位（本机翻译，不联网；目标语言在「提取文字」面板里选）";
+"imageTranslate.noText" = "未在这张截图中识别到文字";
+"imageTranslate.show" = "显示译文";
+"imageTranslate.clear" = "清除译文";
+"imageTranslate.clear.help" = "删掉所有译文块，恢复原图";

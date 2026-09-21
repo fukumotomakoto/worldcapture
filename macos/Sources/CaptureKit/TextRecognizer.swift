@@ -4,12 +4,28 @@ import Vision
 /// 本地文字识别（OCR）。基于 Apple Vision 框架，完全在设备上运行、零网络请求，
 /// 与产品「纯本地」定位一致。识别在后台执行器上进行，不占用主线程。
 public enum TextRecognizer {
+    /// 一行识别出的文字及其位置。`box` 为图像像素坐标、原点在左上（与标注的归一化坐标同向）。
+    public struct Line: Equatable, Sendable {
+        public let text: String
+        public let box: CGRect
+
+        public init(text: String, box: CGRect) {
+            self.text = text
+            self.box = box
+        }
+    }
+
     /// 识别结果：按视觉顺序（自上而下）排列的文本行。
     public struct Result: Sendable {
-        public let lines: [String]
+        public let textLines: [Line]
+        public var lines: [String] { textLines.map(\.text) }
 
         public init(lines: [String]) {
-            self.lines = lines
+            textLines = lines.map { Line(text: $0, box: .zero) }
+        }
+
+        public init(textLines: [Line]) {
+            self.textLines = textLines
         }
 
         /// 以换行拼接的完整文本。
@@ -48,7 +64,14 @@ public enum TextRecognizer {
         try handler.perform([request])
 
         let observations = request.results ?? []
-        let lines = observations.compactMap { $0.topCandidates(1).first?.string }
-        return Result(lines: lines)
+        let width = CGFloat(cgImage.width), height = CGFloat(cgImage.height)
+        let textLines = observations.compactMap { observation -> Line? in
+            guard let text = observation.topCandidates(1).first?.string else { return nil }
+            // Vision 的 boundingBox 是归一化、原点左下；翻成像素、原点左上。
+            let b = observation.boundingBox
+            let box = CGRect(x: b.minX * width, y: (1 - b.maxY) * height, width: b.width * width, height: b.height * height)
+            return Line(text: text, box: box)
+        }
+        return Result(textLines: textLines)
     }
 }

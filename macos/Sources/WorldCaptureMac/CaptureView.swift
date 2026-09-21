@@ -1,6 +1,7 @@
 import AppKit
 import CaptureKit
 import SwiftUI
+@preconcurrency import Translation  // TranslationSession 未标 Sendable
 
 /// 滚动后自适应等待画面稳定：轮询截帧，一旦相邻两帧近乎一致（滚动惯性停止、懒加载渲染完成）
 /// 立即返回该帧，取代固定 500ms 死等。静止页 ~180ms 返回，动画/懒加载页最多等 `maxWait`。
@@ -95,6 +96,13 @@ final class CaptureViewModel: ObservableObject {
         let text: String
         var isEmpty: Bool { text.isEmpty }
     }
+    /// 图上翻译：待翻译的段落 + 触发 translationTask 的配置；译文以 `.translation` 标注落回图上。
+    var pendingTranslationBlocks: [TextBlock] = []
+    @Published var imageTranslationConfiguration: TranslationSession.Configuration?
+    @Published var isTranslatingImage = false
+    @Published var showTranslationOverlay = true
+    var hasTranslationBlocks: Bool { annotations.contains { $0.kind == .translation } }
+
     @Published var hasScreenPermission = true
     @Published var hasAccessibilityPermission = true
     /// 主界面内容区内嵌的缩略图选择器当前模式；nil 表示不显示。
@@ -514,6 +522,69 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
+    /// 图上翻译第一步：OCR 取行 + 位置 → 合并段落 → 设置翻译配置，交给视图上的 translationTask 去翻。
+    /// 用原图（不含标注）识别，免得译文块/马赛克把文字盖住。
+    func translateImage() async {
+        guard !isTranslatingImage, let image,
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        isTranslatingImage = true
+        errorMessage = nil
+        do {
+            let result = try await TextRecognizer.recognize(cgImage: cgImage)
+            let blocks = TextBlockGrouper.group(result.textLines)
+            guard !blocks.isEmpty else {
+                isTranslatingImage = false
+                errorMessage = Loc.s("imageTranslate.noText")
+                return
+            }
+            pendingTranslationBlocks = blocks
+            let stored = UserDefaults.standard.string(forKey: OCRResultView.targetLanguageKey) ?? ""
+            let target = stored.isEmpty ? Locale.current.language : Locale.Language(identifier: stored)
+            if var existing = imageTranslationConfiguration, existing.target == target {
+                existing.invalidate()
+                imageTranslationConfiguration = existing
+            } else {
+                imageTranslationConfiguration = TranslationSession.Configuration(source: nil, target: target)
+            }
+            // isTranslatingImage 由 translationTask 完成后清除。
+        } catch {
+            isTranslatingImage = false
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 图上翻译第二步：把译文按段落位置做成「译文块」标注。底色取周边像素平均色，字色按明度选黑白，字号装满矩形。
+    func applyImageTranslation(_ translated: [(block: TextBlock, text: String)]) {
+        guard let image, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        let width = Double(cgImage.width), height = Double(cgImage.height)
+        guard width > 0, height > 0 else { return }
+        var next = annotations.filter { $0.kind != .translation }
+        for item in translated {
+            let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { continue }
+            let rect = item.block.rect
+            let background = TranslationBlockLayout.backgroundColor(around: rect, in: cgImage)
+            let foreground = TranslationBlockLayout.textColor(on: background)
+            next.append(CaptureAnnotation(
+                kind: .translation,
+                start: NormalizedPoint(x: rect.minX / width, y: rect.minY / height),
+                end: NormalizedPoint(x: rect.maxX / width, y: rect.maxY / height),
+                label: text,
+                colorHex: foreground.hexString,
+                fillColorHex: background.hexString,
+                fontSize: Double(TranslationBlockLayout.fittingFontSize(for: text, in: rect))
+            ))
+        }
+        annotations = next
+        showTranslationOverlay = true
+        selectedAnnotationIDs = []
+    }
+
+    func clearImageTranslation() {
+        annotations.removeAll { $0.kind == .translation }
+        selectedAnnotationIDs = []
+    }
+
     /// 对当前截图做本地 OCR（Vision，纯设备端）。识别在后台执行，完成后弹出结果面板；
     /// 用已渲染图（含标注）作为输入，使马赛克遮盖的文字不会被提取。
     func extractText() async {
@@ -914,8 +985,9 @@ final class CaptureViewModel: ObservableObject {
         guard let image, let original = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             return nil
         }
-        guard !annotations.isEmpty else { return original }
-        return AnnotationRenderer.render(image: original, annotations: annotations)
+        let visible = showTranslationOverlay ? annotations : annotations.filter { $0.kind != .translation }
+        guard !visible.isEmpty else { return original }
+        return AnnotationRenderer.render(image: original, annotations: visible)
     }
 
     private static func timestamp() -> String {
@@ -1149,6 +1221,21 @@ struct CaptureView: View {
         .sheet(item: $model.ocrResult) { result in
             OCRResultView(text: result.text) { model.copyText($0) }
         }
+        // 图上翻译：整批段落一次送进端上翻译会话，回来后落成译文块标注。
+        .translationTask(model.imageTranslationConfiguration) { session in
+            let blocks = model.pendingTranslationBlocks
+            guard !blocks.isEmpty else { return }
+            defer { model.isTranslatingImage = false }
+            do {
+                let translated = try await ImageTranslation.translate(blocks.map(\.text), with: session)
+                let pairs = blocks.enumerated().compactMap { index, block in
+                    translated[index].map { (block: block, text: $0) }
+                }
+                model.applyImageTranslation(pairs)
+            } catch {
+                model.errorMessage = error.localizedDescription
+            }
+        }
         .task {
             model.installGlobalHotKey()
             model.refreshScreenPermission(requestIfNeeded: true)
@@ -1216,6 +1303,14 @@ struct CaptureView: View {
                 }
                 .disabled(model.image == nil || model.isRecognizingText)
                 .help(Loc.s("action.ocr.help"))
+
+                Button {
+                    Task { await model.translateImage() }
+                } label: {
+                    Label(Loc.s("imageTranslate.button"), systemImage: "character.bubble")
+                }
+                .disabled(model.image == nil || model.isTranslatingImage)
+                .help(Loc.s("imageTranslate.help"))
 
                 saveControl
 
@@ -1525,6 +1620,18 @@ struct CaptureView: View {
             .disabled(model.image == nil || model.isCropping)
             .help(Loc.s("crop.button.help"))
 
+            if model.hasTranslationBlocks {
+                Toggle(Loc.s("imageTranslate.show"), isOn: $model.showTranslationOverlay)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                Button {
+                    model.clearImageTranslation()
+                } label: {
+                    Label(Loc.s("imageTranslate.clear"), systemImage: "character.bubble.fill")
+                }
+                .help(Loc.s("imageTranslate.clear.help"))
+            }
+
             Button {
                 model.deleteSelectedAnnotation()
             } label: {
@@ -1679,7 +1786,8 @@ struct CaptureView: View {
                     textLabel: model.annotationText,
                     nextNumber: model.nextAnnotationNumber,
                     colorHex: model.annotationColorHex,
-                    lineWidth: model.annotationLineWidth
+                    lineWidth: model.annotationLineWidth,
+                    hiddenKinds: model.showTranslationOverlay ? [] : [.translation]
                 )
                 .allowsHitTesting(!preview.isSpaceDown)
             }
@@ -1835,3 +1943,18 @@ private struct RecentSavesList: View {
 }
 
 /// OCR 结果面板：以只读、可选中的文本视图展示识别文字，可一键复制全部；无文字时显示空态。
+
+/// 整批段落送进端上翻译会话。放在 nonisolated 里，避免非 Sendable 的 Request/Response 跨 actor 传递。
+enum ImageTranslation {
+    nonisolated static func translate(_ texts: [String], with session: TranslationSession) async throws -> [Int: String] {
+        let requests = texts.enumerated().map { index, text in
+            TranslationSession.Request(sourceText: text, clientIdentifier: String(index))
+        }
+        let responses = try await session.translations(from: requests)
+        var result: [Int: String] = [:]
+        for response in responses {
+            if let id = response.clientIdentifier, let index = Int(id) { result[index] = response.targetText }
+        }
+        return result
+    }
+}

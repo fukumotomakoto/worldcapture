@@ -9,6 +9,8 @@ public enum AnnotationKind: String, Codable, CaseIterable, Sendable {
     case number
     case mosaic
     case freehand
+    /// 图上翻译生成的「译文块」：矩形区域盖底色、内填译文。不是手绘工具，由翻译流程创建。
+    case translation
 }
 
 public struct NormalizedPoint: Codable, Equatable, Sendable {
@@ -36,6 +38,10 @@ public struct CaptureAnnotation: Codable, Equatable, Identifiable, Sendable {
     public var lineWidth: Double?
     /// 自由笔（freehand）的折线路径点；仅 `.freehand` 使用，其他类型为 nil。
     public var points: [NormalizedPoint]?
+    /// 译文块的底色（盖住原文）；仅 `.translation` 使用。
+    public var fillColorHex: String?
+    /// 译文块的字号（图像像素）；仅 `.translation` 使用，由 `TranslationBlockLayout` 算出。
+    public var fontSize: Double?
 
     public init(
         id: UUID = UUID(),
@@ -45,7 +51,9 @@ public struct CaptureAnnotation: Codable, Equatable, Identifiable, Sendable {
         label: String? = nil,
         colorHex: String? = nil,
         lineWidth: Double? = nil,
-        points: [NormalizedPoint]? = nil
+        points: [NormalizedPoint]? = nil,
+        fillColorHex: String? = nil,
+        fontSize: Double? = nil
     ) {
         self.id = id
         self.kind = kind
@@ -55,6 +63,8 @@ public struct CaptureAnnotation: Codable, Equatable, Identifiable, Sendable {
         self.colorHex = colorHex
         self.lineWidth = lineWidth
         self.points = points
+        self.fillColorHex = fillColorHex
+        self.fontSize = fontSize
     }
 
     /// 实际线宽倍率，缺省 1.0。
@@ -92,7 +102,7 @@ public extension CaptureAnnotation {
     func hitTest(_ point: NormalizedPoint, tolerance: Double) -> Bool {
         let p = CGPoint(x: point.x, y: point.y)
         switch kind {
-        case .rectangle, .ellipse, .mosaic:
+        case .rectangle, .ellipse, .mosaic, .translation:
             return normalizedBounds.insetBy(dx: -tolerance, dy: -tolerance).contains(p)
         case .arrow:
             return Self.distance(from: p,

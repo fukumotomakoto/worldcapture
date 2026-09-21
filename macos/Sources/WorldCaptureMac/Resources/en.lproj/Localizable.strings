@@ -225,3 +225,11 @@
 "ocr.translating" = "Translating…";
 "ocr.translation.failed" = "Translation failed: %@";
 "ocr.copyTranslation" = "Copy Translation";
+
+/* Image translation (translations laid over the original text) */
+"imageTranslate.button" = "Translate Image";
+"imageTranslate.help" = "Recognize the text in the screenshot and lay the translation over it (on-device, offline; pick the target language in the Extract Text panel)";
+"imageTranslate.noText" = "No text was recognized in this screenshot";
+"imageTranslate.show" = "Show translation";
+"imageTranslate.clear" = "Clear Translation";
+"imageTranslate.clear.help" = "Remove all translation blocks and restore the original";

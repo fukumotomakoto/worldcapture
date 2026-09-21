@@ -11,6 +11,8 @@ struct AnnotationCanvas: View {
     let nextNumber: Int
     let colorHex: String
     let lineWidth: Double
+    /// 暂不显示、也不参与点选的标注类型（如「显示译文」关掉时的译文块）。
+    var hiddenKinds: Set<AnnotationKind> = []
 
     /// 拖拽会话：新建、（组）移动、缩放或无操作（Shift 加选）。
     private enum Session {
@@ -29,14 +31,14 @@ struct AnnotationCanvas: View {
         GeometryReader { proxy in
             let imageRect = aspectFitRect(content: imageSize, container: proxy.size)
             Canvas { context, _ in
-                for annotation in annotations {
+                for annotation in annotations where !hiddenKinds.contains(annotation.kind) {
                     draw(annotation, context: &context, imageRect: imageRect)
                 }
                 if case let .create(draft) = session {
                     draw(draft, context: &context, imageRect: imageRect)
                 }
                 let showHandles = selectedIDs.count == 1
-                for annotation in annotations where selectedIDs.contains(annotation.id) {
+                for annotation in annotations where selectedIDs.contains(annotation.id) && !hiddenKinds.contains(annotation.kind) {
                     drawSelection(annotation, context: &context, imageRect: imageRect, showHandles: showHandles)
                 }
             }
@@ -126,7 +128,7 @@ struct AnnotationCanvas: View {
             return true
         case .freehand:
             return (annotation.points?.count ?? 0) >= 2
-        case .rectangle, .ellipse, .arrow, .mosaic:
+        case .rectangle, .ellipse, .arrow, .mosaic, .translation:
             let bounds = annotation.normalizedBounds
             return bounds.width >= 0.01 || bounds.height >= 0.01
         }
@@ -142,7 +144,7 @@ struct AnnotationCanvas: View {
     private func topmostHit(at location: CGPoint, imageRect: CGRect) -> CaptureAnnotation? {
         let point = normalized(location, in: imageRect)
         let tolerance = handleHitRadius / min(imageRect.width, imageRect.height)
-        return annotations.last { $0.hitTest(point, tolerance: Double(tolerance)) }
+        return annotations.last { !hiddenKinds.contains($0.kind) && $0.hitTest(point, tolerance: Double(tolerance)) }
     }
 
     /// 返回命中的手柄索引：箭头 0=起点 1=终点；矩形/马赛克 0=左上 1=右上 2=左下 3=右下。
@@ -162,7 +164,7 @@ struct AnnotationCanvas: View {
                 (0, screenPoint(annotation.start, in: imageRect)),
                 (1, screenPoint(annotation.end, in: imageRect)),
             ]
-        case .rectangle, .ellipse, .mosaic:
+        case .rectangle, .ellipse, .mosaic, .translation:
             return corners(of: annotation, imageRect: imageRect).enumerated().map { ($0.offset, $0.element) }
         case .text, .number, .freehand:
             return []
@@ -186,7 +188,7 @@ struct AnnotationCanvas: View {
         switch origin.kind {
         case .arrow:
             if handle == 0 { updated.start = dragged } else { updated.end = dragged }
-        case .rectangle, .ellipse, .mosaic:
+        case .rectangle, .ellipse, .mosaic, .translation:
             let bounds = origin.normalizedBounds
             // 锚定被拖角的对角，使矩形从固定角缩放。
             let anchor: NormalizedPoint
@@ -271,6 +273,26 @@ struct AnnotationCanvas: View {
                 height: abs(end.y - start.y)
             )
             context.fill(Path(rect), with: .color(.gray.opacity(0.55)))
+        case .translation:
+            // 与导出渲染同一套字号（图像像素），按预览缩放比换算到屏幕。
+            let rect = CGRect(
+                x: min(start.x, end.x), y: min(start.y, end.y),
+                width: abs(end.x - start.x), height: abs(end.y - start.y)
+            )
+            let scale = imageSize.width > 0 ? imageRect.width / imageSize.width : 1
+            let fill = RGBAColor(hex: annotation.fillColorHex ?? "#FFFFFF")
+            context.fill(
+                Path(roundedRect: rect, cornerRadius: 3 * scale),
+                with: .color(Color(.sRGB, red: fill.red, green: fill.green, blue: fill.blue, opacity: fill.alpha))
+            )
+            let fontSize = CGFloat(annotation.fontSize ?? 12) * scale
+            let inset = TranslationBlockLayout.padding * scale
+            context.draw(
+                Text(annotation.label ?? "")
+                    .font(.custom("PingFang SC", size: fontSize))
+                    .foregroundStyle(color),
+                in: rect.insetBy(dx: inset, dy: inset)
+            )
         case .freehand:
             if let pts = annotation.points, let head = pts.first {
                 path.move(to: screenPoint(head, in: imageRect))

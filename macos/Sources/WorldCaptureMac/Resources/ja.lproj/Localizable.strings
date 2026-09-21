@@ -225,3 +225,11 @@
 "ocr.translating" = "翻訳中…";
 "ocr.translation.failed" = "翻訳に失敗しました：%@";
 "ocr.copyTranslation" = "訳文をコピー";
+
+/* 画像上翻訳（訳文を元の位置に重ねる） */
+"imageTranslate.button" = "画像を翻訳";
+"imageTranslate.help" = "スクショ内の文字を認識し、訳文を元の位置に重ねる（オンデバイス・オフライン。翻訳先は「テキスト抽出」パネルで選択）";
+"imageTranslate.noText" = "このスクリーンショットから文字を認識できませんでした";
+"imageTranslate.show" = "訳文を表示";
+"imageTranslate.clear" = "訳文を消去";
+"imageTranslate.clear.help" = "すべての訳文ブロックを削除し、元の画像に戻す";

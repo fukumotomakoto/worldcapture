@@ -75,6 +75,8 @@ public enum AnnotationRenderer {
                 drawNumber(annotation.label ?? "1", at: start, in: context, image: image, color: strokeColor)
             case .mosaic:
                 break
+            case .translation:
+                drawTranslationBlock(annotation, start: start, end: end, in: context)
             }
         }
         return context.makeImage()
@@ -142,6 +144,49 @@ public enum AnnotationRenderer {
         context.saveGState()
         context.interpolationQuality = .none
         context.draw(pixelated, in: rect)
+        context.restoreGState()
+    }
+
+    /// 译文块：圆角矩形盖底色，译文按预先算好的字号排在矩形内、垂直居中。
+    private static func drawTranslationBlock(
+        _ annotation: CaptureAnnotation,
+        start: CGPoint,
+        end: CGPoint,
+        in context: CGContext
+    ) {
+        let rect = CGRect(
+            x: min(start.x, end.x), y: min(start.y, end.y),
+            width: abs(end.x - start.x), height: abs(end.y - start.y)
+        )
+        guard rect.width > 2, rect.height > 2 else { return }
+        let fill = RGBAColor(hex: annotation.fillColorHex ?? "#FFFFFF").cgColor
+        let textColor = annotation.color.cgColor
+        let text = annotation.label ?? ""
+        let fontSize = CGFloat(annotation.fontSize ?? TranslationBlockLayout.fittingFontSize(for: text, in: rect))
+
+        context.saveGState()
+        let path = CGPath(roundedRect: rect, cornerWidth: 3, cornerHeight: 3, transform: nil)
+        context.addPath(path)
+        context.setFillColor(fill)
+        context.fillPath()
+
+        let padding = TranslationBlockLayout.padding
+        let textWidth = max(1, rect.width - padding * 2)
+        let needed = min(rect.height - padding * 2,
+                         TranslationBlockLayout.layoutHeight(for: text, fontSize: fontSize, width: textWidth))
+        // CoreText 从框顶往下排；CG 坐标 y 向上，所以「顶」是 maxY。垂直居中：上下各留一半余量。
+        let frameRect = CGRect(
+            x: rect.minX + padding,
+            y: rect.midY - needed / 2,
+            width: textWidth,
+            height: needed
+        )
+        let attributed = TranslationBlockLayout.attributed(text, fontSize: fontSize, color: textColor)
+        let framesetter = CTFramesetterCreateWithAttributedString(attributed)
+        let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: 0), CGPath(rect: frameRect, transform: nil), nil)
+        context.addPath(path)
+        context.clip()
+        CTFrameDraw(frame, context)
         context.restoreGState()
     }
 
