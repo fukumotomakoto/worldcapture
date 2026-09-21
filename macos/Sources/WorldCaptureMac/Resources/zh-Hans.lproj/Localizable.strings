@@ -259,3 +259,5 @@
 "imageTranslate.working" = "翻译中…";
 "imageTranslate.progress" = "翻译中 %d/%d";
 "imageTranslate.partial" = "有 %d 段未能翻译（过长或被系统拒绝），已保留原文。";
+"settings.dock" = "顶部工具条";
+"settings.dock.note" = "屏幕顶端常驻一个小标签，鼠标指上去滑出截图/录制按钮。开启时主窗口默认不显示，截完图才打开编辑器；关闭编辑器即收回。";

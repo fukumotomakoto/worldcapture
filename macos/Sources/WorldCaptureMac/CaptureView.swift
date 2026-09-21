@@ -96,6 +96,9 @@ final class CaptureViewModel: ObservableObject {
         let text: String
         var isEmpty: Bool { text.isEmpty }
     }
+    /// 打开主窗口（编辑器）。由 App 在启动时注入 openWindow；注入前退化为只激活应用。
+    var openMainWindow: () -> Void = { NSApp.activate(ignoringOtherApps: true) }
+
     /// 图上翻译：待翻译的段落 + 触发 translationTask 的配置；译文以 `.translation` 标注落回图上。
     var pendingTranslationBlocks: [TextBlock] = []
     /// 术语表整段命中的段落，不送引擎，直接落块。
@@ -939,11 +942,16 @@ final class CaptureViewModel: ObservableObject {
     /// 截屏后在屏幕角落弹出悬浮预览卡片。
     private func presentCapturePreview() {
         guard let image else { return }
+        // 顶部工具条模式：主窗口平时不在，截完直接打开编辑器，不再另弹快捷预览。
+        if TopDockController.shared.isEnabled {
+            openMainWindow()
+            return
+        }
         CapturePreviewController.shared.present(image: image, actions: CapturePreviewActions(
             copy: { [weak self] in self?.copyToClipboard() },
             save: { [weak self] in self?.save() },
             pin: { [weak self] in self?.pinCurrentImage() },
-            edit: { NSApp.activate(ignoringOtherApps: true) }
+            edit: { [weak self] in self?.openMainWindow() }
         ))
     }
 

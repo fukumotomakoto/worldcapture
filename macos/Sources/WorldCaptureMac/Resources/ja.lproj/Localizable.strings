@@ -259,3 +259,5 @@
 "imageTranslate.working" = "翻訳中…";
 "imageTranslate.progress" = "翻訳中 %d/%d";
 "imageTranslate.partial" = "%d 段落を翻訳できませんでした（長すぎるかシステムに拒否されました）。原文をそのまま残しています。";
+"settings.dock" = "上部ツールバー";
+"settings.dock.note" = "画面上端に小さなタブを常駐させ、ポインタを合わせるとキャプチャ/録画ボタンがスライドして現れます。オンの間はメインウインドウは表示されず、撮影後にエディタが開きます。エディタを閉じると再び隠れます。";

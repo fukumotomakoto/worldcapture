@@ -259,3 +259,5 @@
 "imageTranslate.working" = "Translating…";
 "imageTranslate.progress" = "Translating %d/%d";
 "imageTranslate.partial" = "%d paragraph(s) could not be translated (too long or declined by the system); the original text was kept.";
+"settings.dock" = "Top toolbar";
+"settings.dock.note" = "A small tab stays at the top of the screen; hover to slide out the capture and recording buttons. While on, the main window stays hidden until a capture opens the editor; closing the editor hides it again.";

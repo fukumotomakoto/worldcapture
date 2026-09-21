@@ -57,7 +57,7 @@ struct MenuBarCommands: View {
         Divider()
 
         Group {
-            Button(Loc.s("menu.showMain")) { NSApp.activate(ignoringOtherApps: true) }
+            Button(Loc.s("menu.showMain")) { model.openMainWindow() }
             Button(Loc.s("menu.checkUpdates")) { updater.checkForUpdates() }
                 .disabled(!updater.canCheckForUpdates)
             SettingsLink { Text(Loc.s("menu.settings")) }

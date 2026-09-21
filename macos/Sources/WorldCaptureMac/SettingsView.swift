@@ -51,6 +51,7 @@ struct SettingsView: View {
     @State private var microphoneDenied = false
     @AppStorage(ToolbarLabelStyle.storageKey) private var toolbarLabelStyle: ToolbarLabelStyle = .iconAndText
     @AppStorage(TranslationEngineChoice.storageKey) private var translationEngine: TranslationEngineChoice = .automatic
+    @ObservedObject private var dock = TopDockController.shared
 
     var body: some View {
         Form {
@@ -64,6 +65,14 @@ struct SettingsView: View {
                     newValue.apply()
                 }
                 Text(Loc.s("settings.language.restartNote"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Toggle(Loc.s("settings.dock"), isOn: Binding(
+                    get: { dock.isEnabled },
+                    set: { dock.setEnabled($0) }
+                ))
+                Text(Loc.s("settings.dock.note"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 

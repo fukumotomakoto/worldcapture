@@ -8,7 +8,12 @@ final class MinimizeOnCloseDelegate: NSObject, NSWindowDelegate {
     weak var previous: NSWindowDelegate?
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        sender.miniaturize(nil)
+        // 顶部工具条开着：关闭 = 收起编辑器，回到只有工具条；否则最小化到 Dock。
+        if TopDockController.shared.isEnabled {
+            sender.orderOut(nil)
+        } else {
+            sender.miniaturize(nil)
+        }
         return false
     }
 
