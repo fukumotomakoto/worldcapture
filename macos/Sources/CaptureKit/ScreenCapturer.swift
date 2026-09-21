@@ -63,7 +63,7 @@ public struct ScreenCapturer: ScreenCapturing {
         return content.windows
             .filter { window in
                 window.isOnScreen
-                    && window.windowLayer == 0
+                    && window.windowLayer >= 0 && window.windowLayer < 20  // 20 = Dock；浮动/模态面板（3、8、19）要能选到，见 2026-09-21 iTerm2 集成向导案例
                     && window.frame.width >= 100
                     && window.frame.height >= 80
                     && window.owningApplication?.processID != currentProcess
