@@ -246,3 +246,13 @@
 "settings.translation.engine.unavailable" = "Apple Intelligence is unavailable";
 "settings.translation.glossary.open" = "Open Glossary…";
 "settings.translation.glossary.note" = "Fixed translations in the glossary take precedence over the engine (source = translation, one per line).";
+
+/* Translation lens (keeps translating a screen region in place) */
+"mirror.button" = "Live Lens";
+"mirror.help" = "Select a screen region; it is recognized continuously and the translation is laid over it in place (click-through; for subtitles, chat and refreshing UIs)";
+"menu.mirror" = "Live Lens (translate a region continuously)";
+"mirror.title" = "Live Lens";
+"mirror.paused" = "Live Lens · paused";
+"mirror.pause" = "Pause";
+"mirror.resume" = "Resume";
+"mirror.close" = "Close Live Lens";

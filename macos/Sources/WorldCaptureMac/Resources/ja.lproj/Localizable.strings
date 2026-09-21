@@ -246,3 +246,13 @@
 "settings.translation.engine.unavailable" = "Apple Intelligence は利用できません";
 "settings.translation.glossary.open" = "用語集を開く…";
 "settings.translation.glossary.note" = "用語集の固定訳はエンジンより優先されます（原文 = 訳文、1 行 1 件）。";
+
+/* 翻訳レンズ（画面の一部を継続的に翻訳し、その場に重ねる） */
+"mirror.button" = "翻訳レンズ";
+"mirror.help" = "画面の範囲を選択すると、継続的に認識して訳文をその場に重ねます（クリックは透過。字幕・コメント・更新される画面向け）";
+"menu.mirror" = "翻訳レンズ（範囲を継続翻訳）";
+"mirror.title" = "翻訳レンズ";
+"mirror.paused" = "翻訳レンズ · 一時停止";
+"mirror.pause" = "一時停止";
+"mirror.resume" = "再開";
+"mirror.close" = "翻訳レンズを閉じる";

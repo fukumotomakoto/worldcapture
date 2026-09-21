@@ -23,6 +23,8 @@ struct MenuBarCommands: View {
                 .keyboardShortcut("4", modifiers: [.command, .shift])
             Button(Loc.s("menu.ocr")) { activateThen { await model.captureRegionAndExtractText() } }
                 .keyboardShortcut("5", modifiers: [.command, .shift])
+            Button(Loc.s("menu.mirror")) { run { await model.startTranslationMirror() } }
+                .keyboardShortcut("6", modifiers: [.command, .shift])
             Menu(Loc.s("menu.delay")) {
                 Button(Loc.s("menu.delay.seconds", Int32(3))) { run { await delayThenCapture(3) } }
                 Button(Loc.s("menu.delay.seconds", Int32(5))) { run { await delayThenCapture(5) } }

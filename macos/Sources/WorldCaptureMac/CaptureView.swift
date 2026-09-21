@@ -524,6 +524,18 @@ final class CaptureViewModel: ObservableObject {
         }
     }
 
+    /// 翻译镜：框选屏幕区域后启动持续翻译的覆盖层（见 TranslationMirrorController）。
+    func startTranslationMirror() async {
+        sourcePicker = nil
+        let restoreWindows = hideOwnWindows()
+        guard let selection = await regionSelector.selectRegion() else {
+            restoreWindows()
+            return
+        }
+        restoreWindows()
+        TranslationMirrorController.shared.start(selection: selection)
+    }
+
     /// 图上翻译第一步：OCR 取行 + 位置 → 合并段落 → 设置翻译配置，交给视图上的 translationTask 去翻。
     /// 用原图（不含标注）识别，免得译文块/马赛克把文字盖住。
     func translateImage() async {
@@ -1349,6 +1361,13 @@ struct CaptureView: View {
                 }
                 .disabled(model.image == nil || model.isTranslatingImage)
                 .help(Loc.s("imageTranslate.help"))
+
+                Button {
+                    Task { await model.startTranslationMirror() }
+                } label: {
+                    Label(Loc.s("mirror.button"), systemImage: "rectangle.dashed.badge.record")
+                }
+                .help(Loc.s("mirror.help"))
 
                 saveControl
 
