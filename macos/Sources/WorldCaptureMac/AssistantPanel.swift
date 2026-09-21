@@ -60,9 +60,17 @@ final class AssistantController: NSObject, ObservableObject {
     static let shared = AssistantController()
 
     static let providerStorageKey = "assistant.provider"
-    static let panelWidth: CGFloat = 440
+    static let panelWidthStorageKey = "assistant.panelWidth"
+    static let defaultPanelWidth: CGFloat = 440
+    static let minPanelWidth: CGFloat = 320
+    /// 主内容区至少要留这么宽，否则头部按钮会被挤断。
+    static let minMainWidth: CGFloat = 640
 
     @Published var isVisible = false
+    /// 侧栏宽度，用户拖分隔条调整，持久化。
+    @Published var panelWidth: CGFloat {
+        didSet { UserDefaults.standard.set(Double(panelWidth), forKey: Self.panelWidthStorageKey) }
+    }
     @Published var provider: AssistantProvider {
         didSet { UserDefaults.standard.set(provider.rawValue, forKey: Self.providerStorageKey) }
     }
@@ -80,6 +88,8 @@ final class AssistantController: NSObject, ObservableObject {
     private override init() {
         let stored = UserDefaults.standard.string(forKey: Self.providerStorageKey)
         provider = AssistantProvider(rawValue: stored ?? "") ?? .claude
+        let storedWidth = UserDefaults.standard.double(forKey: Self.panelWidthStorageKey)
+        panelWidth = storedWidth >= Self.minPanelWidth ? CGFloat(storedWidth) : Self.defaultPanelWidth
         super.init()
     }
 
@@ -101,7 +111,7 @@ final class AssistantController: NSObject, ObservableObject {
         // 屏幕放得下就把窗口右扩，放不下就退而缩小内容区。
         var frame = window.frame
         let room = screen.visibleFrame.maxX - frame.maxX
-        let grow = min(Self.panelWidth, max(0, room))
+        let grow = min(panelWidth, max(0, room))
         guard grow > 0 else { return }
         frame.size.width += grow
         widenedBy = grow
@@ -117,6 +127,12 @@ final class AssistantController: NSObject, ObservableObject {
         frame.size.width = max(window.minSize.width, frame.size.width - widenedBy)
         widenedBy = 0
         window.setFrame(frame, display: true, animate: true)
+    }
+
+    /// 拖分隔条：侧栏最窄 320，主内容区最少保留 640。
+    func resizePanel(to proposed: CGFloat, windowWidth: CGFloat) {
+        let upper = max(Self.minPanelWidth, windowWidth - Self.minMainWidth)
+        panelWidth = min(max(proposed, Self.minPanelWidth), upper)
     }
 
     // MARK: - 发送截图
@@ -302,8 +318,39 @@ struct AssistantPanel: View {
             AssistantWebView(webView: controller.webView(for: controller.provider))
                 .id(controller.provider)
         }
-        .frame(width: AssistantController.panelWidth)
+        .frame(width: controller.panelWidth)
         .background(Color(nsColor: .windowBackgroundColor))
         .animation(.easeInOut(duration: 0.2), value: controller.pasteHintVisible)
+    }
+}
+
+/// 主内容区与助手侧栏之间的可拖分隔条。
+struct AssistantResizeHandle: View {
+    @ObservedObject var controller: AssistantController
+    @State private var widthAtDragStart: CGFloat?
+
+    var body: some View {
+        ZStack {
+            Divider()
+            // 8pt 宽的透明命中区，比 1pt 的分隔线好抓。
+            Color.clear
+                .frame(width: 8)
+                .contentShape(Rectangle())
+        }
+        .frame(width: 8)
+        .onHover { inside in
+            if inside { NSCursor.resizeLeftRight.push() } else { NSCursor.pop() }
+        }
+        .gesture(
+            DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                .onChanged { value in
+                    if widthAtDragStart == nil { widthAtDragStart = controller.panelWidth }
+                    let windowWidth = NSApp.keyWindow?.frame.width ?? NSApp.mainWindow?.frame.width ?? 0
+                    // 分隔条在侧栏左边：往左拖 = 侧栏变宽。
+                    controller.resizePanel(to: (widthAtDragStart ?? controller.panelWidth) - value.translation.width,
+                                           windowWidth: windowWidth)
+                }
+                .onEnded { _ in widthAtDragStart = nil }
+        )
     }
 }

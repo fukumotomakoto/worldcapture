@@ -41,6 +41,7 @@
 		81EF139153C95E5B38E4446F /* ScrollCaptureEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D300F98C4285B98344FE3979 /* ScrollCaptureEngine.swift */; };
 		83C16FA09E5C0EF1B1E4F8B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D137BB91289DE8944C6AAAA5 /* Assets.xcassets */; };
 		862C3AC53FA9B49C2EEDADDB /* ScrollCaptureEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91B58CE6C6CABEACE35900FD /* ScrollCaptureEngineTests.swift */; };
+		8789C0E0B86E8D9C0D6826F8 /* OCRResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE78A46F37030C0DB942A930 /* OCRResultView.swift */; };
 		895383AEE5B787D29F064AC7 /* CaptureWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89BB00424BA8B71E1698E2EF /* CaptureWindowTests.swift */; };
 		8D39C0AD9F430E213171A463 /* GIFEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C88BC9075DAB1F24F954E473 /* GIFEncoder.swift */; };
 		9E0BAB5F2DA08C6FD9F2FC43 /* GIFEncoderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA31BA5F899E4A26D7276B61 /* GIFEncoderTests.swift */; };
@@ -191,6 +192,7 @@
 		B5E0854B183AEA28EE383D40 /* HistoryLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryLibraryView.swift; sourceTree = "<group>"; };
 		BA2B315FCF24B0EECFE0916C /* ScrollStitcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollStitcherTests.swift; sourceTree = "<group>"; };
 		BA31BA5F899E4A26D7276B61 /* GIFEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoderTests.swift; sourceTree = "<group>"; };
+		BE78A46F37030C0DB942A930 /* OCRResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRResultView.swift; sourceTree = "<group>"; };
 		C20EAD3EFBA9D51AE0D17DBA /* ScrollInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollInput.swift; sourceTree = "<group>"; };
 		C88BC9075DAB1F24F954E473 /* GIFEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GIFEncoder.swift; sourceTree = "<group>"; };
 		C9F39A5734A0080383990F5A /* manifest.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = manifest.json; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				F6D305097250477193BA8D81 /* HistoryStore.swift */,
 				7FF822FA161454E950CB0F64 /* Localization.swift */,
 				E00803A9BEEDA5A8F9C3CDBF /* MenuBarCommands.swift */,
+				BE78A46F37030C0DB942A930 /* OCRResultView.swift */,
 				FB8D0AC008EB01DADCBF7DA7 /* OutputLocation.swift */,
 				8DA489077D5A8D90FBA7F07F /* PinnedImage.swift */,
 				8173312EBBDE59245C770E71 /* PreviewZoomPan.swift */,
@@ -600,6 +603,7 @@
 				CDD0D8B80EE97D6F54347F0D /* HistoryStore.swift in Sources */,
 				BFE619DD104D0C435D697405 /* Localization.swift in Sources */,
 				0E00F2BDFA1DA8974182EB1D /* MenuBarCommands.swift in Sources */,
+				8789C0E0B86E8D9C0D6826F8 /* OCRResultView.swift in Sources */,
 				27AE9AB04E2E5EDC978F2085 /* OutputLocation.swift in Sources */,
 				79DE76B7B5234692966DBBB2 /* PinnedImage.swift in Sources */,
 				F362F7572BA279F663AC7C14 /* PreviewZoomPan.swift in Sources */,

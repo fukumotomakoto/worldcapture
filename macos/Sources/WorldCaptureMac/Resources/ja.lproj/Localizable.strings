@@ -216,3 +216,12 @@
 "assistant.openBrowser" = "ブラウザで開く";
 "assistant.close" = "アシスタントを閉じる";
 "assistant.hint.paste.noPrefill" = "スクショをコピーしました。下の入力欄をクリックし、⌘V で貼り付けてから、依頼（例：日本語に翻訳）を入力してください。";
+
+/* テキスト抽出パネル · オンデバイス翻訳 */
+"ocr.source.title" = "原文";
+"ocr.translation.title" = "訳文";
+"ocr.translate.target" = "翻訳先の言語";
+"ocr.translate.help" = "macOS 内蔵の翻訳でこの Mac 上で翻訳（オフライン。初回は言語パックをダウンロード）";
+"ocr.translating" = "翻訳中…";
+"ocr.translation.failed" = "翻訳に失敗しました：%@";
+"ocr.copyTranslation" = "訳文をコピー";

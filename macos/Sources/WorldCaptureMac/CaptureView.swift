@@ -1,7 +1,6 @@
 import AppKit
 import CaptureKit
 import SwiftUI
-import Translation
 
 /// 滚动后自适应等待画面稳定：轮询截帧，一旦相邻两帧近乎一致（滚动惯性停止、懒加载渲染完成）
 /// 立即返回该帧，取代固定 500ms 死等。静止页 ~180ms 返回，动画/懒加载页最多等 `maxWait`。
@@ -1001,7 +1000,7 @@ struct CaptureView: View {
         HStack(spacing: 0) {
             mainColumn
             if assistant.isVisible {
-                Divider()
+                AssistantResizeHandle(controller: assistant)
                 AssistantPanel(controller: assistant) {
                     assistant.hide(in: NSApp.keyWindow ?? NSApp.mainWindow)
                 }
@@ -1836,75 +1835,3 @@ private struct RecentSavesList: View {
 }
 
 /// OCR 结果面板：以只读、可选中的文本视图展示识别文字，可一键复制全部；无文字时显示空态。
-private struct OCRResultView: View {
-    let text: String
-    let onCopy: (String) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var copied = false
-    @State private var showTranslation = false
-
-    private var isEmpty: Bool { text.isEmpty }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Label(Loc.s("ocr.title"), systemImage: "text.viewfinder")
-                    .font(.headline)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-
-            Divider()
-
-            if isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "text.badge.xmark")
-                        .font(.system(size: 32))
-                        .foregroundStyle(.secondary)
-                    Text(Loc.s("ocr.empty"))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(24)
-            } else {
-                TextEditor(text: .constant(text))
-                    .font(.system(.body, design: .default))
-                    .textSelection(.enabled)
-                    .frame(minHeight: 220)
-                    .padding(8)
-            }
-
-            Divider()
-
-            HStack(spacing: 10) {
-                Button {
-                    showTranslation = true
-                } label: {
-                    Label(Loc.s("ocr.translate"), systemImage: "character.book.closed")
-                }
-                .disabled(isEmpty)
-                Spacer()
-                Button(Loc.s("ocr.close")) { dismiss() }
-                    .keyboardShortcut(.cancelAction)
-                Button {
-                    onCopy(text)
-                    copied = true
-                } label: {
-                    Label(copied ? Loc.s("ocr.copied") : Loc.s("ocr.copyAll"),
-                          systemImage: copied ? "checkmark" : "doc.on.doc")
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isEmpty)
-                .keyboardShortcut(.defaultAction)
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
-        }
-        .frame(width: 460, height: 380)
-        // Apple 本地翻译面板（macOS 15+，纯本地/免费/离线；系统处理语言下载与目标语选择）。
-        .translationPresentation(isPresented: $showTranslation, text: text)
-    }
-}

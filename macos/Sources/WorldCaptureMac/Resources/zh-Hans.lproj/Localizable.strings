@@ -216,3 +216,12 @@
 "assistant.openBrowser" = "在浏览器中打开";
 "assistant.close" = "关闭助手侧栏";
 "assistant.hint.paste.noPrefill" = "截图已复制到剪贴板，点一下下面的输入框，按 ⌘V 粘贴，再输入你的要求（例如：翻译成中文）。";
+
+/* 提取文字面板 · 端上翻译 */
+"ocr.source.title" = "原文";
+"ocr.translation.title" = "译文";
+"ocr.translate.target" = "目标语言";
+"ocr.translate.help" = "用 macOS 内置翻译在本机翻译（不联网；首次使用需下载语言包）";
+"ocr.translating" = "翻译中…";
+"ocr.translation.failed" = "翻译失败：%@";
+"ocr.copyTranslation" = "复制译文";

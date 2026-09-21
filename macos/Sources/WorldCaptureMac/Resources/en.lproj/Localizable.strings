@@ -216,3 +216,12 @@
 "assistant.openBrowser" = "Open in Browser";
 "assistant.close" = "Close the assistant sidebar";
 "assistant.hint.paste.noPrefill" = "Screenshot copied. Click the input box below, press ⌘V to paste, then type your request (e.g. translate into English).";
+
+/* Extract Text panel · on-device translation */
+"ocr.source.title" = "Original";
+"ocr.translation.title" = "Translation";
+"ocr.translate.target" = "Target language";
+"ocr.translate.help" = "Translate on this Mac with the built-in macOS translator (offline; the language pack downloads on first use)";
+"ocr.translating" = "Translating…";
+"ocr.translation.failed" = "Translation failed: %@";
+"ocr.copyTranslation" = "Copy Translation";
