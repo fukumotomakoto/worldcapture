@@ -68,3 +68,45 @@ private func line(_ text: String, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat
     #expect(TranslationBlockLayout.textColor(on: RGBAColor(red: 0.1, green: 0.1, blue: 0.12)).relativeLuminance > 0.8)
     #expect(RGBAColor(red: 1, green: 0, blue: 0).hexString == "#FF0000")
 }
+
+@Test func layoutCapsFontAtTheOriginalLineHeightEvenWhenTheBoxIsTaller() {
+    // 两行英文的框，译成一行短中文：字号应贴近原行高，而不是撑满两行高。
+    let box = CGRect(x: 0, y: 0, width: 600, height: 60)
+    let layout = TranslationBlockLayout.layout(text: "设置已保存", in: box, lineHeight: 26, imageSize: CGSize(width: 900, height: 400))
+    #expect(layout.fontSize <= 26 * TranslationBlockLayout.fontScaleOfLineHeight + 0.01)
+    #expect(layout.fontSize > 26 * TranslationBlockLayout.fontScaleOfLineHeight - 1)
+    #expect(layout.rect == box)
+}
+
+@Test func layoutGrowsTheBoxDownwardInsteadOfShrinkingBelowTheFloor() {
+    let box = CGRect(x: 0, y: 0, width: 120, height: 20)
+    let long = "这是一段稍长的译文，原文框放不下，应把框向下加高。"
+    let layout = TranslationBlockLayout.layout(text: long, in: box, lineHeight: 20, imageSize: CGSize(width: 900, height: 400))
+    #expect(layout.rect.height > box.height)
+    #expect(layout.rect.minY == box.minY && layout.rect.width == box.width)
+    #expect(layout.fontSize >= 20 * TranslationBlockLayout.fontScaleOfLineHeight * TranslationBlockLayout.minimumFontScale - 0.6)
+}
+
+@Test func layoutNeverGrowsPastTheImageBottom() {
+    let box = CGRect(x: 0, y: 380, width: 100, height: 16)
+    let layout = TranslationBlockLayout.layout(text: "一二三四五六七八九十一二三四五六七八九十一二三四五六七八九十", in: box, lineHeight: 16, imageSize: CGSize(width: 900, height: 400))
+    #expect(layout.rect.maxY <= 400)
+}
+
+@Test func headingSlightlyLargerThanBodyIsKeptSeparate() {
+    let blocks = TextBlockGrouper.group([
+        line("Motion", x: 10, y: 10, w: 90, h: 26),
+        line("Reduce animation in streaming responses.", x: 10, y: 44, w: 400, h: 18),
+    ])
+    #expect(blocks.count == 2)
+}
+
+@Test func groupedBlockRemembersItsMedianLineHeight() {
+    let blocks = TextBlockGrouper.group([
+        line("a", x: 10, y: 10, w: 100, h: 20),
+        line("b", x: 10, y: 34, w: 100, h: 22),
+        line("c", x: 10, y: 60, w: 100, h: 20),
+    ])
+    #expect(blocks.count == 1)
+    #expect(blocks[0].lineHeight == 20)
+}

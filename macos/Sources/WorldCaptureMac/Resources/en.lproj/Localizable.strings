@@ -233,3 +233,16 @@
 "imageTranslate.show" = "Show translation";
 "imageTranslate.clear" = "Clear Translation";
 "imageTranslate.clear.help" = "Remove all translation blocks and restore the original";
+
+/* Settings · Translation */
+"settings.section.translation" = "Translation";
+"settings.translation.engine" = "Translation engine";
+"settings.translation.engine.automatic" = "Automatic (prefer Apple Intelligence)";
+"settings.translation.engine.system" = "System translation";
+"settings.translation.engine.appleIntelligence" = "Apple Intelligence";
+"settings.translation.engine.note" = "Both engines run on this Mac and never go online. Apple Intelligence understands context and terminology better; system translation is faster.";
+"settings.translation.engine.aiUnavailable" = "Apple Intelligence is currently unavailable (%@); system translation will be used.";
+"settings.translation.engine.needsMacOS26" = "requires macOS 26 or later with Apple Intelligence turned on";
+"settings.translation.engine.unavailable" = "Apple Intelligence is unavailable";
+"settings.translation.glossary.open" = "Open Glossary…";
+"settings.translation.glossary.note" = "Fixed translations in the glossary take precedence over the engine (source = translation, one per line).";

@@ -222,6 +222,31 @@ struct OCRResultView: View {
     private func translate() {
         translationCopied = false
         let target = targetLanguage
+        let glossary = UserGlossary.load()
+        if let hit = glossary.lookup(text, target: target.minimalIdentifier) {
+            translation = hit
+            translationError = nil
+            return
+        }
+        if TranslationEngineChoice.current.usesAppleIntelligence {
+            // Apple 智能：按行送，保留换行；术语表相关条目放进提示。
+            let lines = text.components(separatedBy: .newlines)
+            let terms = glossary.entries(relevantTo: lines, target: target.minimalIdentifier)
+            isTranslating = true
+            translationError = nil
+            Task {
+                do {
+                    let nonEmpty = lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+                    let translated = try await AppleIntelligenceTranslator.translate(nonEmpty, to: target, glossary: terms)
+                    translation = translated.joined(separator: "\n")
+                } catch {
+                    translation = nil
+                    translationError = error.localizedDescription
+                }
+                isTranslating = false
+            }
+            return
+        }
         if var existing = configuration, existing.target == target {
             // 同一目标语言再点一次：显式失效让 translationTask 重跑。
             existing.invalidate()

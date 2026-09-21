@@ -5,10 +5,13 @@ import Foundation
 public struct TextBlock: Equatable, Sendable {
     public var rect: CGRect
     public var lines: [String]
+    /// 原文一行的高度（各行框高的中位数）；译文字号以它为基准，不随译文长短忽大忽小。
+    public var lineHeight: CGFloat
 
-    public init(rect: CGRect, lines: [String]) {
+    public init(rect: CGRect, lines: [String], lineHeight: CGFloat? = nil) {
         self.rect = rect
         self.lines = lines
+        self.lineHeight = lineHeight ?? rect.height / CGFloat(max(1, lines.count))
     }
 
     /// 合并后的整段文字：相邻两行若接缝两侧都是中日韩字符则直接相连，否则以空格相连。
@@ -44,25 +47,30 @@ public enum TextBlockGrouper {
                 return a.box.minX < b.box.minX
             }
 
-        var blocks: [(rect: CGRect, lastBox: CGRect, lines: [String])] = []
+        var blocks: [(rect: CGRect, lastBox: CGRect, lines: [String], heights: [CGFloat])] = []
         for line in ordered {
             // 从最近的段落往前找，找到第一个能接上的；找不到就另起一段。
             if let index = blocks.indices.reversed().first(where: { canAppend(line.box, after: blocks[$0].lastBox) }) {
                 blocks[index].rect = blocks[index].rect.union(line.box)
                 blocks[index].lastBox = line.box
                 blocks[index].lines.append(line.text)
+                blocks[index].heights.append(line.box.height)
             } else {
-                blocks.append((line.box, line.box, [line.text]))
+                blocks.append((line.box, line.box, [line.text], [line.box.height]))
             }
         }
-        return blocks.map { TextBlock(rect: $0.rect, lines: $0.lines) }
+        return blocks.map { block in
+            let sorted = block.heights.sorted()
+            return TextBlock(rect: block.rect, lines: block.lines, lineHeight: sorted[sorted.count / 2])
+        }
     }
 
     static func canAppend(_ box: CGRect, after previous: CGRect) -> Bool {
         let height = (box.height + previous.height) / 2
         guard height > 0 else { return false }
+        // 行高差超过 ±30% 多半是标题与正文，分开翻更准（OCR 框的抖动一般在 10% 内）。
         let heightRatio = box.height / previous.height
-        guard heightRatio >= 0.55, heightRatio <= 1.8 else { return false }
+        guard heightRatio >= 0.7, heightRatio <= 1.4 else { return false }
 
         let gap = box.minY - previous.maxY
         guard gap > -height * 0.35, gap < height * 0.8 else { return false }

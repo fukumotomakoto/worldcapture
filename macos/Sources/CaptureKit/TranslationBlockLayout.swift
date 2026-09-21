@@ -16,11 +16,37 @@ public enum TranslationBlockLayout {
 
     // MARK: - 字号
 
-    /// 能让 `text` 换行后装进 `rect` 的最大字号；上限为矩形高度（单行即整块高）。
-    public static func fittingFontSize(for text: String, in rect: CGRect) -> CGFloat {
+    /// 译文字号相对原文行高的基准比例：OCR 的行框略大于字号，取 0.85 视觉上与原文同大。
+    public static let fontScaleOfLineHeight: CGFloat = 0.85
+    /// 缩到基准的这个比例以下就不再缩字，改为把框向下加高。
+    public static let minimumFontScale: CGFloat = 0.6
+    /// 框最多加高到原高的这个倍数（再高会盖住下面的内容）。
+    public static let maximumGrowth: CGFloat = 2.5
+
+    public struct Layout: Equatable, Sendable {
+        public var rect: CGRect
+        public var fontSize: CGFloat
+    }
+
+    /// 统一字号的排版：字号以原文行高为上限，装不下先缩、缩到下限再把框向下加高（不超过图像底边）。
+    public static func layout(text: String, in rect: CGRect, lineHeight: CGFloat, imageSize: CGSize) -> Layout {
+        let base = max(minimumFontSize, lineHeight * fontScaleOfLineHeight)
+        let floor = max(minimumFontSize, base * minimumFontScale)
+        let fitted = fittingFontSize(for: text, in: rect, maxFontSize: base)
+        if fitted >= floor { return Layout(rect: rect, fontSize: fitted) }
+
+        // 以下限字号算需要的高度，向下扩框。
+        let needed = layoutHeight(for: text, fontSize: floor, width: max(1, rect.width - padding * 2)) + padding * 2
+        let maxHeight = min(rect.height * maximumGrowth, max(rect.height, imageSize.height - rect.minY))
+        let grown = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: min(needed, maxHeight))
+        return Layout(rect: grown, fontSize: fittingFontSize(for: text, in: grown, maxFontSize: base))
+    }
+
+    /// 能让 `text` 换行后装进 `rect` 的最大字号；上限为矩形高度（单行即整块高）或 `maxFontSize`。
+    public static func fittingFontSize(for text: String, in rect: CGRect, maxFontSize: CGFloat? = nil) -> CGFloat {
         let available = CGSize(width: max(1, rect.width - padding * 2), height: max(1, rect.height - padding * 2))
         var low = minimumFontSize
-        var high = max(minimumFontSize, available.height)
+        var high = max(minimumFontSize, min(available.height, maxFontSize ?? available.height))
         guard fits(text, size: low, in: available) else { return low }
         // 二分：精确到 0.5pt 就够了。
         while high - low > 0.5 {

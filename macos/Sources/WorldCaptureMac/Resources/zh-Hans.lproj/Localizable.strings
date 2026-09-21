@@ -233,3 +233,16 @@
 "imageTranslate.show" = "显示译文";
 "imageTranslate.clear" = "清除译文";
 "imageTranslate.clear.help" = "删掉所有译文块，恢复原图";
+
+/* 设置 · 翻译 */
+"settings.section.translation" = "翻译";
+"settings.translation.engine" = "翻译引擎";
+"settings.translation.engine.automatic" = "自动（优先 Apple 智能）";
+"settings.translation.engine.system" = "系统翻译";
+"settings.translation.engine.appleIntelligence" = "Apple 智能";
+"settings.translation.engine.note" = "两种引擎都在本机运行、不联网。Apple 智能更懂上下文和术语，系统翻译更快。";
+"settings.translation.engine.aiUnavailable" = "Apple 智能当前不可用（%@），将使用系统翻译。";
+"settings.translation.engine.needsMacOS26" = "需要 macOS 26 及以上并开启 Apple 智能";
+"settings.translation.engine.unavailable" = "Apple 智能不可用";
+"settings.translation.glossary.open" = "打开词表…";
+"settings.translation.glossary.note" = "词表里的固定译法优先于引擎（原文 = 译文，一行一条）。";

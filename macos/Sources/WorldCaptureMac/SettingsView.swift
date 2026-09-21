@@ -50,6 +50,7 @@ struct SettingsView: View {
     @State private var includeMicrophone = RecordingPreferences.includeMicrophone
     @State private var microphoneDenied = false
     @AppStorage(ToolbarLabelStyle.storageKey) private var toolbarLabelStyle: ToolbarLabelStyle = .iconAndText
+    @AppStorage(TranslationEngineChoice.storageKey) private var translationEngine: TranslationEngineChoice = .automatic
 
     var body: some View {
         Form {
@@ -102,6 +103,31 @@ struct SettingsView: View {
                     }
                 } else {
                     Text(Loc.s("settings.mic.note"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section(Loc.s("settings.section.translation")) {
+                Picker(Loc.s("settings.translation.engine"), selection: $translationEngine) {
+                    ForEach(TranslationEngineChoice.allCases) { choice in
+                        Text(Loc.s("settings.translation.engine.\(choice.rawValue)")).tag(choice)
+                    }
+                }
+                if let note = AppleIntelligenceTranslator.unavailabilityNote {
+                    Text(Loc.s("settings.translation.engine.aiUnavailable", note))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(Loc.s("settings.translation.engine.note"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                HStack {
+                    Button(Loc.s("settings.translation.glossary.open")) {
+                        NSWorkspace.shared.open(UserGlossary.ensureFileExists())
+                    }
+                    Text(Loc.s("settings.translation.glossary.note"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

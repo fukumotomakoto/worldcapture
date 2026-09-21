@@ -233,3 +233,16 @@
 "imageTranslate.show" = "訳文を表示";
 "imageTranslate.clear" = "訳文を消去";
 "imageTranslate.clear.help" = "すべての訳文ブロックを削除し、元の画像に戻す";
+
+/* 設定 · 翻訳 */
+"settings.section.translation" = "翻訳";
+"settings.translation.engine" = "翻訳エンジン";
+"settings.translation.engine.automatic" = "自動（Apple Intelligence を優先）";
+"settings.translation.engine.system" = "システム翻訳";
+"settings.translation.engine.appleIntelligence" = "Apple Intelligence";
+"settings.translation.engine.note" = "どちらもこの Mac 上で動作し、通信しません。Apple Intelligence は文脈と用語に強く、システム翻訳は高速です。";
+"settings.translation.engine.aiUnavailable" = "Apple Intelligence は現在利用できません（%@）。システム翻訳を使用します。";
+"settings.translation.engine.needsMacOS26" = "macOS 26 以降で Apple Intelligence を有効にする必要があります";
+"settings.translation.engine.unavailable" = "Apple Intelligence は利用できません";
+"settings.translation.glossary.open" = "用語集を開く…";
+"settings.translation.glossary.note" = "用語集の固定訳はエンジンより優先されます（原文 = 訳文、1 行 1 件）。";

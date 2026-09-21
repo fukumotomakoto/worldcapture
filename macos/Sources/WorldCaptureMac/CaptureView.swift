@@ -98,6 +98,8 @@ final class CaptureViewModel: ObservableObject {
     }
     /// 图上翻译：待翻译的段落 + 触发 translationTask 的配置；译文以 `.translation` 标注落回图上。
     var pendingTranslationBlocks: [TextBlock] = []
+    /// 术语表整段命中的段落，不送引擎，直接落块。
+    var pendingGlossaryPairs: [(block: TextBlock, text: String)] = []
     @Published var imageTranslationConfiguration: TranslationSession.Configuration?
     @Published var isTranslatingImage = false
     @Published var showTranslationOverlay = true
@@ -537,9 +539,38 @@ final class CaptureViewModel: ObservableObject {
                 errorMessage = Loc.s("imageTranslate.noText")
                 return
             }
-            pendingTranslationBlocks = blocks
             let stored = UserDefaults.standard.string(forKey: OCRResultView.targetLanguageKey) ?? ""
             let target = stored.isEmpty ? Locale.current.language : Locale.Language(identifier: stored)
+
+            // 术语表：整段命中的（Billing、Voice 这类短标签）直接用译法，其余才送引擎。
+            let glossary = UserGlossary.load()
+            var matched: [(block: TextBlock, text: String)] = []
+            var remaining: [TextBlock] = []
+            for block in blocks {
+                if let hit = glossary.lookup(block.text, target: target.minimalIdentifier) {
+                    matched.append((block, hit))
+                } else {
+                    remaining.append(block)
+                }
+            }
+            pendingGlossaryPairs = matched
+            pendingTranslationBlocks = remaining
+
+            if remaining.isEmpty {
+                applyImageTranslation([])
+                isTranslatingImage = false
+                return
+            }
+
+            if TranslationEngineChoice.current.usesAppleIntelligence {
+                // Apple 智能：直接调用，术语表相关条目放进提示。
+                let terms = glossary.entries(relevantTo: remaining.map(\.text), target: target.minimalIdentifier)
+                let translated = try await AppleIntelligenceTranslator.translate(remaining.map(\.text), to: target, glossary: terms)
+                applyImageTranslation(Array(zip(remaining, translated)).map { (block: $0.0, text: $0.1) })
+                isTranslatingImage = false
+                return
+            }
+
             if var existing = imageTranslationConfiguration, existing.target == target {
                 existing.invalidate()
                 imageTranslationConfiguration = existing
@@ -559,12 +590,19 @@ final class CaptureViewModel: ObservableObject {
         let width = Double(cgImage.width), height = Double(cgImage.height)
         guard width > 0, height > 0 else { return }
         var next = annotations.filter { $0.kind != .translation }
-        for item in translated {
+        let all = (pendingGlossaryPairs + translated).sorted { $0.block.rect.minY < $1.block.rect.minY }
+        pendingGlossaryPairs = []
+        for item in all {
             let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { continue }
-            let rect = item.block.rect
-            let background = TranslationBlockLayout.backgroundColor(around: rect, in: cgImage)
+            // 底色按原文框采样（周边像素），字号/框高按原文行高统一，装不下再向下加高。
+            let background = TranslationBlockLayout.backgroundColor(around: item.block.rect, in: cgImage)
             let foreground = TranslationBlockLayout.textColor(on: background)
+            let layout = TranslationBlockLayout.layout(
+                text: text, in: item.block.rect, lineHeight: item.block.lineHeight,
+                imageSize: CGSize(width: width, height: height)
+            )
+            let rect = layout.rect
             next.append(CaptureAnnotation(
                 kind: .translation,
                 start: NormalizedPoint(x: rect.minX / width, y: rect.minY / height),
@@ -572,7 +610,7 @@ final class CaptureViewModel: ObservableObject {
                 label: text,
                 colorHex: foreground.hexString,
                 fillColorHex: background.hexString,
-                fontSize: Double(TranslationBlockLayout.fittingFontSize(for: text, in: rect))
+                fontSize: Double(layout.fontSize)
             ))
         }
         annotations = next
