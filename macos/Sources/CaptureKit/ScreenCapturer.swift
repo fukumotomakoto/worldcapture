@@ -76,6 +76,7 @@ public struct ScreenCapturer: ScreenCapturing {
                     frame: window.frame
                 )
             }
+            .droppingUntitledHelperWindows()
             .sorted {
                 ($0.applicationName.localizedStandardCompare($1.applicationName) == .orderedAscending)
                     || ($0.applicationName == $1.applicationName
