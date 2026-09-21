@@ -102,6 +102,8 @@ final class CaptureViewModel: ObservableObject {
     var pendingGlossaryPairs: [(block: TextBlock, text: String)] = []
     @Published var imageTranslationConfiguration: TranslationSession.Configuration?
     @Published var isTranslatingImage = false
+    /// Apple 智能路径的进度（已完成批数 / 总批数），供按钮显示。
+    @Published var translationProgress: (done: Int, total: Int)?
     @Published var showTranslationOverlay = true
     var hasTranslationBlocks: Bool { annotations.contains { $0.kind == .translation } }
 
@@ -575,11 +577,22 @@ final class CaptureViewModel: ObservableObject {
             }
 
             if TranslationEngineChoice.current.usesAppleIntelligence {
-                // Apple 智能：直接调用，术语表相关条目放进提示。
+                // Apple 智能：直接调用，术语表相关条目放进提示；失败的段落保留原文（跳过），其余照常。
                 let terms = glossary.entries(relevantTo: remaining.map(\.text), target: target.minimalIdentifier)
-                let translated = try await AppleIntelligenceTranslator.translate(remaining.map(\.text), to: target, glossary: terms)
-                applyImageTranslation(Array(zip(remaining, translated)).map { (block: $0.0, text: $0.1) })
+                translationProgress = (0, 0)
+                let translated = try await AppleIntelligenceTranslator.translate(
+                    remaining.map(\.text), to: target, glossary: terms,
+                    progress: { done, total in
+                        Task { @MainActor [weak self] in self?.translationProgress = (done, total) }
+                    }
+                )
+                let pairs = zip(remaining, translated).compactMap { block, text in text.map { (block: block, text: $0) } }
+                applyImageTranslation(pairs)
+                translationProgress = nil
                 isTranslatingImage = false
+                if pairs.count < remaining.count {
+                    errorMessage = Loc.s("imageTranslate.partial", remaining.count - pairs.count)
+                }
                 return
             }
 
@@ -1357,7 +1370,13 @@ struct CaptureView: View {
                 Button {
                     Task { await model.translateImage() }
                 } label: {
-                    Label(Loc.s("imageTranslate.button"), systemImage: "character.bubble")
+                    if let progress = model.translationProgress, progress.total > 0 {
+                        Label(Loc.s("imageTranslate.progress", Int32(progress.done), Int32(progress.total)), systemImage: "character.bubble")
+                    } else if model.isTranslatingImage {
+                        Label(Loc.s("imageTranslate.working"), systemImage: "character.bubble")
+                    } else {
+                        Label(Loc.s("imageTranslate.button"), systemImage: "character.bubble")
+                    }
                 }
                 .disabled(model.image == nil || model.isTranslatingImage)
                 .help(Loc.s("imageTranslate.help"))

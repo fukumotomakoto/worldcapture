@@ -79,27 +79,62 @@ enum AppleIntelligenceTranslator {
         return Loc.s("settings.translation.engine.needsMacOS26")
     }
 
-    /// 每批最多多少条 / 多少字符（模型上下文约 4k token，留足指令和输出的余量）。
+    /// 每批最多多少条 / 多少字符。模型上下文 4096 token：实测一段 6000 字符直接报
+    /// exceededContextWindowSize（还要等 41 秒），16 条短句一批约 4 秒。所以段落先按句切到 ≤ 900 字符，
+    /// 每批 ≤ 1000 字符，输出中文也留得下。
     static let batchItemLimit = 16
-    static let batchCharacterLimit = 1400
+    static let batchCharacterLimit = 1000
+    static let paragraphChunkLimit = 900
 
+    /// 逐条翻译；某一批失败（超长、触发内容护栏……）只让那几条返回 nil，其余照常。
+    /// `progress(done, total)` 按批回报，供界面显示进度。
     nonisolated static func translate(
         _ texts: [String],
         to target: Locale.Language,
-        glossary: [(source: String, target: String)]
-    ) async throws -> [String] {
+        glossary: [(source: String, target: String)],
+        progress: (@Sendable (Int, Int) -> Void)? = nil
+    ) async throws -> [String?] {
         #if canImport(FoundationModels)
         guard #available(macOS 26.0, *) else { throw TranslationEngineError.unavailable }
-        var results: [String] = []
-        for batch in batches(of: texts) {
-            let session = LanguageModelSession(instructions: instructions(target: target, glossary: glossary))
-            let numbered = batch.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
-            let response = try await session.respond(to: numbered, generating: TranslatedBatch.self)
-            var items = response.content.items
-            // 条数对不上时以输入为准：多的截掉，少的用原文补位，绝不错位。
-            if items.count > batch.count { items = Array(items.prefix(batch.count)) }
-            while items.count < batch.count { items.append(batch[items.count]) }
-            results.append(contentsOf: items)
+        // 超长段落切块，翻完再拼回；chunkOwner[i] = 第 i 块属于第几条原文。
+        var chunks: [String] = []
+        var chunkOwner: [Int] = []
+        for (index, text) in texts.enumerated() {
+            for piece in TextChunker.split(text, limit: paragraphChunkLimit) {
+                chunks.append(piece)
+                chunkOwner.append(index)
+            }
+        }
+        let batches = self.batches(of: chunks)
+        var translatedChunks: [String?] = Array(repeating: nil, count: chunks.count)
+        var cursor = 0
+        for (batchIndex, batch) in batches.enumerated() {
+            let range = cursor..<(cursor + batch.count)
+            cursor += batch.count
+            do {
+                let session = LanguageModelSession(instructions: instructions(target: target, glossary: glossary))
+                let numbered = batch.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
+                let response = try await session.respond(to: numbered, generating: TranslatedBatch.self)
+                var items = response.content.items
+                // 条数对不上时以输入为准：多的截掉，少的用原文补位，绝不错位。
+                if items.count > batch.count { items = Array(items.prefix(batch.count)) }
+                while items.count < batch.count { items.append(batch[items.count]) }
+                for (offset, item) in items.enumerated() { translatedChunks[range.lowerBound + offset] = item }
+            } catch {
+                // 这一批放弃（保留 nil），不影响其他批。
+            }
+            progress?(batchIndex + 1, batches.count)
+        }
+        // 拼回每条原文：任一块失败整条视为失败。
+        let joinsWithoutSpace = ["zh", "ja", "ko"].contains(target.languageCode?.identifier ?? "")
+        var results: [String?] = Array(repeating: nil, count: texts.count)
+        var parts: [[String]?] = Array(repeating: [], count: texts.count)
+        for (index, chunk) in translatedChunks.enumerated() {
+            let owner = chunkOwner[index]
+            if let chunk, parts[owner] != nil { parts[owner]!.append(chunk) } else { parts[owner] = nil }
+        }
+        for (index, list) in parts.enumerated() {
+            if let list { results[index] = list.joined(separator: joinsWithoutSpace ? "" : " ") }
         }
         return results
         #else

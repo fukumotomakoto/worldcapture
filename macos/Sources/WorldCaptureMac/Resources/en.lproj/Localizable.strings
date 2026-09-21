@@ -256,3 +256,6 @@
 "mirror.pause" = "Pause";
 "mirror.resume" = "Resume";
 "mirror.close" = "Close Live Lens";
+"imageTranslate.working" = "Translating…";
+"imageTranslate.progress" = "Translating %d/%d";
+"imageTranslate.partial" = "%d paragraph(s) could not be translated (too long or declined by the system); the original text was kept.";

@@ -238,7 +238,8 @@ struct OCRResultView: View {
                 do {
                     let nonEmpty = lines.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
                     let translated = try await AppleIntelligenceTranslator.translate(nonEmpty, to: target, glossary: terms)
-                    translation = translated.joined(separator: "\n")
+                    // 失败的行保留原文。
+                    translation = zip(nonEmpty, translated).map { $0.1 ?? $0.0 }.joined(separator: "\n")
                 } catch {
                     translation = nil
                     translationError = error.localizedDescription

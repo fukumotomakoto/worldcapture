@@ -168,7 +168,7 @@ final class TranslationMirrorController: ObservableObject {
             do {
                 let translated = try await AppleIntelligenceTranslator.translate(pendingTexts, to: target, glossary: terms)
                 var byText: [String: String] = [:]
-                for (text, output) in zip(pendingTexts, translated) { byText[text] = output }
+                for (text, output) in zip(pendingTexts, translated) { if let output { byText[text] = output } }
                 finish(with: byText)
             } catch {
                 pendingTexts = []

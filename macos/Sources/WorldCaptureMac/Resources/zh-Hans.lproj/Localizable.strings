@@ -256,3 +256,6 @@
 "mirror.pause" = "暂停";
 "mirror.resume" = "继续";
 "mirror.close" = "关闭翻译镜";
+"imageTranslate.working" = "翻译中…";
+"imageTranslate.progress" = "翻译中 %d/%d";
+"imageTranslate.partial" = "有 %d 段未能翻译（过长或被系统拒绝），已保留原文。";

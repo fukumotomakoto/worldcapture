@@ -256,3 +256,6 @@
 "mirror.pause" = "一時停止";
 "mirror.resume" = "再開";
 "mirror.close" = "翻訳レンズを閉じる";
+"imageTranslate.working" = "翻訳中…";
+"imageTranslate.progress" = "翻訳中 %d/%d";
+"imageTranslate.partial" = "%d 段落を翻訳できませんでした（長すぎるかシステムに拒否されました）。原文をそのまま残しています。";
