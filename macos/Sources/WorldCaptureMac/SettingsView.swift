@@ -75,6 +75,13 @@ struct SettingsView: View {
                 Text(Loc.s("settings.dock.note"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                Picker(Loc.s("settings.dock.labelStyle"), selection: $dock.labelStyle) {
+                    ForEach(DockLabelStyle.allCases) { style in
+                        Text(Loc.s("settings.dock.labelStyle.\(style.rawValue)")).tag(style)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .disabled(!dock.isEnabled)
 
                 Picker(Loc.s("settings.labelStyle"), selection: $toolbarLabelStyle) {
                     ForEach(ToolbarLabelStyle.allCases) { style in

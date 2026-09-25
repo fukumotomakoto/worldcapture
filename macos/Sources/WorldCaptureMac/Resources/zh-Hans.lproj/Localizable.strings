@@ -261,3 +261,19 @@
 "imageTranslate.partial" = "有 %d 段未能翻译（过长或被系统拒绝），已保留原文。";
 "settings.dock" = "顶部工具条";
 "settings.dock.note" = "屏幕顶端常驻一个小标签，鼠标指上去滑出截图/录制按钮。开启时主窗口默认不显示，截完图才打开编辑器；关闭编辑器即收回。";
+
+/* 顶部工具条按钮短标签（2～3 字） */
+"dock.region" = "区域";
+"dock.screen" = "屏幕";
+"dock.window" = "窗口";
+"dock.scroll" = "长图";
+"dock.record" = "录屏";
+"dock.recordRegion" = "录区域";
+"dock.gif" = "GIF";
+"dock.stop" = "停止";
+"dock.ocr" = "取字";
+"dock.mirror" = "翻译镜";
+"dock.main" = "编辑器";
+"settings.dock.labelStyle" = "工具条标签";
+"settings.dock.labelStyle.iconAndText" = "图标 + 文字";
+"settings.dock.labelStyle.iconOnly" = "纯图标（悬停说明）";

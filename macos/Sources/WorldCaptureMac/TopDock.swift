@@ -7,6 +7,14 @@ import SwiftUI
 /// 默认开启；设置里可以关掉（铁律 9：自用时把前脸让给桌面精灵）。
 /// 实现上是一扇不激活的浮动面板：折叠时只有 56×9 的标签，展开时整条工具条；
 /// 用全局鼠标移动监视器判断悬停，面板可左右拖动，位置按屏宽比例记住。
+/// 工具条按钮的标签方式：图标下方带 2～3 字文字，或纯图标 + 悬停说明。两种都留着，供师弟对比。
+enum DockLabelStyle: String, CaseIterable, Identifiable {
+    case iconAndText
+    case iconOnly
+    var id: String { rawValue }
+    static let storageKey = "dock.labelStyle"
+}
+
 @MainActor
 final class TopDockController: ObservableObject {
     static let shared = TopDockController()
@@ -21,9 +29,28 @@ final class TopDockController: ObservableObject {
 
     @Published private(set) var isEnabled = TopDockController.isEnabledAtLaunch
     @Published private(set) var isExpanded = false
+    @Published var labelStyle: DockLabelStyle = DockLabelStyle(
+        rawValue: UserDefaults.standard.string(forKey: DockLabelStyle.storageKey) ?? ""
+    ) ?? .iconAndText {
+        didSet {
+            UserDefaults.standard.set(labelStyle.rawValue, forKey: DockLabelStyle.storageKey)
+            reposition()
+        }
+    }
 
-    static let collapsedSize = CGSize(width: 56, height: 9)
-    static let expandedSize = CGSize(width: 512, height: 46)
+    /// 尺寸：师弟要求比首版大 50%。
+    static let collapsedSize = CGSize(width: 84, height: 13)
+    static let buttonCount = 10
+    static let dividerCount = 3
+    static func buttonSize(_ style: DockLabelStyle) -> CGSize {
+        style == .iconAndText ? CGSize(width: 58, height: 52) : CGSize(width: 50, height: 44)
+    }
+    static func expandedSize(_ style: DockLabelStyle) -> CGSize {
+        let button = buttonSize(style)
+        let width = CGFloat(buttonCount) * button.width + CGFloat(dividerCount) * 20 + 32
+        return CGSize(width: width, height: button.height + 24)
+    }
+    var expandedSize: CGSize { Self.expandedSize(labelStyle) }
 
     private var panel: NSPanel?
     private var model: CaptureViewModel?
@@ -87,7 +114,7 @@ final class TopDockController: ObservableObject {
 
     private func frame(expanded: Bool) -> CGRect {
         guard let screen else { return .zero }
-        let size = expanded ? Self.expandedSize : Self.collapsedSize
+        let size = expanded ? expandedSize : Self.collapsedSize
         let top = screen.visibleFrame.maxY
         var x = screen.frame.minX + screen.frame.width * xFraction - size.width / 2
         x = min(max(x, screen.frame.minX + 8), screen.frame.maxX - size.width - 8)
@@ -197,7 +224,7 @@ private struct TopDockView: View {
             UnevenRoundedRectangle(bottomLeadingRadius: 6, bottomTrailingRadius: 6)
                 .fill(.regularMaterial)
                 .overlay(
-                    Capsule().fill(Color.secondary.opacity(0.7)).frame(width: 28, height: 3)
+                    Capsule().fill(Color.secondary.opacity(0.7)).frame(width: 42, height: 4)
                 )
                 .frame(width: TopDockController.collapsedSize.width, height: TopDockController.collapsedSize.height)
             Spacer(minLength: 0)
@@ -205,41 +232,55 @@ private struct TopDockView: View {
     }
 
     private var expandedBar: some View {
-        HStack(spacing: 2) {
-            dockButton("capture.region", "selection.pin.in.out") { Task { await model.captureRegion() } }
-            dockButton("capture.fullscreen", "display") { Task { await model.capture() } }
-            dockButton("capture.window", "macwindow") {
+        let size = controller.expandedSize
+        return HStack(spacing: 0) {
+            dockButton("dock.region", help: "capture.region.help", "selection.pin.in.out") { Task { await model.captureRegion() } }
+            dockButton("dock.screen", help: "capture.fullscreen.help", "display") { Task { await model.capture() } }
+            dockButton("dock.window", help: "capture.window.help", "macwindow") {
                 model.sourcePicker = .window
                 model.openMainWindow()
             }
-            dockButton("capture.scroll", "arrow.down.doc") { Task { await model.captureScrolling() } }
-            Divider().frame(height: 22).padding(.horizontal, 4)
-            dockButton(model.isRecording ? "record.stop" : "record.screen",
+            dockButton("dock.scroll", help: "capture.scroll.help", "arrow.down.doc") { Task { await model.captureScrolling() } }
+            divider
+            dockButton(model.isRecording ? "dock.stop" : "dock.record", help: "record.screen",
                        model.isRecording ? "stop.circle.fill" : "record.circle") { Task { await model.toggleRecording() } }
-            dockButton("record.region", "rectangle.dashed.badge.record") { Task { await model.beginRegionRecording() } }
-            dockButton(model.isGIFRecording ? "gif.stop" : "gif.button", "photo.stack") { Task { await model.toggleGIFRecording() } }
-            Divider().frame(height: 22).padding(.horizontal, 4)
-            dockButton("menu.ocr", "text.viewfinder") { Task { await model.captureRegionAndExtractText() } }
-            dockButton("mirror.button", "character.bubble") { Task { await model.startTranslationMirror() } }
-            Divider().frame(height: 22).padding(.horizontal, 4)
-            dockButton("menu.showMain", "macwindow.on.rectangle") { model.openMainWindow() }
+            dockButton("dock.recordRegion", help: "record.region", "rectangle.dashed.badge.record") { Task { await model.beginRegionRecording() } }
+            dockButton(model.isGIFRecording ? "dock.stop" : "dock.gif", help: "gif.button", "photo.stack") { Task { await model.toggleGIFRecording() } }
+            divider
+            dockButton("dock.ocr", help: "menu.ocr", "text.viewfinder") { Task { await model.captureRegionAndExtractText() } }
+            dockButton("dock.mirror", help: "mirror.help", "character.bubble") { Task { await model.startTranslationMirror() } }
+            divider
+            dockButton("dock.main", help: "menu.showMain", "macwindow.on.rectangle") { model.openMainWindow() }
         }
-        .padding(.horizontal, 10)
-        .frame(width: TopDockController.expandedSize.width, height: TopDockController.expandedSize.height)
-        .background(.regularMaterial, in: UnevenRoundedRectangle(bottomLeadingRadius: 12, bottomTrailingRadius: 12))
+        .padding(.horizontal, 16)
+        .frame(width: size.width, height: size.height)
+        .background(.regularMaterial, in: UnevenRoundedRectangle(bottomLeadingRadius: 16, bottomTrailingRadius: 16))
         .overlay(alignment: .bottom) {
-            Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 28, height: 3).padding(.bottom, 3)
+            Capsule().fill(Color.secondary.opacity(0.5)).frame(width: 42, height: 4).padding(.bottom, 4)
         }
     }
 
-    private func dockButton(_ key: String, _ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 16, weight: .medium))
-                .frame(width: 34, height: 30)
-                .contentShape(Rectangle())
+    private var divider: some View {
+        Divider().frame(height: 30).padding(.horizontal, 9)
+    }
+
+    /// 图标 + 文字（2～3 字）或纯图标；两种都带悬停说明（纯图标模式下说明就是唯一的文字提示）。
+    private func dockButton(_ labelKey: String, help helpKey: String, _ symbol: String, action: @escaping () -> Void) -> some View {
+        let size = TopDockController.buttonSize(controller.labelStyle)
+        return Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: symbol)
+                    .font(.system(size: controller.labelStyle == .iconAndText ? 21 : 24, weight: .medium))
+                if controller.labelStyle == .iconAndText {
+                    Text(Loc.s(labelKey))
+                        .font(.system(size: 11))
+                        .lineLimit(1)
+                }
+            }
+            .frame(width: size.width, height: size.height)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help(Loc.s(key))
+        .help(controller.labelStyle == .iconAndText ? Loc.s(helpKey) : Loc.s(labelKey) + " — " + Loc.s(helpKey))
     }
 }
