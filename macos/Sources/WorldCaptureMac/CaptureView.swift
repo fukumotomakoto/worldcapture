@@ -1336,14 +1336,31 @@ struct CaptureView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("WorldCapture")
                     .font(.title2.bold())
+                    .lineLimit(1)
                 Text(Loc.s("app.subtitle"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
-            .layoutPriority(0)
+            // 标题永不被压缩。曾经让按钮组固定宽度、标题可压缩：按钮一多，标题被压成零宽、逐字换行，
+            // 头部被撑到几百像素高，右端按钮还被截掉（2026-10-08 师弟截图）。
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
             Spacer(minLength: 16)
+            // 先试「图标 + 文字」，放不下就自动退成纯图标；用户选了纯图标则只有一种。
+            ViewThatFits(in: .horizontal) {
+                if toolbarLabelStyle == .iconAndText {
+                    headerActions(iconOnly: false)
+                }
+                headerActions(iconOnly: true)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+    }
+
+    private func headerActions(iconOnly: Bool) -> some View {
             HStack(spacing: 10) {
                 Button {
                     model.reset()
@@ -1423,13 +1440,8 @@ struct CaptureView: View {
                 }
                 .help(Loc.s("assistant.toggle.help"))
             }
-            .labelStyle(toolbarLabel)
-            // 头部动作按钮保持完整标签（尤其日文更长），窄窗时优先压缩左侧副标题而非截断按钮。
+            .labelStyle(AdaptiveLabelStyle(iconOnly: iconOnly))
             .fixedSize(horizontal: true, vertical: false)
-            .layoutPriority(1)
-        }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 16)
     }
 
     /// 录制控件：录制中显示停止；多屏时在内容区内嵌屏幕缩略图供选择（不用下拉菜单）；单屏直接录主屏。
