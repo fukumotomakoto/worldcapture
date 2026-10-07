@@ -115,11 +115,11 @@ enum AppleIntelligenceTranslator {
                 let session = LanguageModelSession(instructions: instructions(target: target, glossary: glossary))
                 let numbered = batch.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
                 let response = try await session.respond(to: numbered, generating: TranslatedBatch.self)
-                var items = response.content.items
-                // 条数对不上时以输入为准：多的截掉，少的用原文补位，绝不错位。
-                if items.count > batch.count { items = Array(items.prefix(batch.count)) }
-                while items.count < batch.count { items.append(batch[items.count]) }
-                for (offset, item) in items.enumerated() { translatedChunks[range.lowerBound + offset] = item }
+                // 回填：模型会把两条合并后重新编号（实测过），所以序号只是线索，以回显的原文为准匹配。
+                let matched = Self.match(batch, with: response.content.items.map { ($0.index, $0.source, $0.translation) })
+                for (offset, text) in matched.enumerated() {
+                    translatedChunks[range.lowerBound + offset] = text ?? batch[offset]
+                }
             } catch {
                 // 这一批放弃（保留 nil），不影响其他批。
             }
@@ -140,6 +140,28 @@ enum AppleIntelligenceTranslator {
         #else
         throw TranslationEngineError.unavailable
         #endif
+    }
+
+    /// 把模型输出对回输入：先看序号指向的条目回显原文是否对得上，对不上就在所有条目里找原文最像的；
+    /// 都找不到返回 nil（调用方保留原文）。「像」= 规范化后的前 24 个字符相同，或一方是另一方的前缀。
+    nonisolated static func match(_ inputs: [String], with items: [(index: Int, source: String, translation: String)]) -> [String?] {
+        func norm(_ s: String) -> String {
+            String(s.lowercased().filter { $0.isLetter || $0.isNumber }.prefix(24))
+        }
+        let normalized = items.map { (index: $0.index, source: norm($0.source), translation: $0.translation) }
+        return inputs.enumerated().map { offset, input in
+            let key = norm(input)
+            guard !key.isEmpty else { return nil }
+            if let byIndex = normalized.first(where: { $0.index == offset + 1 }),
+               byIndex.source == key || (byIndex.source.count >= 8 && (key.hasPrefix(byIndex.source) || byIndex.source.hasPrefix(key))) {
+                return byIndex.translation
+            }
+            if let best = normalized.first(where: { $0.source == key })
+                ?? normalized.first(where: { $0.source.count >= 8 && (key.hasPrefix($0.source) || $0.source.hasPrefix(key)) }) {
+                return best.translation
+            }
+            return nil
+        }
     }
 
     static func batches(of texts: [String]) -> [[String]] {
@@ -163,7 +185,8 @@ enum AppleIntelligenceTranslator {
         let languageName = Locale.current.localizedString(forIdentifier: target.minimalIdentifier) ?? target.minimalIdentifier
         var text = """
         You are a software UI localizer. Translate each numbered line the user gives you into \(languageName).
-        Rules: keep the same number of items and the same order, one translation per input line; \
+        Rules: output exactly one entry per numbered input line, carrying that line's number; never merge or split lines; \
+        translate every sentence of a line completely (never shorten or drop a sentence); \
         translate UI labels concisely as a native app would name them; keep product names, brand names, \
         file names, code, URLs, numbers and units unchanged; do not add explanations, quotes or numbering.
         """
@@ -183,8 +206,19 @@ enum TranslationEngineError: LocalizedError {
 #if canImport(FoundationModels)
 @available(macOS 26.0, *)
 @Generable
+private struct TranslatedItem {
+    @Guide(description: "The number of the input line this translation belongs to (1-based).")
+    var index: Int
+    @Guide(description: "The first few words of that input line, copied exactly as given.")
+    var source: String
+    @Guide(description: "The translation of that line, without the number.")
+    var translation: String
+}
+
+@available(macOS 26.0, *)
+@Generable
 private struct TranslatedBatch {
-    @Guide(description: "Translations in the same order as the numbered input lines, one per line, without the numbers.")
-    var items: [String]
+    @Guide(description: "One entry per numbered input line, each carrying the line's number.")
+    var items: [TranslatedItem]
 }
 #endif

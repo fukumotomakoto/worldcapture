@@ -141,6 +141,9 @@ public struct TranslationGlossary: Sendable {
         ("Desktop app", "桌面应用"), ("Mobile app", "手机应用"), ("Extension", "扩展"), ("Model", "模型"),
         ("Prompt", "提示词"), ("Token", "令牌"), ("Tokens", "令牌"), ("Context", "上下文"), ("Agent", "智能体"),
         ("Claude Code", "Claude Code"), ("Claude in Chrome", "Chrome 中的 Claude"),
+        ("Keyboard Shortcuts", "键盘快捷键"), ("Shortcuts", "快捷键"), ("Screen Recording", "屏幕录制"),
+        ("Privacy & Security", "隐私与安全"), ("Automatic updates", "自动更新"), ("Save Changes", "保存更改"),
+        ("Accessibility", "辅助功能"), ("Microphone", "麦克风"), ("Camera", "相机"), ("Storage", "存储"),
     ]
 
     static let englishToJapanese: [(String, String)] = [
@@ -174,5 +177,8 @@ public struct TranslationGlossary: Sendable {
         ("Desktop app", "デスクトップアプリ"), ("Mobile app", "モバイルアプリ"), ("Extension", "拡張機能"), ("Model", "モデル"),
         ("Prompt", "プロンプト"), ("Token", "トークン"), ("Tokens", "トークン"), ("Context", "コンテキスト"), ("Agent", "エージェント"),
         ("Claude Code", "Claude Code"), ("Claude in Chrome", "Chrome の Claude"),
+        ("Keyboard Shortcuts", "キーボードショートカット"), ("Shortcuts", "ショートカット"), ("Screen Recording", "画面収録"),
+        ("Privacy & Security", "プライバシーとセキュリティ"), ("Automatic updates", "自動アップデート"), ("Save Changes", "変更を保存"),
+        ("Accessibility", "アクセシビリティ"), ("Microphone", "マイク"), ("Camera", "カメラ"), ("Storage", "ストレージ"),
     ]
 }

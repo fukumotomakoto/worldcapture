@@ -14,6 +14,16 @@ public struct TextBlock: Equatable, Sendable {
         self.lineHeight = lineHeight ?? rect.height / CGFloat(max(1, lines.count))
     }
 
+    /// 由行框高度和文字内容反推原文字号（em）。Vision 的行框贴着字形：有降部字母（g j p q y）的行
+    /// 约 0.95 em 高，只有 x 高度和上伸部的行约 0.74 em，中日韩文字约 0.9 em。不做这个修正，
+    /// 「General」和「Appearance」会因为一个 p 相差两成字号。
+    public static func estimatedFontSize(boxHeight: CGFloat, text: String) -> CGFloat {
+        let hasCJK = text.contains { $0.isCJK }
+        if hasCJK { return boxHeight / 0.9 }
+        let hasDescender = text.contains { "gjpqy".contains($0) }
+        return boxHeight / (hasDescender ? 0.95 : 0.74)
+    }
+
     /// 合并后的整段文字：相邻两行若接缝两侧都是中日韩字符则直接相连，否则以空格相连。
     /// 按段送翻译，句子才不会在换行处被切成两半。
     public var text: String {
@@ -47,30 +57,51 @@ public enum TextBlockGrouper {
                 return a.box.minX < b.box.minX
             }
 
-        var blocks: [(rect: CGRect, lastBox: CGRect, lines: [String], heights: [CGFloat])] = []
+        var blocks: [(rect: CGRect, lastBox: CGRect, lastSize: CGFloat, lines: [String], sizes: [CGFloat], tops: [CGFloat])] = []
         for line in ordered {
+            let size = TextBlock.estimatedFontSize(boxHeight: line.box.height, text: line.text)
             // 从最近的段落往前找，找到第一个能接上的；找不到就另起一段。
-            if let index = blocks.indices.reversed().first(where: { canAppend(line.box, after: blocks[$0].lastBox) }) {
+            if let index = blocks.indices.reversed().first(where: {
+                canAppend(line.box, size: size, after: blocks[$0].lastBox, size: blocks[$0].lastSize, blockLineCount: blocks[$0].lines.count)
+            }) {
                 blocks[index].rect = blocks[index].rect.union(line.box)
                 blocks[index].lastBox = line.box
+                blocks[index].lastSize = size
                 blocks[index].lines.append(line.text)
-                blocks[index].heights.append(line.box.height)
+                blocks[index].sizes.append(size)
+                blocks[index].tops.append(line.box.minY)
             } else {
-                blocks.append((line.box, line.box, [line.text], [line.box.height]))
+                blocks.append((line.box, line.box, size, [line.text], [size], [line.box.minY]))
             }
         }
         return blocks.map { block in
-            let sorted = block.heights.sorted()
+            // 多行段落：行距最可靠（Vision 对段落内行的框高会带上行距，不稳定）。界面/网页行距通常是字号的 1.25～1.45 倍。
+            if block.tops.count >= 2, let first = block.tops.first, let last = block.tops.last, last > first {
+                let pitch = (last - first) / CGFloat(block.tops.count - 1)
+                return TextBlock(rect: block.rect, lines: block.lines, lineHeight: pitch / lineHeightOverFontSize)
+            }
+            let sorted = block.sizes.sorted()
             return TextBlock(rect: block.rect, lines: block.lines, lineHeight: sorted[sorted.count / 2])
         }
     }
 
-    static func canAppend(_ box: CGRect, after previous: CGRect) -> Bool {
+    /// 段落行距 ÷ 字号 的典型值。
+    public static let lineHeightOverFontSize: CGFloat = 1.35
+
+    /// `size` 为按字形修正后的字号估计（见 `estimatedFontSize`）。
+    static func canAppend(_ box: CGRect, size: CGFloat, after previous: CGRect, size previousSize: CGFloat, blockLineCount: Int) -> Bool {
         let height = (box.height + previous.height) / 2
-        guard height > 0 else { return false }
-        // 行高差超过 ±30% 多半是标题与正文，分开翻更准（OCR 框的抖动一般在 10% 内）。
-        let heightRatio = box.height / previous.height
-        guard heightRatio >= 0.7, heightRatio <= 1.4 else { return false }
+        guard height > 0, previousSize > 0 else { return false }
+        // 字号差超过 ±25% 多半是标题与正文，分开翻更准。
+        // 例外：比前一行窄且左对齐的行多半是段落换行后的末行，Vision 对它的框高常偏小，下限放宽到 0.6。
+        let sizeRatio = size / previousSize
+        let looksLikeWrappedTail = box.width < previous.width && abs(box.minX - previous.minX) < height * 1.5
+        guard sizeRatio >= (looksLikeWrappedTail ? 0.6 : 0.75), sizeRatio <= 1.33 else { return false }
+        // 段落首行比下一行大 12% 以上 = 小标题（「Screen Recording」接说明文字），也分开，标题才能保住自己的字号。
+        // 但首行比候选行长得多时，它是段落的正文首行而不是标题（候选行是换行后的末行），不适用。
+        if blockLineCount == 1, sizeRatio < 0.88, previous.width <= box.width * 1.2 { return false }
+        // 首行很短、下一行很长 = 标题接说明（框高不可靠时的保险）：标题一般不到说明行宽的 60%，说明行至少 20 个字符。
+        if blockLineCount == 1, previous.width < box.width * 0.6, box.width > height * 12 { return false }
 
         let gap = box.minY - previous.maxY
         guard gap > -height * 0.35, gap < height * 0.8 else { return false }

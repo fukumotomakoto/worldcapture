@@ -31,7 +31,11 @@ public enum TranslationBlockLayout {
 
     /// 统一字号的排版：字号由原文行高决定（不由框高决定），框按译文需要的高度向下加高；
     /// 只有加高到上限（原高 2.5 倍或图像底边）还装不下，才逐步缩字，缩到下限为止。
-    public static func layout(text: String, in rect: CGRect, lineHeight: CGFloat, imageSize: CGSize) -> Layout {
+    public static func layout(text: String, in original: CGRect, lineHeight: CGFloat, imageSize: CGSize) -> Layout {
+        // Vision 的框贴着字形，原文的上伸部/降部/字距会从译文块边缘漏出来：按字号外扩一圈再盖。
+        let rect = original
+            .insetBy(dx: -lineHeight * 0.12, dy: -lineHeight * 0.14)
+            .intersection(CGRect(origin: .zero, size: imageSize))
         let base = max(minimumFontSize, lineHeight * fontScaleOfLineHeight)
         let floor = max(minimumFontSize, base * minimumFontScale)
         let width = max(1, rect.width - padding * 2)
