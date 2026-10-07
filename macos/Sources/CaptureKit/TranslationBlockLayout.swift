@@ -102,17 +102,19 @@ public enum TranslationBlockLayout {
         guard outer.width >= 3, outer.height >= 3, let pixels = ImagePixels(image: image, rect: outer) else {
             return RGBAColor(red: 1, green: 1, blue: 1)
         }
-        var sum = (r: 0.0, g: 0.0, b: 0.0), count = 0.0
+        // 取各通道的中位数而不是均值：环里偶尔混进相邻文字或边框的像素，均值会被拉偏，中位数不会。
+        var rs: [Double] = [], gs: [Double] = [], bs: [Double] = []
         for y in 0..<pixels.height {
             for x in 0..<pixels.width {
                 let onRing = x < Int(ring) || y < Int(ring) || x >= pixels.width - Int(ring) || y >= pixels.height - Int(ring)
                 guard onRing else { continue }
                 let p = pixels[x, y]
-                sum.r += p.r; sum.g += p.g; sum.b += p.b; count += 1
+                rs.append(p.r); gs.append(p.g); bs.append(p.b)
             }
         }
-        guard count > 0 else { return RGBAColor(red: 1, green: 1, blue: 1) }
-        return RGBAColor(red: sum.r / count, green: sum.g / count, blue: sum.b / count)
+        guard !rs.isEmpty else { return RGBAColor(red: 1, green: 1, blue: 1) }
+        func median(_ v: [Double]) -> Double { let s = v.sorted(); return s[s.count / 2] }
+        return RGBAColor(red: median(rs), green: median(gs), blue: median(bs))
     }
 
     /// 字色：按底色相对明度选黑或白。
