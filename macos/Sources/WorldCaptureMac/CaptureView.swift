@@ -620,15 +620,18 @@ final class CaptureViewModel: ObservableObject {
         var next = annotations.filter { $0.kind != .translation }
         let all = (pendingGlossaryPairs + translated).sorted { $0.block.rect.minY < $1.block.rect.minY }
         pendingGlossaryPairs = []
+        let allRects = all.map(\.block.rect)
+        let imageSize = CGSize(width: width, height: height)
         for item in all {
             let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { continue }
-            // 底色按原文框采样（周边像素），字号/框高按原文行高统一，装不下再向下加高。
+            // 底色按原文框采样（周边像素），字号按原文行高统一；装不下先向右借空白，再向下（不碰到别的块），再缩字。
             let background = TranslationBlockLayout.backgroundColor(around: item.block.rect, in: cgImage)
             let foreground = TranslationBlockLayout.textColor(on: background)
+            let space = TranslationBlockLayout.freeSpace(for: item.block.rect, among: allRects, imageSize: imageSize)
             let layout = TranslationBlockLayout.layout(
                 text: text, in: item.block.rect, lineHeight: item.block.lineHeight,
-                imageSize: CGSize(width: width, height: height)
+                imageSize: imageSize, maxWidth: space.maxWidth, maxHeight: space.maxHeight
             )
             let rect = layout.rect
             next.append(CaptureAnnotation(

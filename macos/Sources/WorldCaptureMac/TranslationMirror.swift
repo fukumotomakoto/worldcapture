@@ -205,14 +205,17 @@ final class TranslationMirrorController: ObservableObject {
         let image = lastImage
         let width = imagePixelSize.width, height = imagePixelSize.height
         var next: [CaptureAnnotation] = []
+        let allRects = pendingBlocks.map(\.rect)
         for (index, block) in pendingBlocks.enumerated() {
             guard let text = (pendingResolved[index] ?? translated[block.text])?
                 .trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { continue }
             let background = image.map { TranslationBlockLayout.backgroundColor(around: block.rect, in: $0) }
                 ?? RGBAColor(red: 1, green: 1, blue: 1)
             let foreground = TranslationBlockLayout.textColor(on: background)
+            let space = TranslationBlockLayout.freeSpace(for: block.rect, among: allRects, imageSize: imagePixelSize)
             let layout = TranslationBlockLayout.layout(
-                text: text, in: block.rect, lineHeight: block.lineHeight, imageSize: imagePixelSize
+                text: text, in: block.rect, lineHeight: block.lineHeight, imageSize: imagePixelSize,
+                maxWidth: space.maxWidth, maxHeight: space.maxHeight
             )
             next.append(CaptureAnnotation(
                 kind: .translation,

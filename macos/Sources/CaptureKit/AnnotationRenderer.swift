@@ -181,7 +181,8 @@ public enum AnnotationRenderer {
             width: textWidth,
             height: needed
         )
-        let attributed = TranslationBlockLayout.attributed(text, fontSize: fontSize, color: textColor)
+        let single = TranslationBlockLayout.fitsOnOneLine(text, fontSize: fontSize, width: textWidth)
+        let attributed = TranslationBlockLayout.attributed(text, fontSize: fontSize, color: textColor, singleLine: single)
         let framesetter = CTFramesetterCreateWithAttributedString(attributed)
         let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: 0), CGPath(rect: frameRect, transform: nil), nil)
         context.addPath(path)

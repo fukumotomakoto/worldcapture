@@ -163,3 +163,26 @@ private func line(_ text: String, x: CGFloat, y: CGFloat, w: CGFloat, h: CGFloat
     ])
     #expect(blocks.count == 2)
 }
+
+@Test func longTranslationBorrowsFreeSpaceToTheRightBeforeWrapping() {
+    // 侧栏标签：右边是一大片空白 → 译文拉成单行，不向下压到下一项。
+    let label = CGRect(x: 40, y: 200, width: 180, height: 26)
+    let below = CGRect(x: 40, y: 260, width: 120, height: 26)
+    let space = TranslationBlockLayout.freeSpace(for: label, among: [label, below], imageSize: CGSize(width: 1600, height: 1000))
+    #expect(space.maxWidth > 1000)
+    #expect(abs(space.maxHeight - (260 - 6 - 200)) < 0.01)
+    let layout = TranslationBlockLayout.layout(text: "プライバシーとセキュリティ", in: label, lineHeight: 26,
+                                               imageSize: CGSize(width: 1600, height: 1000), maxWidth: space.maxWidth, maxHeight: space.maxHeight)
+    #expect(layout.rect.width > label.width)
+    #expect(layout.rect.maxY < 260)
+    #expect(layout.fontSize == 26)
+}
+
+@Test func freeSpaceStopsAtTheNeighbourOnTheRightAndBelow() {
+    let rect = CGRect(x: 0, y: 0, width: 100, height: 20)
+    let right = CGRect(x: 300, y: 5, width: 50, height: 20)
+    let below = CGRect(x: 10, y: 80, width: 50, height: 20)
+    let space = TranslationBlockLayout.freeSpace(for: rect, among: [right, below], imageSize: CGSize(width: 900, height: 400))
+    #expect(abs(space.maxWidth - 294) < 0.01, "maxWidth=\(space.maxWidth)")
+    #expect(abs(space.maxHeight - 74) < 0.01, "maxHeight=\(space.maxHeight)")
+}

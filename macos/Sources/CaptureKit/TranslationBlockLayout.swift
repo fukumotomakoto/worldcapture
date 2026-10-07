@@ -29,26 +29,63 @@ public enum TranslationBlockLayout {
         public var fontSize: CGFloat
     }
 
-    /// 统一字号的排版：字号由原文行高决定（不由框高决定），框按译文需要的高度向下加高；
-    /// 只有加高到上限（原高 2.5 倍或图像底边）还装不下，才逐步缩字，缩到下限为止。
-    public static func layout(text: String, in original: CGRect, lineHeight: CGFloat, imageSize: CGSize) -> Layout {
+    /// 一个块周围可用的空间：向右能扩到最近的「同一行高范围内、位于右侧」的块（或图像右边）；
+    /// 向下能扩到最近的「横向有重叠、位于下方」的块（或图像底边）。留 6px 间隙。
+    public static func freeSpace(for rect: CGRect, among others: [CGRect], imageSize: CGSize) -> (maxWidth: CGFloat, maxHeight: CGFloat) {
+        let gap: CGFloat = 6
+        var rightLimit = imageSize.width
+        var bottomLimit = imageSize.height
+        for other in others where other != rect {
+            let verticalOverlap = min(rect.maxY, other.maxY) - max(rect.minY, other.minY)
+            if verticalOverlap > 0, other.minX >= rect.maxX - 1 {
+                rightLimit = min(rightLimit, other.minX - gap)
+            }
+            let horizontalOverlap = min(rect.maxX, other.maxX) - max(rect.minX, other.minX)
+            if horizontalOverlap > 0, other.minY >= rect.maxY - 1 {
+                bottomLimit = min(bottomLimit, other.minY - gap)
+            }
+        }
+        return (max(rect.width, rightLimit - rect.minX), max(rect.height, bottomLimit - rect.minY))
+    }
+
+    /// 统一字号的排版：字号由原文行高决定（不由框高决定）。译文装不下时按顺序：
+    /// ① 向右借用空白（到 `maxWidth`）② 向下加高（到 `maxHeight`、原高 2.5 倍或图像底边）③ 逐步缩字到下限。
+    /// `maxWidth`/`maxHeight` 由 `freeSpace` 给出，不传则只受图像边界限制。
+    public static func layout(text: String, in original: CGRect, lineHeight: CGFloat, imageSize: CGSize,
+                              maxWidth: CGFloat? = nil, maxHeight explicitMaxHeight: CGFloat? = nil) -> Layout {
         // Vision 的框贴着字形，原文的上伸部/降部/字距会从译文块边缘漏出来：按字号外扩一圈再盖。
         let rect = original
             .insetBy(dx: -lineHeight * 0.12, dy: -lineHeight * 0.14)
             .intersection(CGRect(origin: .zero, size: imageSize))
         let base = max(minimumFontSize, lineHeight * fontScaleOfLineHeight)
         let floor = max(minimumFontSize, base * minimumFontScale)
-        let width = max(1, rect.width - padding * 2)
-        let maxHeight = max(rect.height, min(rect.height * maximumGrowth, imageSize.height - rect.minY))
 
+        // ① 向右：单行放得下就拉成单行；放不下就用满可借的宽度减少换行。
+        let widthLimit = min(imageSize.width - rect.minX, max(rect.width, maxWidth ?? rect.width))
+        var boxWidth = rect.width
+        let singleLine = singleLineWidth(for: text, fontSize: base) + padding * 2
+        if singleLine > boxWidth {
+            boxWidth = min(widthLimit, singleLine)
+        }
+        let textWidth = max(1, boxWidth - padding * 2)
+
+        // ② 向下，③ 缩字。
+        let growthCap = min(rect.height * maximumGrowth, imageSize.height - rect.minY)
+        let maxHeight = max(rect.height, min(growthCap, explicitMaxHeight ?? growthCap))
         var size = base
-        var needed = layoutHeight(for: text, fontSize: size, width: width) + padding * 2
+        var needed = layoutHeight(for: text, fontSize: size, width: textWidth) + padding * 2
         while needed > maxHeight, size - 0.5 >= floor {
             size -= 0.5
-            needed = layoutHeight(for: text, fontSize: size, width: width) + padding * 2
+            needed = layoutHeight(for: text, fontSize: size, width: textWidth) + padding * 2
         }
         let height = min(maxHeight, max(rect.height, needed))
-        return Layout(rect: CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: height), fontSize: size)
+        return Layout(rect: CGRect(x: rect.minX, y: rect.minY, width: boxWidth, height: height), fontSize: size)
+    }
+
+    /// 不换行时文字的宽度。
+    public static func singleLineWidth(for text: String, fontSize: CGFloat) -> CGFloat {
+        let line = CTLineCreateWithAttributedString(attributed(text, fontSize: fontSize, color: nil))
+        return CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
     }
 
     /// 能让 `text` 换行后装进 `rect` 的最大字号；上限为矩形高度（单行即整块高）或 `maxFontSize`。
@@ -65,9 +102,19 @@ public enum TranslationBlockLayout {
         return low
     }
 
+    /// 单行译文的行高倍数（紧凑，让它装进原文那一行的框）；多行段落的行高倍数（可读性）。
+    public static let singleLineHeightMultiple: CGFloat = 1.08
+    public static let paragraphLineHeightMultiple: CGFloat = 1.3
+
+    /// 这段文字在给定宽度、字号下是否一行放得下。渲染器与排版都用它决定行高倍数，两边才一致。
+    public static func fitsOnOneLine(_ text: String, fontSize: CGFloat, width: CGFloat) -> Bool {
+        singleLineWidth(for: text, fontSize: fontSize) <= width
+    }
+
     /// 排好版的文字所需高度（用于在矩形内垂直居中）。
     public static func layoutHeight(for text: String, fontSize: CGFloat, width: CGFloat) -> CGFloat {
-        let framesetter = CTFramesetterCreateWithAttributedString(attributed(text, fontSize: fontSize, color: nil))
+        let single = fitsOnOneLine(text, fontSize: fontSize, width: width)
+        let framesetter = CTFramesetterCreateWithAttributedString(attributed(text, fontSize: fontSize, color: nil, singleLine: single))
         let size = CTFramesetterSuggestFrameSizeWithConstraints(
             framesetter, CFRange(location: 0, length: 0), nil,
             CGSize(width: max(1, width), height: .greatestFiniteMagnitude), nil
@@ -76,7 +123,8 @@ public enum TranslationBlockLayout {
     }
 
     private static func fits(_ text: String, size: CGFloat, in available: CGSize) -> Bool {
-        let framesetter = CTFramesetterCreateWithAttributedString(attributed(text, fontSize: size, color: nil))
+        let single = fitsOnOneLine(text, fontSize: size, width: available.width)
+        let framesetter = CTFramesetterCreateWithAttributedString(attributed(text, fontSize: size, color: nil, singleLine: single))
         var fitRange = CFRange()
         let needed = CTFramesetterSuggestFrameSizeWithConstraints(
             framesetter, CFRange(location: 0, length: 0), nil,
@@ -85,9 +133,14 @@ public enum TranslationBlockLayout {
         return fitRange.length >= (text as NSString).length && needed.height <= available.height
     }
 
-    public static func attributed(_ text: String, fontSize: CGFloat, color: CGColor?) -> NSAttributedString {
+    public static func attributed(_ text: String, fontSize: CGFloat, color: CGColor?, singleLine: Bool = false) -> NSAttributedString {
         let font = CTFontCreateWithName(fontName as CFString, fontSize, nil)
-        var attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let paragraph = NSMutableParagraphStyle()
+        let lineHeight = fontSize * (singleLine ? singleLineHeightMultiple : paragraphLineHeightMultiple)
+        paragraph.minimumLineHeight = lineHeight
+        paragraph.maximumLineHeight = lineHeight
+        paragraph.lineBreakMode = .byWordWrapping
+        var attributes: [NSAttributedString.Key: Any] = [.font: font, .paragraphStyle: paragraph]
         if let color { attributes[.foregroundColor] = color }
         return NSAttributedString(string: text, attributes: attributes)
     }
