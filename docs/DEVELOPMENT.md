@@ -2,7 +2,7 @@
 
 > 文档状态：与 `main` 分支同步
 >
-> 当前版本：`0.1.0` / build `1`
+> 当前版本：`0.1.1` / build `2`
 >
 > 当前平台：macOS 15+
 > Windows 状态：规划中，尚无可构建实现
@@ -695,8 +695,8 @@ xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
 当前版本配置在 `project.yml`：
 
 ```yaml
-MARKETING_VERSION: 0.1.0
-CURRENT_PROJECT_VERSION: 1
+MARKETING_VERSION: 0.1.1
+CURRENT_PROJECT_VERSION: 2
 ```
 
 发布时同时更新：
