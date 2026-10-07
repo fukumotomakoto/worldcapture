@@ -775,7 +775,11 @@ scripts/release.sh <profile> [signing-identity]
 
 - `build/appcast/` **持久保留**（跨版本累积发布记录，Sparkle 据此判断可升级项）。
 - enclosure 下载前缀默认指向 GitHub Releases 的当前 tag：`https://github.com/fukumotomakoto/worldcapture/releases/download/v<version>/`。它与 `SUFeedURL` **性质不同**——只写进每次重新生成的 `appcast.xml`，随时可改，且下载包的完整性由 EdDSA 签名保证、不依赖来源可信，所以直接挂 GitHub Releases，省带宽也省仓库体积。可用环境变量覆盖：`DOWNLOAD_URL_PREFIX=... GH_REPO=... SITE_URL=... scripts/release.sh <profile>`。
-- 前缀里带版本 tag 是安全的：`generate_appcast` 只对**新条目**套用该前缀，已有条目原样保留（见其 `--help`），历史版本仍指向各自 tag 下的文件。
+- ⚠️ 实测（2026-10-07 发 0.1.1）：`generate_appcast` **会把已有条目的 enclosure URL 也改写成本次前缀**，历史版本因此指向不存在的目录。生成后必须 `grep 'url='` 检查，把旧版本条目改回各自 tag 的目录（EdDSA 签名只覆盖文件内容，改 URL 不影响验签）。
+- 它还会生成 **delta 包**（`WorldCapture<新build>-<旧build>.delta`，Sparkle 优先走增量、失败再回退全量）和 `<sparkle:releaseNotesLink>`（指向 `SITE_URL/WorldCapture-<version>.html`，源文件放在 `build/appcast/` 同名 `.html`）。发布时 **delta 要和 DMG 一起传 GitHub Release，HTML 要和 appcast.xml 一起推 gh-pages**。
+- 发版前先跑 `xcrun notarytool history --keychain-profile <profile>`：返回 403「A required agreement is missing or has expired」= Apple 开发者协议需在 developer.apple.com 重新接受（接受后约 1 分钟生效），别等归档完才在公证一步失败。
+- `gh release create --target` 不接受短 SHA，用 `main` 或完整 SHA。
+- **自动更新链路已于 2026-10-07 端到端验证**：装 0.1.0 → 「检查更新…」→ 发现 0.1.1 → 下载 → 验签 → 安装 → 自动重启，TCC 授权未丢。
 - **分发时**（两处地址互不相干）：`WorldCapture-<version>.dmg` 传到 GitHub Release 的 `v<version>` tag；`appcast.xml` 传到 `SUFeedURL` 所在地址（`worldcapture.fukumoto.jp`）——**这一处必须同址**，否则老版本收不到更新。`build/appcast/old_updates/` 不要上传。
 
 #### 仍需真机验证
