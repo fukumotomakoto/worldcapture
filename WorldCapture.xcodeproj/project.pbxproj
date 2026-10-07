@@ -195,10 +195,12 @@
 		8FC333EDC565F45BC5375EB5 /* MicrophonePermission.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicrophonePermission.swift; sourceTree = "<group>"; };
 		91B58CE6C6CABEACE35900FD /* ScrollCaptureEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCaptureEngineTests.swift; sourceTree = "<group>"; };
 		91BC362292BD660B314858FB /* ImageEncoderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageEncoderTests.swift; sourceTree = "<group>"; };
+		96C45276858B4EE862623037 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/Localizable.strings; sourceTree = "<group>"; };
 		98623A284F79C546DE4AEACC /* ExtensionInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionInbox.swift; sourceTree = "<group>"; };
 		98C7F32E0659B41D632079D0 /* CaptureKitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CaptureKitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A0C30C2E0AB62ABB9783DFD /* RegionSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegionSelector.swift; sourceTree = "<group>"; };
 		9A422AFB8446162AB7E85862 /* CaptureKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CaptureKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9D88837D88F80A5D94FD71E4 /* ko */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ko; path = ko.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A5F314191558D82B7E332954 /* content.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = content.js; sourceTree = "<group>"; };
 		A782E2851BD10BC0EC5C6F34 /* CaptureAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureAnnotation.swift; sourceTree = "<group>"; };
 		AAF23E9B671521DD1BEC9451 /* CaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureView.swift; sourceTree = "<group>"; };
@@ -519,6 +521,7 @@
 				Base,
 				en,
 				ja,
+				ko,
 				"zh-Hans",
 			);
 			mainGroup = 8E753C1082D5DFB46BA1366D;
@@ -686,6 +689,7 @@
 			children = (
 				3AC277EDDC93F6A133C68F64 /* en */,
 				2C16188A9938E701B5E146BD /* ja */,
+				96C45276858B4EE862623037 /* ko */,
 				12E0C3C00F081615D450691B /* zh-Hans */,
 			);
 			name = Localizable.strings;
@@ -696,6 +700,7 @@
 			children = (
 				71AA8BD53F29E7EAC3AED0E7 /* en */,
 				1E64FAB5CE2C08B38095B3A6 /* ja */,
+				9D88837D88F80A5D94FD71E4 /* ko */,
 				49C1215126AE43195709101A /* zh-Hans */,
 			);
 			name = InfoPlist.strings;
@@ -734,14 +739,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = macos/App/WorldCapture.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = macos/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 0.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = io.worldcapture.app;
 				PRODUCT_NAME = WorldCapture;
 				SDKROOT = macosx;
@@ -953,14 +958,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = macos/App/WorldCapture.entitlements;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = macos/App/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.1;
+				MARKETING_VERSION = 0.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = io.worldcapture.app;
 				PRODUCT_NAME = WorldCapture;
 				SDKROOT = macosx;
