@@ -17,6 +17,7 @@
 		<string>zh-Hans</string>
 		<string>en</string>
 		<string>ja</string>
+		<string>ko</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
