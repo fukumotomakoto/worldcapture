@@ -63,7 +63,7 @@ public enum TranslationBlockLayout {
         // ① 向右：单行放得下就拉成单行；放不下就用满可借的宽度减少换行。
         let widthLimit = min(imageSize.width - rect.minX, max(rect.width, maxWidth ?? rect.width))
         var boxWidth = rect.width
-        let singleLine = singleLineWidth(for: text, fontSize: base) + padding * 2
+        let singleLine = singleLineWidth(for: text, fontSize: base) * 1.02 + 2 + padding * 2
         if singleLine > boxWidth {
             boxWidth = min(widthLimit, singleLine)
         }
@@ -108,7 +108,8 @@ public enum TranslationBlockLayout {
 
     /// 这段文字在给定宽度、字号下是否一行放得下。渲染器与排版都用它决定行高倍数，两边才一致。
     public static func fitsOnOneLine(_ text: String, fontSize: CGFloat, width: CGFloat) -> Bool {
-        singleLineWidth(for: text, fontSize: fontSize) <= width
+        // 留 2% 余量：CoreText 实际排版比排印宽度略宽时会意外换行，第二行装不下就整段消失。
+        singleLineWidth(for: text, fontSize: fontSize) * 1.02 + 1 <= width
     }
 
     /// 排好版的文字所需高度（用于在矩形内垂直居中）。

@@ -172,13 +172,13 @@ public enum AnnotationRenderer {
 
         let padding = TranslationBlockLayout.padding
         let textWidth = max(1, rect.width - padding * 2)
-        let needed = min(rect.height - padding * 2,
-                         TranslationBlockLayout.layoutHeight(for: text, fontSize: fontSize, width: textWidth))
+        // 排版框给足高度（CoreText 装不下的行会整行丢弃，不是裁掉）；真正的裁切靠下面的 clip。
+        let needed = TranslationBlockLayout.layoutHeight(for: text, fontSize: fontSize, width: textWidth) + 2
         // CoreText 从框顶往下排；CG 坐标 y 向上，所以「顶」是 maxY。垂直居中：上下各留一半余量。
         let frameRect = CGRect(
             x: rect.minX + padding,
             y: rect.midY - needed / 2,
-            width: textWidth,
+            width: textWidth + 1,
             height: needed
         )
         let single = TranslationBlockLayout.fitsOnOneLine(text, fontSize: fontSize, width: textWidth)
