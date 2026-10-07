@@ -1,0 +1,279 @@
+/* WorldCapture — 한국어 */
+
+"app.subtitle" = "로컬 우선 크로스플랫폼 캡처 및 녹화";
+
+/* Top-level global actions */
+"action.reset" = "초기화";
+"action.reset.help" = "현재 스크린샷과 주석을 지웁니다";
+"action.pin" = "고정";
+"action.pin.help" = "스크린샷을 항상 위에 떠 있는 창으로 고정합니다";
+"action.restart" = "재시작";
+"action.restart.help" = "WorldCapture를 재시작합니다(손쉬운 사용 권한을 허용한 뒤에 필요할 때가 많습니다)";
+"action.save" = "저장";
+"action.copy" = "복사";
+"action.ocr" = "텍스트 추출";
+"action.ocr.help" = "현재 스크린샷의 문자를 인식합니다(기기 내 처리, 업로드 없음)";
+"ocr.title" = "추출된 텍스트";
+"ocr.empty" = "이 스크린샷에서 문자를 찾지 못했습니다";
+"ocr.translate" = "번역";
+"ocr.copyAll" = "모두 복사";
+"ocr.copied" = "복사됨";
+"ocr.close" = "닫기";
+"recent.title" = "최근 저장";
+"recent.help" = "최근에 저장한 스크린샷";
+"reveal.finder" = "Finder에서 보기";
+
+/* History library */
+"library.title" = "기록";
+"library.open" = "기록";
+"library.open.help" = "지난 스크린샷과 녹화를 둘러봅니다";
+"library.empty" = "아직 기록이 없습니다";
+"library.count" = "%d개 항목";
+"library.clear" = "지우기";
+"library.clear.confirm" = "기록 목록을 지울까요? (목록만 지워지고 파일은 디스크에 남습니다)";
+"library.filter.all" = "전체";
+"library.filter.image" = "이미지";
+"library.filter.video" = "비디오";
+"library.open.file" = "열기";
+"library.copy" = "복사";
+"library.trash" = "휴지통으로 이동";
+"library.removeEntry" = "기록에서 제거";
+"library.missing" = "파일이 이동되었거나 삭제되었습니다";
+"library.showAll" = "전체 기록 보기";
+
+/* Recording */
+"record.screen" = "녹화";
+"record.region" = "영역 녹화";
+"record.region.help" = "영역을 선택해 비디오로 녹화합니다";
+"record.window" = "윈도우 녹화";
+"record.window.help" = "썸네일에서 윈도우를 골라 녹화합니다";
+"record.stop" = "중지";
+"record.pause" = "일시 정지";
+"record.resume" = "계속";
+"record.paused" = "녹화 일시 정지됨";
+"record.pick.help" = "녹화할 디스플레이를 선택합니다";
+"record.active" = "화면과 시스템 오디오를 녹화 중";
+"record.saved" = "녹화 저장됨: %@";
+
+/* GIF recording */
+"gif.record" = "GIF";
+"gif.record.help" = "영역을 선택해 움직이는 GIF로 녹화합니다(최대 30초)";
+"gif.stop" = "GIF 중지";
+"gif.active" = "GIF 녹화 중(최대 30초)";
+
+/* Capture sources */
+"capture.group.shot" = "캡처";
+"capture.group.record" = "녹화";
+"capture.region" = "영역";
+"capture.region.help" = "드래그해서 캡처할 영역을 선택합니다(Esc 또는 오른쪽 클릭으로 취소)";
+"capture.main" = "주 화면";
+"capture.fullscreen" = "전체 화면";
+"capture.fullscreen.help" = "화면 전체를 캡처합니다(디스플레이가 여러 개면 선택)";
+"capture.window" = "윈도우";
+"capture.window.help" = "썸네일에서 캡처할 윈도우를 선택합니다";
+"capture.scroll" = "스크롤 캡처";
+"capture.scroll.help" = "영역을 선택하면 자동으로 스크롤하며 긴 스크린샷으로 이어 붙입니다";
+"capture.scrollWindow" = "윈도우 스크롤";
+"capture.scrollWindow.help" = "윈도우를 선택하면 자동으로 스크롤하며 윈도우 전체를 긴 스크린샷으로 이어 붙입니다";
+"capture.self" = "이 윈도우";
+"capture.self.help" = "WorldCapture 자체 윈도우를 캡처합니다";
+"window.menu" = "윈도우";
+"window.menu.help" = "특정 윈도우를 캡처합니다";
+"window.refresh" = "목록 새로 고침";
+"picker.window.title" = "캡처할 윈도우 선택";
+"picker.screen.title" = "캡처할 화면 선택";
+"picker.record.title" = "녹화할 화면 선택";
+"picker.recordWindow.title" = "녹화할 윈도우 선택";
+"picker.scrollWindow.title" = "스크롤 캡처할 윈도우 선택";
+"picker.scrollWindow.hint" = "윈도우 전체를 스크롤하면 좌우에 고정된 사이드바가 이어 붙인 이미지에 반복됩니다. 고정 사이드바가 있는 페이지는 “스크롤 캡처”로 실제로 스크롤되는 열만 드래그하세요.";
+"window.none" = "사용할 수 있는 윈도우가 없습니다";
+"thumbnail.picker" = "썸네일";
+"thumbnail.picker.help" = "썸네일에서 윈도우나 화면 전체를 선택합니다";
+"region.shortcut.help" = "영역 캡처 단축키";
+
+/* Permission banners */
+"perm.screen.title" = "화면 기록 권한이 필요합니다";
+"perm.screen.desc" = "시스템 설정에서 WorldCapture를 허용한 뒤 앱을 다시 실행하세요.";
+"perm.open.settings" = "시스템 설정 열기";
+"perm.recheck" = "다시 확인";
+"perm.ax.title" = "스크롤 캡처에는 손쉬운 사용 권한이 필요합니다";
+"perm.ax.desc" = "시스템 설정의 손쉬운 사용에서 WorldCapture를 허용한 뒤 다시 시도하세요.";
+
+/* Annotation */
+"anno.rect" = "사각형";
+"anno.ellipse" = "타원";
+"anno.arrow" = "화살표";
+"anno.text" = "텍스트";
+"anno.number" = "번호";
+"anno.mosaic" = "모자이크";
+"anno.freehand" = "펜";
+"crop.button" = "자르기";
+"crop.button.help" = "이미지를 자릅니다: 상자를 드래그한 뒤 적용";
+"crop.hint" = "모서리를 드래그해 조정하거나 빈 곳을 드래그해 다시 선택하세요";
+"crop.apply" = "적용";
+"crop.cancel" = "취소";
+"anno.color.help" = "주석 색상";
+"anno.width.help" = "선 굵기";
+"width.thin" = "가늘게";
+"width.mid" = "보통";
+"width.thick" = "굵게";
+"anno.text.editSelected" = "선택한 텍스트 편집";
+"anno.text.placeholder" = "주석 텍스트";
+"anno.text.hintSelect" = "텍스트 도구를 선택하면 입력할 수 있습니다";
+"anno.delete" = "삭제";
+"anno.undo" = "실행 취소";
+"anno.clear" = "모두 지우기";
+"anno.hint" = "클릭으로 이동/크기 조절 · Shift로 다중 선택 · 스크롤로 확대 · 스페이스+드래그로 이동 · 저장/복사 시 렌더링";
+
+/* Empty state & progress */
+"empty.title" = "아직 스크린샷이 없습니다";
+"empty.desc" = "“주 화면”을 눌러 기본 캡처 경로를 확인하세요.";
+"capturing" = "캡처 중…";
+
+/* Preview zoom/pan */
+"pan.mode.hint" = "이동 모드: 드래그해서 이미지를 옮깁니다";
+"zoom.fit.help" = "창에 맞추기";
+
+/* Source picker */
+"picker.title" = "캡처할 대상 선택";
+"picker.tab.windows" = "윈도우";
+"picker.tab.screens" = "화면";
+"picker.loading" = "불러오는 중…";
+"picker.refresh" = "새로 고침";
+"picker.close" = "선택기 닫기";
+"screen.index" = "화면 %d";
+"display.main" = " (주)";
+
+/* Errors */
+"error.title" = "작업 실패";
+"error.ok" = "확인";
+"error.unknown" = "알 수 없는 오류";
+"error.scrollEmpty" = "스크롤 캡처에서 아무 내용도 얻지 못했습니다.";
+"error.scrollNoProgress" = "스크롤이 진행되지 않아 한 화면만 캡처했습니다. 시스템 설정 › 개인정보 보호 및 보안 › 손쉬운 사용에서 WorldCapture를 허용하고 앱을 재시작하세요. 이미 허용했다면 윈도우가 한 화면보다 짧거나 스크롤할 수 없는 창일 수 있습니다.";
+"error.gifEmpty" = "GIF 녹화에서 프레임을 얻지 못했습니다.";
+"error.noOwnWindow" = "캡처할 이 앱의 윈도우를 찾지 못했습니다.";
+"error.windowUnavailable" = "그 윈도우는 더 이상 사용할 수 없습니다.";
+
+/* Menu bar */
+"menu.section.capture" = "캡처";
+"menu.section.record" = "녹화";
+"menu.region" = "영역 캡처";
+"menu.main" = "전체 화면 캡처";
+"menu.window" = "윈도우 캡처";
+"menu.scrolling" = "스크롤 캡처";
+"menu.ocr" = "텍스트 캡처(OCR)";
+"menu.delay" = "지연 캡처";
+"menu.delay.seconds" = "%d초";
+"record.gif" = "GIF 녹화";
+"record.gif.stop" = "GIF 중지";
+"menu.recent" = "최근 캡처";
+"menu.recent.empty" = "아직 없음";
+"menu.settings" = "설정…";
+"menu.showMain" = "주 윈도우 보기";
+"menu.checkUpdates" = "업데이트 확인…";
+"menu.quit" = "WorldCapture 종료";
+
+/* Settings */
+"settings.title" = "설정";
+"settings.section.general" = "일반";
+"settings.language" = "언어";
+"settings.language.system" = "시스템 기본값";
+"settings.language.restartNote" = "언어 변경은 앱을 다시 실행해야 적용됩니다.";
+"settings.labelStyle" = "버튼 스타일";
+"settings.labelStyle.iconAndText" = "아이콘 + 글자";
+"settings.labelStyle.iconOnly" = "아이콘만";
+"settings.labelStyle.note" = "아이콘만 쓰면 언어에 따라 배치가 바뀌지 않습니다. 버튼 위에 포인터를 올리면 설명이 나타납니다.";
+"settings.savePath" = "기본 저장 위치";
+"settings.savePath.ask" = "매번 묻기";
+"settings.shortcuts" = "단축키";
+"settings.shortcuts.note" = "현재: ⌘⇧2 영역 캡처(아직 변경할 수 없음).";
+"settings.section.recording" = "녹화";
+"settings.mic" = "마이크 소리 포함";
+"settings.mic.note" = "켜면 화면 녹화에 마이크 음성이 포함됩니다(처음 사용할 때 마이크 권한 허용 필요).";
+"settings.mic.denied" = "마이크 접근이 거부되어 음성을 녹음할 수 없습니다.";
+"settings.mic.openSettings" = "시스템 설정 열기";
+"settings.section.updates" = "업데이트";
+"settings.autoUpdate" = "업데이트 자동 확인";
+
+/* Misc */
+"action.edit" = "편집";
+"action.close" = "닫기";
+"anno.text.default" = "텍스트";
+"pin.remove" = "고정 해제";
+"pin.clickThrough" = "클릭 통과(클릭이 아래 창으로 전달됩니다. 메뉴 막대에서 해제)";
+"pin.clickThrough.disableAll" = "고정 창 클릭 통과 끄기";
+
+/* Assistant sidebar (embedded Claude / ChatGPT web, the user's own account) */
+"assistant.title" = "어시스턴트";
+"assistant.toggle.help" = "오른쪽에 Claude 또는 ChatGPT를 엽니다(본인 계정 사용, 앱은 아무것도 업로드하지 않음)";
+"assistant.send" = "어시스턴트로 보내기";
+"assistant.send.help" = "현재 스크린샷을 클립보드에 복사하고 번역 요청을 미리 채웁니다. 어시스턴트 입력창에서 ⌘V로 붙여 넣은 뒤 보내세요";
+"assistant.hint.paste" = "스크린샷을 복사했습니다. 아래 입력창을 클릭하고 ⌘V로 붙여 넣은 뒤 보내세요.";
+"assistant.prompt" = "이 스크린샷의 글을 한국어로 번역해 주세요. 원래 배치를 최대한 유지해 주세요.";
+"assistant.back" = "뒤로";
+"assistant.home" = "채팅 홈으로";
+"assistant.reload" = "다시 불러오기";
+"assistant.openBrowser" = "브라우저에서 열기";
+"assistant.close" = "어시스턴트 사이드바 닫기";
+"assistant.hint.paste.noPrefill" = "스크린샷을 복사했습니다. 아래 입력창을 클릭하고 ⌘V로 붙여 넣은 뒤 요청을 입력하세요(예: 한국어로 번역).";
+
+/* Extract Text panel · on-device translation */
+"ocr.source.title" = "원문";
+"ocr.translation.title" = "번역";
+"ocr.translate.target" = "번역할 언어";
+"ocr.translate.help" = "macOS 내장 번역으로 이 Mac에서 번역합니다(오프라인, 처음 사용할 때 언어 팩 다운로드)";
+"ocr.translating" = "번역 중…";
+"ocr.translation.failed" = "번역 실패: %@";
+"ocr.copyTranslation" = "번역 복사";
+
+/* Image translation (translations laid over the original text) */
+"imageTranslate.button" = "이미지 번역";
+"imageTranslate.help" = "스크린샷의 문자를 인식해 번역문을 원래 자리에 덮어 씁니다(기기 내 처리, 오프라인. 번역할 언어는 텍스트 추출 패널에서 선택)";
+"imageTranslate.noText" = "이 스크린샷에서 문자를 인식하지 못했습니다";
+"imageTranslate.show" = "번역 표시";
+"imageTranslate.clear" = "번역 지우기";
+"imageTranslate.clear.help" = "번역 블록을 모두 제거하고 원본으로 되돌립니다";
+
+/* Settings · Translation */
+"settings.section.translation" = "번역";
+"settings.translation.engine" = "번역 엔진";
+"settings.translation.engine.automatic" = "자동(Apple Intelligence 우선)";
+"settings.translation.engine.system" = "시스템 번역";
+"settings.translation.engine.appleIntelligence" = "Apple Intelligence";
+"settings.translation.engine.note" = "두 엔진 모두 이 Mac에서 실행되며 인터넷에 연결하지 않습니다. Apple Intelligence는 문맥과 용어에 강하고, 시스템 번역은 더 빠릅니다.";
+"settings.translation.engine.aiUnavailable" = "Apple Intelligence를 지금 사용할 수 없습니다(%@). 시스템 번역을 사용합니다.";
+"settings.translation.engine.needsMacOS26" = "macOS 26 이상에서 Apple Intelligence를 켜야 합니다";
+"settings.translation.engine.unavailable" = "Apple Intelligence를 사용할 수 없습니다";
+"settings.translation.glossary.open" = "용어집 열기…";
+"settings.translation.glossary.note" = "용어집의 고정 번역이 엔진보다 우선합니다(원문 = 번역, 한 줄에 하나).";
+
+/* Translation lens (keeps translating a screen region in place) */
+"mirror.button" = "라이브 렌즈";
+"mirror.help" = "화면 영역을 선택하면 계속 인식해 번역문을 그 자리에 덮어 씁니다(클릭 통과. 자막, 채팅, 바뀌는 화면용)";
+"menu.mirror" = "라이브 렌즈(영역을 계속 번역)";
+"mirror.title" = "라이브 렌즈";
+"mirror.paused" = "라이브 렌즈 · 일시 정지";
+"mirror.pause" = "일시 정지";
+"mirror.resume" = "계속";
+"mirror.close" = "라이브 렌즈 닫기";
+"imageTranslate.working" = "번역 중…";
+"imageTranslate.progress" = "번역 중 %d/%d";
+"imageTranslate.partial" = "%d개 문단을 번역하지 못했습니다(너무 길거나 시스템이 거부함). 원문을 그대로 두었습니다.";
+"settings.dock" = "상단 도구 막대";
+"settings.dock.note" = "화면 맨 위에 작은 탭이 머무르며, 포인터를 올리면 캡처와 녹화 버튼이 나타납니다. 켜져 있는 동안 주 윈도우는 캡처 후 편집기가 열릴 때까지 숨겨지고, 편집기를 닫으면 다시 숨겨집니다.";
+
+/* Top toolbar short labels */
+"dock.region" = "영역";
+"dock.screen" = "화면";
+"dock.window" = "윈도우";
+"dock.scroll" = "스크롤";
+"dock.record" = "녹화";
+"dock.recordRegion" = "영역 녹화";
+"dock.gif" = "GIF";
+"dock.stop" = "중지";
+"dock.ocr" = "텍스트";
+"dock.mirror" = "렌즈";
+"dock.main" = "편집기";
+"settings.dock.labelStyle" = "도구 막대 라벨";
+"settings.dock.labelStyle.iconAndText" = "아이콘 + 글자";
+"settings.dock.labelStyle.iconOnly" = "아이콘만(설명은 포인터를 올리면)";

@@ -1,0 +1,6 @@
+/* 시스템 권한 요청 창에 표시되는 사용 목적 문구(TCC). 키는 Info.plist와 같습니다.
+   화면 기록과 손쉬운 사용에는 Info.plist 키가 없어 시스템 문구를 바꿀 수 없습니다. */
+
+"NSMicrophoneUsageDescription" = "화면 녹화에 내레이션을 녹음합니다. “마이크 소리 포함”을 켠 동안에만 녹음하며, 녹화는 이 Mac에만 저장됩니다.";
+
+"NSAudioCaptureUsageDescription" = "이 Mac에서 재생 중인 소리를 화면 녹화에 녹음합니다. 녹화는 이 Mac에만 저장되며 업로드되지 않습니다.";
