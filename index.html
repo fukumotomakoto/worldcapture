@@ -3,51 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>WorldCapture — 本地优先的 macOS 截屏 · 标注 · 录屏</title>
-<meta name="description" content="macOS 的本地优先截屏、标注和录屏工具。MIT 开源、免费、无广告、无追踪。">
+<title>WorldCapture — macOS 截图 · 录屏 · 图上翻译</title>
+<meta name="description" content="macOS 上的截图、录屏和图上翻译工具：译文直接贴回原位，字幕弹幕持续翻译。免费、MIT 开源、无账号、无遥测，全部本机处理。">
+<meta property="og:title" content="WorldCapture">
+<meta property="og:description" content="Screenshots, recording and in-place image translation for macOS. Free, open source, everything on your Mac.">
+<meta property="og:image" content="https://worldcapture.fukumoto.jp/assets/hero-translate-zh.png">
 <style>
   :root {
     color-scheme: light dark;
-    --bg: #ffffff;
-    --fg: #1d1d1f;
-    --muted: #6e6e73;
-    --line: #e3e3e6;
-    --accent: #0066cc;
-    --card: #f5f5f7;
+    --bg: #ffffff; --fg: #1d1d1f; --muted: #6e6e73; --line: #e3e3e6; --accent: #0066cc; --card: #f5f5f7;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #000000;
-      --fg: #f5f5f7;
-      --muted: #98989d;
-      --line: #2a2a2c;
-      --accent: #4aa3ff;
-      --card: #1c1c1e;
-    }
+    :root { --bg: #000000; --fg: #f5f5f7; --muted: #98989d; --line: #2a2a2c; --accent: #4aa3ff; --card: #1c1c1e; }
   }
   * { box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body {
-    margin: 0;
-    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans CJK SC", sans-serif;
-    color: var(--fg);
-    background: var(--bg);
-  }
-  .wrap { max-width: 720px; margin: 0 auto; padding: 0 24px; }
-  header { text-align: center; padding: 88px 0 40px; }
+  body { margin: 0; font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans CJK SC", "Apple SD Gothic Neo", sans-serif; color: var(--fg); background: var(--bg); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+  nav { display: flex; justify-content: flex-end; gap: 6px; padding: 18px 0 0; font-size: 14px; }
+  nav button { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 12px; cursor: pointer; font: inherit; }
+  nav button[aria-pressed="true"] { color: var(--fg); border-color: var(--fg); }
+  header { text-align: center; padding: 56px 0 28px; }
   h1 { font-size: 44px; letter-spacing: -0.02em; margin: 0 0 12px; }
-  .tagline { font-size: 20px; color: var(--muted); margin: 0 auto; max-width: 34ch; }
-  .cta { margin: 36px 0 12px; }
-  .btn {
-    display: inline-block; background: var(--accent); color: #fff;
-    text-decoration: none; font-weight: 600; font-size: 17px;
-    padding: 14px 30px; border-radius: 12px;
-  }
+  .tagline { font-size: 20px; color: var(--muted); margin: 0 auto; max-width: 40ch; }
+  .cta { margin: 32px 0 10px; }
+  .btn { display: inline-block; background: var(--accent); color: #fff; text-decoration: none; font-weight: 600; font-size: 17px; padding: 14px 30px; border-radius: 12px; }
   .req { font-size: 14px; color: var(--muted); margin-top: 14px; }
-  .req code { font-size: 13px; }
+  .hero { margin: 24px auto 0; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+  .hero img { display: block; width: 100%; height: auto; }
+  .caption { font-size: 13px; color: var(--muted); text-align: center; margin: 10px 0 0; }
   section { padding: 40px 0; border-top: 1px solid var(--line); }
   h2 { font-size: 24px; letter-spacing: -0.01em; margin: 0 0 20px; }
-  ul.features { list-style: none; padding: 0; margin: 0; display: grid; gap: 16px; }
+  ul.features { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
   ul.features li { padding-left: 28px; position: relative; }
   ul.features li::before { content: "›"; position: absolute; left: 6px; color: var(--accent); font-weight: 700; }
   .feature-title { font-weight: 600; }
@@ -57,50 +44,155 @@
   a { color: var(--accent); }
   footer { text-align: center; color: var(--muted); font-size: 14px; padding: 48px 0 64px; border-top: 1px solid var(--line); }
   footer a { color: var(--muted); }
-  .verify { font-size: 13px; color: var(--muted); margin-top: 10px; word-break: break-all; }
+  [data-lang] { display: none; }
+  [data-lang].on { display: block; }
+  li[data-lang].on, p[data-lang].on { display: block; }
+  span[data-lang].on { display: inline; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>WorldCapture</h1>
-    <p class="tagline">本地优先的 macOS 截屏、标注与录屏工具。</p>
-    <div class="cta">
-      <!-- 下载按钮：发布首个版本后，把 href 指向 GitHub Release 的 DMG，并填上校验值。 -->
-      <a class="btn" href="https://github.com/fukumotomakoto/worldcapture/releases/latest">前往下载</a>
-    </div>
-    <p class="req">需要 macOS 15.0 或更高版本 · Apple 芯片与 Intel 通用 · 已签名并公证</p>
-  </header>
+  <nav aria-label="Language">
+    <button type="button" data-set="zh-Hans">中文</button>
+    <button type="button" data-set="en">English</button>
+    <button type="button" data-set="ja">日本語</button>
+  </nav>
 
-  <section>
-    <h2>能做什么</h2>
-    <ul class="features">
-      <li><span class="feature-title">截屏与区域选择</span> — 全屏、窗口、自定义区域，原生像素清晰度。</li>
-      <li><span class="feature-title">非破坏标注</span> — 矩形、箭头、文字、序号、马赛克、画笔与裁剪，随时可改。</li>
-      <li><span class="feature-title">滚动长图</span> — 把超出一屏的内容拼成整张长图。</li>
-      <li><span class="feature-title">屏幕录制</span> — ScreenCaptureKit 原生录制，含系统音频与麦克风讲解声，导出 H.264/AAC MP4。</li>
-      <li><span class="feature-title">GIF 与本地 OCR</span> — 录制 GIF；截图文字识别与翻译全部在设备上完成。</li>
-    </ul>
-  </section>
+  <!-- ===================== 中文 ===================== -->
+  <div data-lang="zh-Hans">
+    <header>
+      <h1>WorldCapture</h1>
+      <p class="tagline">macOS 上的截图、录屏和图上翻译工具。译文直接贴回原位，全部在你的 Mac 上完成。</p>
+      <div class="cta"><a class="btn" href="https://github.com/fukumotomakoto/worldcapture/releases/latest">下载 WorldCapture</a></div>
+      <p class="req">macOS 15 或更高 · Apple 芯片与 Intel 通用 · 已签名并公证 · 15 MB · 免费、MIT 开源</p>
+      <div class="hero"><img src="assets/hero-translate-zh.png" alt="翻译前与翻译后：英文设置页的文字被译文按原位置、原字号替换"></div>
+      <p class="caption">翻译前 → 翻译后。译文按原文的位置、字号和底色贴回，每一块都能再编辑。</p>
+    </header>
+    <section>
+      <h2>它能做什么</h2>
+      <ul class="features">
+        <li><span class="feature-title">翻译图片</span> — 识别截图里的文字，按段落翻译，把译文贴回原来的位置。</li>
+        <li><span class="feature-title">翻译镜</span> — 框选屏幕一块区域，字幕、弹幕、会刷新的界面持续翻译，原位覆盖，点击穿透。</li>
+        <li><span class="feature-title">提取文字</span> — 本地 OCR，原文｜译文两栏，可选目标语言。</li>
+        <li><span class="feature-title">截图与录屏</span> — 区域、全屏、窗口、滚动长图；屏幕 / 区域 / 窗口录制，系统声音与麦克风，GIF。</li>
+        <li><span class="feature-title">标注与钉屏</span> — 矩形、箭头、文字、序号、马赛克、自由笔、裁切；钉屏可点击穿透；历史库。</li>
+        <li><span class="feature-title">翻译引擎</span> — Apple 智能（端上大模型）或系统翻译，都不联网；内置界面术语表，可加自己的词条。</li>
+      </ul>
+    </section>
+    <section>
+      <h2>原则</h2>
+      <div class="principles">
+        <p><strong>全部本机</strong> — 截图、录屏、文字识别、翻译都不离开这台 Mac。</p>
+        <p><strong>无追踪</strong> — 无账号、无埋点、无广告、无水印。唯一的联网行为是可选的更新检查。</p>
+        <p><strong>开源可审计</strong> — MIT 许可，源码公开，这些承诺你都能自己核实。</p>
+      </div>
+    </section>
+    <footer>
+      <p><a href="https://github.com/fukumotomakoto/worldcapture">源码</a> · <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/PRIVACY.md">隐私政策</a> · <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/LICENSE">MIT 许可</a> · <a href="mailto:worldcapture@fukumoto.jp">联系</a></p>
+      <p>© 2026 Makoto Fukumoto</p>
+    </footer>
+  </div>
 
-  <section>
-    <h2>原则</h2>
-    <div class="principles">
-      <p><strong>本地优先</strong> — 截图、录屏和 OCR 默认不离开设备。</p>
-      <p><strong>无追踪</strong> — 无账号、无埋点、无广告。唯一的联网行为是可选的自动更新检查，可在设置中关闭。</p>
-      <p><strong>开源可审计</strong> — MIT 许可，源码公开。这些承诺你都能自己核实。</p>
-    </div>
-  </section>
+  <!-- ===================== English ===================== -->
+  <div data-lang="en">
+    <header>
+      <h1>WorldCapture</h1>
+      <p class="tagline">Screenshots, screen recording and in-place image translation for macOS. Translations land right over the original text, and everything stays on your Mac.</p>
+      <div class="cta"><a class="btn" href="https://github.com/fukumotomakoto/worldcapture/releases/latest">Download WorldCapture</a></div>
+      <p class="req">macOS 15 or later · Apple Silicon and Intel · Signed and notarized · 15 MB · Free, MIT</p>
+      <div class="hero"><img src="assets/hero-translate-zh.png" alt="Before and after: the text of an English settings page replaced by translations at the same position and size"></div>
+      <p class="caption">Before → after. Translations are placed at the original position, size and background, and every block stays editable.</p>
+    </header>
+    <section>
+      <h2>What it does</h2>
+      <ul class="features">
+        <li><span class="feature-title">Translate Image</span> — recognizes the text in a screenshot, translates it paragraph by paragraph and lays each translation back where the original was.</li>
+        <li><span class="feature-title">Live Lens</span> — select a screen region; subtitles, chat and changing UIs keep translating in place, click-through.</li>
+        <li><span class="feature-title">Extract Text</span> — on-device OCR with original and translation side by side and a target-language picker.</li>
+        <li><span class="feature-title">Capture and record</span> — region, full screen, window, scrolling capture; screen / region / window recording with system audio and microphone, GIF.</li>
+        <li><span class="feature-title">Annotate and pin</span> — rectangle, arrow, text, numbers, mosaic, freehand, crop; click-through pins; history library.</li>
+        <li><span class="feature-title">Translation engines</span> — Apple Intelligence (on-device model) or the system translator, neither goes online; a built-in UI glossary you can extend.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Principles</h2>
+      <div class="principles">
+        <p><strong>Everything on your Mac</strong> — screenshots, recordings, text recognition and translation never leave the device.</p>
+        <p><strong>No tracking</strong> — no account, no analytics, no ads, no watermark. The only network activity is the optional update check.</p>
+        <p><strong>Open source, verifiable</strong> — MIT licensed; you can check every one of these claims yourself.</p>
+      </div>
+    </section>
+    <footer>
+      <p><a href="https://github.com/fukumotomakoto/worldcapture">Source</a> · <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/PRIVACY.md">Privacy</a> · <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/LICENSE">MIT License</a> · <a href="mailto:worldcapture@fukumoto.jp">Contact</a></p>
+      <p>© 2026 Makoto Fukumoto</p>
+    </footer>
+  </div>
 
-  <footer>
-    <p>
-      <a href="https://github.com/fukumotomakoto/worldcapture">源码</a> ·
-      <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/PRIVACY.md">隐私政策</a> ·
-      <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/LICENSE">MIT 许可</a> ·
-      <a href="mailto:worldcapture@fukumoto.jp">联系</a>
-    </p>
-    <p>© 2026 Makoto Fukumoto</p>
-  </footer>
+  <!-- ===================== 日本語 ===================== -->
+  <div data-lang="ja">
+    <header>
+      <h1>WorldCapture</h1>
+      <p class="tagline">macOS 向けのスクリーンショット・画面収録・画像上翻訳ツール。訳文は元の文字の位置にそのまま重なり、処理はすべて Mac の中で完結します。</p>
+      <div class="cta"><a class="btn" href="https://github.com/fukumotomakoto/worldcapture/releases/latest">WorldCapture をダウンロード</a></div>
+      <p class="req">macOS 15 以降 · Apple シリコン / Intel 両対応 · 署名・公証済み · 15 MB · 無料・MIT</p>
+      <div class="hero"><img src="assets/hero-translate-ja.png" alt="翻訳前と翻訳後：英語の設定画面の文字が、同じ位置・サイズの日本語に置き換わる"></div>
+      <p class="caption">翻訳前 → 翻訳後。元の位置・サイズ・背景色のまま訳文を重ね、各ブロックは後から編集できます。</p>
+    </header>
+    <section>
+      <h2>できること</h2>
+      <ul class="features">
+        <li><span class="feature-title">画像を翻訳</span> — スクリーンショット内の文字を認識し、段落ごとに翻訳して元の位置に重ねます。</li>
+        <li><span class="feature-title">翻訳レンズ</span> — 画面の範囲を選ぶと、字幕・コメント・更新される画面を継続的にその場で翻訳（クリックは透過）。</li>
+        <li><span class="feature-title">テキスト抽出</span> — オンデバイス OCR。原文｜訳文を並べて表示し、翻訳先の言語を選べます。</li>
+        <li><span class="feature-title">キャプチャと録画</span> — 範囲・全画面・ウィンドウ・スクロールキャプチャ。画面／範囲／ウィンドウの録画、システム音声とマイク、GIF。</li>
+        <li><span class="feature-title">注釈とピン留め</span> — 矩形、矢印、テキスト、番号、モザイク、フリーハンド、トリミング。クリック透過のピン留め。履歴ライブラリ。</li>
+        <li><span class="feature-title">翻訳エンジン</span> — Apple Intelligence（オンデバイスモデル）またはシステム翻訳。どちらも通信しません。UI 用語集は自分で追加できます。</li>
+      </ul>
+    </section>
+    <section>
+      <h2>方針</h2>
+      <div class="principles">
+        <p><strong>すべて Mac の中で</strong> — スクリーンショット、録画、文字認識、翻訳はデバイスから出ません。</p>
+        <p><strong>追跡なし</strong> — アカウント、計測、広告、透かし、いずれもありません。通信は任意のアップデート確認だけです。</p>
+        <p><strong>オープンソースで検証可能</strong> — MIT ライセンス。これらの約束はすべて自分で確かめられます。</p>
+      </div>
+    </section>
+    <footer>
+      <p><a href="https://github.com/fukumotomakoto/worldcapture">ソースコード</a> · <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/PRIVACY.md">プライバシーポリシー</a> · <a href="https://github.com/fukumotomakoto/worldcapture/blob/main/LICENSE">MIT ライセンス</a> · <a href="mailto:worldcapture@fukumoto.jp">連絡先</a></p>
+      <p>© 2026 Makoto Fukumoto</p>
+    </footer>
+  </div>
 </div>
+<script>
+(function () {
+  var langs = ["zh-Hans", "en", "ja"];
+  var titles = { "zh-Hans": "WorldCapture — macOS 截图 · 录屏 · 图上翻译", "en": "WorldCapture — Screenshots, recording and image translation for macOS", "ja": "WorldCapture — macOS のスクリーンショット・画面収録・画像翻訳" };
+  function pick() {
+    var q = new URLSearchParams(location.search).get("lang");
+    if (langs.indexOf(q) >= 0) return q;
+    try { var s = localStorage.getItem("lang"); if (langs.indexOf(s) >= 0) return s; } catch (e) {}
+    var nav = (navigator.languages || [navigator.language || "en"]).map(function (l) { return l.toLowerCase(); });
+    for (var i = 0; i < nav.length; i++) {
+      if (nav[i].indexOf("zh") === 0) return "zh-Hans";
+      if (nav[i].indexOf("ja") === 0) return "ja";
+      if (nav[i].indexOf("en") === 0) return "en";
+    }
+    return "en";
+  }
+  function apply(lang) {
+    document.documentElement.lang = lang;
+    document.title = titles[lang];
+    var blocks = document.querySelectorAll("[data-lang]");
+    for (var i = 0; i < blocks.length; i++) blocks[i].classList.toggle("on", blocks[i].getAttribute("data-lang") === lang);
+    var buttons = document.querySelectorAll("nav button[data-set]");
+    for (var j = 0; j < buttons.length; j++) buttons[j].setAttribute("aria-pressed", buttons[j].getAttribute("data-set") === lang ? "true" : "false");
+    try { localStorage.setItem("lang", lang); } catch (e) {}
+  }
+  var buttons = document.querySelectorAll("nav button[data-set]");
+  for (var k = 0; k < buttons.length; k++) buttons[k].addEventListener("click", function () { apply(this.getAttribute("data-set")); });
+  apply(pick());
+})();
+</script>
+<noscript><style>[data-lang="zh-Hans"] { display: block; }</style></noscript>
 </body>
 </html>
