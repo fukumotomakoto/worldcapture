@@ -89,6 +89,7 @@ final class TopDockController: ObservableObject {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
         panel.contentView = NSHostingView(rootView: TopDockView(controller: self, model: model))
         self.panel = panel
+        screenID = NSScreen.underMouse?.displayID
         reposition()
         panel.orderFrontRegardless()
         installMonitors()
@@ -101,8 +102,12 @@ final class TopDockController: ObservableObject {
         isExpanded = false
     }
 
-    /// 屏幕：带菜单栏的主屏。顶边 = visibleFrame.maxY（菜单栏正下方）。
-    private var screen: NSScreen? { NSScreen.screens.first ?? NSScreen.main }
+    /// 工具条当前所在的屏。多屏时**跟着鼠标走**（2026-11-11 师弟定）：始终只有一个工具条，
+    /// 鼠标移到哪块屏，折叠的小标签就挪到那块屏顶端；展开期间不换屏。顶边 = visibleFrame.maxY（菜单栏正下方）。
+    private var screenID: CGDirectDisplayID?
+    private var screen: NSScreen? {
+        NSScreen.screens.first { $0.displayID == screenID } ?? NSScreen.screens.first ?? NSScreen.main
+    }
 
     private var xFraction: CGFloat {
         get {
@@ -176,6 +181,12 @@ final class TopDockController: ObservableObject {
 
     private func mouseMoved(to point: CGPoint) {
         guard let panel else { return }
+        if !isExpanded,
+           let target = NSScreen.screens.first(where: { NSMouseInRect(point, $0.frame, false) }),
+           let targetID = target.displayID, targetID != screenID {
+            screenID = targetID
+            reposition()
+        }
         let hot = panel.frame.insetBy(dx: -10, dy: -10)
         if hot.contains(point) {
             collapseTask?.cancel()
@@ -196,7 +207,10 @@ final class TopDockController: ObservableObject {
 
     /// 拖动后：y 吸回顶边，x 按屏宽比例记住。
     private func panelDidMove(windowNumber: Int?) {
-        guard let panel, windowNumber == panel.windowNumber, !isRepositioning, let screen else { return }
+        guard let panel, windowNumber == panel.windowNumber, !isRepositioning else { return }
+        // 拖到别的屏上：就认那块屏。
+        if let dropped = panel.screen?.displayID { screenID = dropped }
+        guard let screen else { return }
         let centerX = panel.frame.midX
         xFraction = (centerX - screen.frame.minX) / max(1, screen.frame.width)
         reposition()

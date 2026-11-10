@@ -159,7 +159,7 @@
 "menu.section.record" = "录制";
 "menu.region" = "区域截屏";
 "menu.main" = "全屏截图";
-"menu.window" = "截取窗口";
+"menu.window" = "截取当前窗口";
 "menu.scrolling" = "滚动截屏";
 "menu.ocr" = "截取文字（OCR）";
 "menu.delay" = "延时截屏";
@@ -178,7 +178,7 @@
 "settings.section.general" = "通用";
 "settings.language" = "界面语言";
 "settings.language.system" = "跟随系统";
-"settings.language.restartNote" = "切换语言后需重新启动应用才会生效。";
+"settings.language.restartNote" = "切换语言后会提示重新启动，重启后生效。";
 "settings.labelStyle" = "按钮样式";
 "settings.labelStyle.iconAndText" = "图标 + 文字";
 "settings.labelStyle.iconOnly" = "纯图标";
@@ -186,7 +186,7 @@
 "settings.savePath" = "默认保存位置";
 "settings.savePath.ask" = "每次询问";
 "settings.shortcuts" = "快捷键";
-"settings.shortcuts.note" = "当前：⌘⇧2 区域截屏（暂不可自定义）。";
+"settings.shortcuts.note" = "统一用 ⌥（Option）+ 英文首字母，任何应用里都能用，一只手就能按。多屏时全屏截图和录屏作用于鼠标所在的屏。暂不可自定义。";
 "settings.section.recording" = "录制";
 "settings.mic" = "录制时包含麦克风声音";
 "settings.mic.note" = "开启后屏幕录像会录入麦克风讲解声（首次需授予麦克风权限）。";
@@ -277,3 +277,9 @@
 "settings.dock.labelStyle" = "工具条标签";
 "settings.dock.labelStyle.iconAndText" = "图标 + 文字";
 "settings.dock.labelStyle.iconOnly" = "纯图标（悬停说明）";
+"settings.shortcuts.taken" = "被其他程序占用";
+"menu.repeatRegion" = "重复上次区域";
+"settings.language.relaunch.title" = "界面语言已切换";
+"settings.language.relaunch.message" = "WorldCapture 需要重新启动才能使用新语言。正在进行的录制会被中断。";
+"settings.language.relaunch.now" = "立即重启";
+"settings.language.relaunch.later" = "稍后";

@@ -159,7 +159,7 @@
 "menu.section.record" = "録画";
 "menu.region" = "範囲を撮影";
 "menu.main" = "全画面を撮影";
-"menu.window" = "ウィンドウを撮影";
+"menu.window" = "現在のウィンドウを撮影";
 "menu.scrolling" = "スクロール撮影";
 "menu.ocr" = "テキスト抽出（OCR）";
 "menu.delay" = "遅延撮影";
@@ -178,7 +178,7 @@
 "settings.section.general" = "一般";
 "settings.language" = "表示言語";
 "settings.language.system" = "システムに従う";
-"settings.language.restartNote" = "言語の変更はアプリを再起動すると反映されます。";
+"settings.language.restartNote" = "変更すると再起動を確認します。再起動後に反映されます。";
 "settings.labelStyle" = "ボタン表示";
 "settings.labelStyle.iconAndText" = "アイコン + 文字";
 "settings.labelStyle.iconOnly" = "アイコンのみ";
@@ -186,7 +186,7 @@
 "settings.savePath" = "既定の保存先";
 "settings.savePath.ask" = "毎回確認";
 "settings.shortcuts" = "ショートカット";
-"settings.shortcuts.note" = "現在：⌘⇧2 範囲撮影（カスタマイズ未対応）。";
+"settings.shortcuts.note" = "⌥（Option）+ 英単語の頭文字で、どのアプリからでも片手で使えます。複数ディスプレイでは、全画面撮影と録画はポインタのある画面が対象です。カスタマイズは未対応。";
 "settings.section.recording" = "録画";
 "settings.mic" = "マイクの音声を含める";
 "settings.mic.note" = "オンにすると画面録画にマイク音声が入ります（初回はマイク権限の許可が必要）。";
@@ -277,3 +277,9 @@
 "settings.dock.labelStyle" = "ツールバーのラベル";
 "settings.dock.labelStyle.iconAndText" = "アイコン + 文字";
 "settings.dock.labelStyle.iconOnly" = "アイコンのみ（ホバーで説明）";
+"settings.shortcuts.taken" = "他のアプリが使用中";
+"menu.repeatRegion" = "前回の範囲を再撮影";
+"settings.language.relaunch.title" = "表示言語を変更しました";
+"settings.language.relaunch.message" = "新しい言語を使うには WorldCapture を再起動する必要があります。録画中の場合は停止します。";
+"settings.language.relaunch.now" = "今すぐ再起動";
+"settings.language.relaunch.later" = "後で";

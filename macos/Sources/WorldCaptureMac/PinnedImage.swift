@@ -44,7 +44,8 @@ final class PinnedImageController: ObservableObject {
             }
         ))
 
-        if let screen = NSScreen.main {
+        // 多屏：出现在鼠标所在的屏（NSScreen.main 是「有键盘焦点窗口的屏」，不是鼠标那块）。
+        if let screen = NSScreen.underMouse {
             let visible = screen.visibleFrame
             let offset = CGFloat(panels.count % 6) * 28
             panel.setFrameOrigin(CGPoint(

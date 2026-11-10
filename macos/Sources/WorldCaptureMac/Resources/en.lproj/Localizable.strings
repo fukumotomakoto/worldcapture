@@ -159,7 +159,7 @@
 "menu.section.record" = "Record";
 "menu.region" = "Capture region";
 "menu.main" = "Capture full screen";
-"menu.window" = "Capture window";
+"menu.window" = "Capture current window";
 "menu.scrolling" = "Scrolling capture";
 "menu.ocr" = "Capture text (OCR)";
 "menu.delay" = "Delayed capture";
@@ -178,7 +178,7 @@
 "settings.section.general" = "General";
 "settings.language" = "Language";
 "settings.language.system" = "System default";
-"settings.language.restartNote" = "Relaunch the app for the language change to take effect.";
+"settings.language.restartNote" = "You'll be asked to relaunch; the new language applies after relaunch.";
 "settings.labelStyle" = "Button style";
 "settings.labelStyle.iconAndText" = "Icon + label";
 "settings.labelStyle.iconOnly" = "Icon only";
@@ -186,7 +186,7 @@
 "settings.savePath" = "Default save location";
 "settings.savePath.ask" = "Ask every time";
 "settings.shortcuts" = "Shortcuts";
-"settings.shortcuts.note" = "Current: ⌘⇧2 region capture (not yet customizable).";
+"settings.shortcuts.note" = "⌥ (Option) plus the first letter, in any app, with one hand. With several displays, full-screen capture and recording use the display under the pointer. Not yet customizable.";
 "settings.section.recording" = "Recording";
 "settings.mic" = "Include microphone audio";
 "settings.mic.note" = "When on, screen recordings include your microphone (grant Microphone permission on first use).";
@@ -277,3 +277,9 @@
 "settings.dock.labelStyle" = "Toolbar labels";
 "settings.dock.labelStyle.iconAndText" = "Icon + text";
 "settings.dock.labelStyle.iconOnly" = "Icons only (hover help)";
+"settings.shortcuts.taken" = "In use by another app";
+"menu.repeatRegion" = "Repeat last region";
+"settings.language.relaunch.title" = "Language changed";
+"settings.language.relaunch.message" = "WorldCapture needs to relaunch to use the new language. Any recording in progress will stop.";
+"settings.language.relaunch.now" = "Relaunch Now";
+"settings.language.relaunch.later" = "Later";

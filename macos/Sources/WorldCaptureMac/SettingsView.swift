@@ -63,6 +63,7 @@ struct SettingsView: View {
                 }
                 .onChange(of: language) { _, newValue in
                     newValue.apply()
+                    newValue.confirmRelaunch()
                 }
                 Text(Loc.s("settings.language.restartNote"))
                     .font(.caption)
@@ -97,10 +98,24 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                LabeledContent(Loc.s("settings.shortcuts")) {
-                    Text(Loc.s("settings.shortcuts.note"))
-                        .foregroundStyle(.secondary)
+            }
+
+            Section(Loc.s("settings.shortcuts")) {
+                ForEach(HotKeyAction.allCases) { hotKey in
+                    LabeledContent(Loc.s(hotKey.titleKey)) {
+                        HStack(spacing: 6) {
+                            if HotKeyStatus.failed.contains(hotKey) {
+                                Text(Loc.s("settings.shortcuts.taken"))
+                                    .foregroundStyle(.orange)
+                            }
+                            Text(hotKey.display)
+                                .font(.body.monospaced())
+                        }
+                    }
                 }
+                Text(Loc.s("settings.shortcuts.note"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section(Loc.s("settings.section.recording")) {

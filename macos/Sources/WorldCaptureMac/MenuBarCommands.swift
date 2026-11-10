@@ -12,19 +12,22 @@ struct MenuBarCommands: View {
 
     var body: some View {
         Section(Loc.s("menu.section.capture")) {
+            // 显示的快捷键 = 全局热键表（GlobalHotKey.swift 的 HotKeyAction），别再写死 ⌘⇧3/4/5/6——那是系统截图键。
             Button(Loc.s("menu.region")) { run { await model.captureRegion() } }
-                .keyboardShortcut("2", modifiers: [.command, .shift])
-            Button(Loc.s("menu.window")) { activateThen { await model.captureSelectedWindow() } }
-                .keyboardShortcut("3", modifiers: [.command, .shift])
-                .disabled(model.selectedWindowID == nil)
+                .shortcut(.region)
+            Button(Loc.s("menu.repeatRegion")) { run { await model.repeatLastRegion() } }
+                .shortcut(.repeatRegion)
+            // 截「当前正在用的窗口」（前台应用最前面那扇），不必先在主窗口里选。
+            Button(Loc.s("menu.window")) { run { await model.captureFrontmostWindow() } }
+                .shortcut(.window)
             Button(Loc.s("menu.main")) { activateThen { await model.capture() } }
-                .keyboardShortcut("1", modifiers: [.command, .shift])
+                .shortcut(.fullScreen)
             Button(Loc.s("menu.scrolling")) { run { await model.captureScrolling() } }
-                .keyboardShortcut("4", modifiers: [.command, .shift])
+                .shortcut(.scrolling)
             Button(Loc.s("menu.ocr")) { activateThen { await model.captureRegionAndExtractText() } }
-                .keyboardShortcut("5", modifiers: [.command, .shift])
+                .shortcut(.ocr)
             Button(Loc.s("menu.mirror")) { run { await model.startTranslationMirror() } }
-                .keyboardShortcut("6", modifiers: [.command, .shift])
+                .shortcut(.mirror)
             Menu(Loc.s("menu.delay")) {
                 Button(Loc.s("menu.delay.seconds", Int32(3))) { run { await delayThenCapture(3) } }
                 Button(Loc.s("menu.delay.seconds", Int32(5))) { run { await delayThenCapture(5) } }
@@ -36,10 +39,11 @@ struct MenuBarCommands: View {
             Button(model.isRecording ? Loc.s("record.stop") : Loc.s("record.screen")) {
                 Task { await model.toggleRecording() }
             }
-            .keyboardShortcut("6", modifiers: [.command, .shift])
+            .shortcut(.record)
             Button(model.isGIFRecording ? Loc.s("record.gif.stop") : Loc.s("record.gif")) {
                 Task { await model.toggleGIFRecording() }
             }
+            .shortcut(.gif)
         }
 
         Divider()
@@ -120,5 +124,11 @@ private struct RecentCaptureItem: View {
             }
         }
         .task { thumb = await HistoryStore.shared.thumbnail(for: entry, maxDimension: 48) }
+    }
+}
+
+private extension View {
+    func shortcut(_ hotKey: HotKeyAction) -> some View {
+        keyboardShortcut(hotKey.keyEquivalent, modifiers: hotKey.eventModifiers)
     }
 }

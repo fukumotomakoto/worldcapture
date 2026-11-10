@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 /// 轻量本地化封装。
@@ -61,5 +62,48 @@ enum AppLanguage: String, CaseIterable, Identifiable {
             defaults.set(rawValue, forKey: Self.preferenceKey)
             defaults.set([rawValue], forKey: "AppleLanguages")
         }
+    }
+
+    /// 切换后提示并自动重启生效（师弟 2026-11-11：改完语言要提示、自动退出重启）。
+    /// 提示用**新语言**写：用户刚选了它，旧界面的语言可能正是他看不懂的。
+    @MainActor
+    func confirmRelaunch() {
+        let alert = NSAlert()
+        alert.messageText = localized("settings.language.relaunch.title")
+        alert.informativeText = localized("settings.language.relaunch.message")
+        alert.addButton(withTitle: localized("settings.language.relaunch.now"))
+        alert.addButton(withTitle: localized("settings.language.relaunch.later"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        Self.relaunch()
+    }
+
+    /// 起一个独立的 shell：等本进程退出后再 open，避免 open 时旧实例还在、只被激活不重开。
+    @MainActor
+    static func relaunch() {
+        let path = Bundle.main.bundleURL.path
+        let pid = ProcessInfo.processInfo.processIdentifier
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/bin/sh")
+        task.arguments = ["-c", "while kill -0 \(pid) 2>/dev/null; do sleep 0.2; done; /usr/bin/open \"$0\"", path]
+        do {
+            try task.run()
+        } catch {
+            return
+        }
+        NSApp.terminate(nil)
+    }
+
+    /// 取这门语言的文案（跟随系统时用系统首选语言里第一个我们有的）。
+    private func localized(_ key: String) -> String {
+        let code: String
+        if self == .system {
+            code = Bundle.preferredLocalizations(from: Loc.bundle.localizations,
+                                                 forPreferences: Locale.preferredLanguages).first ?? "en"
+        } else {
+            code = rawValue
+        }
+        guard let path = Loc.bundle.path(forResource: code, ofType: "lproj"),
+              let bundle = Bundle(path: path) else { return Loc.s(key) }
+        return bundle.localizedString(forKey: key, value: Loc.s(key), table: nil)
     }
 }

@@ -34,10 +34,33 @@ struct MinimizeOnClose: NSViewRepresentable {
 
     func makeCoordinator() -> MinimizeOnCloseDelegate { MinimizeOnCloseDelegate() }
 
+    /// 多屏：把窗口搬到鼠标所在的屏（2026-11-11 师弟：截完图编辑器要出现在当前屏，
+    /// 而不是上次拖放过的那块屏）。保持它在屏内的相对位置，放不下就缩到可见区域内。
+    @MainActor
+    static func moveToScreenUnderMouse(_ window: NSWindow) {
+        guard let target = NSScreen.underMouse, window.screen != target else { return }
+        let source = window.screen ?? NSScreen.screens.first ?? target
+        let from = source.visibleFrame
+        let to = target.visibleFrame
+        var frame = window.frame
+        frame.size.width = min(frame.width, to.width)
+        frame.size.height = min(frame.height, to.height)
+        // 窗口中心在原屏可见区域里的比例 → 新屏的同一比例处。
+        let fx = from.width > 0 ? (window.frame.midX - from.minX) / from.width : 0.5
+        let fy = from.height > 0 ? (window.frame.midY - from.minY) / from.height : 0.5
+        frame.origin.x = to.minX + to.width * min(max(fx, 0), 1) - frame.width / 2
+        frame.origin.y = to.minY + to.height * min(max(fy, 0), 1) - frame.height / 2
+        frame.origin.x = min(max(frame.minX, to.minX), to.maxX - frame.width)
+        frame.origin.y = min(max(frame.minY, to.minY), to.maxY - frame.height)
+        window.setFrame(frame, display: false)
+    }
+
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
             guard let window = view.window else { return }
+            // 第一次创建（openWindow）时也出现在鼠标所在的屏。
+            if Self.mainWindow !== window { Self.moveToScreenUnderMouse(window) }
             Self.mainWindow = window
             // 已安装则不重复包裹（避免自引用循环）。
             if window.delegate is MinimizeOnCloseDelegate { return }

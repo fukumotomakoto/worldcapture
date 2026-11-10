@@ -150,7 +150,9 @@ final class CaptureViewModel: ObservableObject {
     private let gifRecorder = GIFRecorder()
     private var gifTimer: Timer?
     private var gifStartedAt: Date?
-    private var globalHotKey: GlobalHotKey?
+    private var globalHotKeys: GlobalHotKeys?
+    /// 上一次框选的区域（⌥Z「重复上次区域」用）。
+    private var lastRegionSelection: RegionSelection?
     private var recordingTimer: Timer?
     private var recordingStartedAt: Date?
     /// 累计已暂停时长，及当前这次暂停的起点——用于让显示时长排除暂停段（与输出实际时长一致）。
@@ -173,7 +175,13 @@ final class CaptureViewModel: ObservableObject {
         defer { isCapturing = false }
 
         do {
-            let captured = try await capturer.captureMainDisplay()
+            // 多屏：截鼠标所在的那块屏（从顶部工具条点 = 工具条所在屏）。
+            let captured: CGImage
+            if let displayID = NSScreen.underMouse?.displayID {
+                captured = try await capturer.captureDisplay(id: displayID, region: nil)
+            } else {
+                captured = try await capturer.captureMainDisplay()
+            }
             image = NSImage(cgImage: captured, size: .zero)
             annotations = []
             selectedAnnotationIDs = []
@@ -191,6 +199,24 @@ final class CaptureViewModel: ObservableObject {
             restoreWindows()
             return
         }
+        lastRegionSelection = selection
+        await captureRegion(selection, restoreWindows: restoreWindows)
+    }
+
+    /// 重复上次区域：不再框选，直接按上次的屏幕 + 区域截（没有上次就退回普通框选）。
+    func repeatLastRegion() async {
+        guard let selection = lastRegionSelection else {
+            await captureRegion()
+            return
+        }
+        sourcePicker = nil
+        let restoreWindows = hideOwnWindows()
+        // 等窗口真正从屏幕上撤下（框选时有覆盖层动画兜着，这里没有）。
+        try? await Task.sleep(for: .milliseconds(150))
+        await captureRegion(selection, restoreWindows: restoreWindows)
+    }
+
+    private func captureRegion(_ selection: RegionSelection, restoreWindows: @escaping () -> Void) async {
         isCapturing = true
         errorMessage = nil
         defer { isCapturing = false }
@@ -708,11 +734,45 @@ final class CaptureViewModel: ObservableObject {
         NSWorkspace.shared.open(url)
     }
 
-    func installGlobalHotKey() {
-        guard globalHotKey == nil else { return }
-        globalHotKey = GlobalHotKey { [weak self] in
-            Task { await self?.captureRegion() }
+    /// 注册全局快捷键表（`HotKeyAction`）。App 启动时由状态栏图标调用——不能等主窗口出现，
+    /// 顶部工具条模式下主窗口启动时根本不开。
+    func installGlobalHotKeys() {
+        guard globalHotKeys == nil else { return }
+        globalHotKeys = GlobalHotKeys { [weak self] hotKey in
+            Task { await self?.perform(hotKey) }
         }
+        HotKeyStatus.failed = Set(globalHotKeys?.failed ?? [])
+    }
+
+    func perform(_ hotKey: HotKeyAction) async {
+        switch hotKey {
+        case .region: await captureRegion()
+        case .window: await captureFrontmostWindow()
+        case .fullScreen: await capture()
+        case .scrolling: await captureScrolling()
+        case .ocr: await captureRegionAndExtractText()
+        case .mirror: await startTranslationMirror()
+        case .record: await toggleRecording()
+        case .gif: await toggleGIFRecording()
+        case .repeatRegion: await repeatLastRegion()
+        }
+    }
+
+    /// 截「当前正在用的窗口」：别的应用最前面那扇普通窗口（不弹选择器，按下即截）。
+    func captureFrontmostWindow() async {
+        let ownPID = ProcessInfo.processInfo.processIdentifier
+        let frontPID = NSWorkspace.shared.frontmostApplication?.processIdentifier
+        guard let infos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
+                as? [[String: Any]] else { return }
+        let candidates = infos.filter {
+            ($0[kCGWindowLayer as String] as? Int) == 0
+                && ($0[kCGWindowOwnerPID as String] as? pid_t) != ownPID
+                && (($0[kCGWindowBounds as String] as? [String: CGFloat])?["Height"] ?? 0) > 40
+        }
+        // 列表按前后顺序排列：优先前台应用的窗口，否则取最上面那扇。
+        let pick = candidates.first { ($0[kCGWindowOwnerPID as String] as? pid_t) == frontPID } ?? candidates.first
+        guard let number = pick?[kCGWindowNumber as String] as? CGWindowID else { return }
+        await captureWindow(id: number)
     }
 
     func undoAnnotation() {
@@ -776,7 +836,8 @@ final class CaptureViewModel: ObservableObject {
         if isRecording {
             await stopRecording()
         } else {
-            await beginRecording(displayID: CGMainDisplayID())
+            // 多屏：录鼠标所在的那块屏。
+            await beginRecording(displayID: NSScreen.underMouse?.displayID ?? CGMainDisplayID())
         }
     }
 
@@ -1315,7 +1376,6 @@ struct CaptureView: View {
             }
         }
         .task {
-            model.installGlobalHotKey()
             model.refreshScreenPermission(requestIfNeeded: true)
             model.loadDisplays()
             ExtensionInbox.shared.onImage = { [weak model] image in model?.loadExternalImage(image) }
@@ -1605,7 +1665,7 @@ struct CaptureView: View {
                 .help(Loc.s("capture.scrollWindow.help"))
 
                 Spacer(minLength: 12)
-                Text("⌘⇧2")
+                Text(HotKeyAction.region.display)
                     .font(.callout.monospaced())
                     .foregroundStyle(.secondary)
                     .help(Loc.s("region.shortcut.help"))

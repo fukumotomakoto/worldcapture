@@ -46,6 +46,7 @@ struct WorldCaptureApp: App {
                         // 已有主窗口（哪怕被最小化或被 orderOut 收起）就唤回它，绝不另开一个。
                         if let existing = MinimizeOnClose.mainWindow {
                             if existing.isMiniaturized { existing.deminiaturize(nil) }
+                            MinimizeOnClose.moveToScreenUnderMouse(existing)
                             existing.makeKeyAndOrderFront(nil)
                         } else {
                             openWindow(id: "main")
@@ -53,6 +54,7 @@ struct WorldCaptureApp: App {
                         NSApp.activate(ignoringOtherApps: true)
                     }
                     TopDockController.shared.attach(model: model)
+                    model.installGlobalHotKeys()
                 }
         }
     }
