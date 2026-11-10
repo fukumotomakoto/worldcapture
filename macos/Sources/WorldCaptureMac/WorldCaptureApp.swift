@@ -9,7 +9,9 @@ struct WorldCaptureApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup(id: "main") {
+        // 单实例 Window（不是 WindowGroup）：WindowGroup 每次 openWindow 都会新建一个窗口，
+        // 顶部工具条模式下截一次图就多叠一个主界面。
+        Window("WorldCapture", id: "main") {
             CaptureView(model: model)
                 .frame(minWidth: 900, minHeight: 580)
                 .background(MinimizeOnClose())
@@ -41,7 +43,13 @@ struct WorldCaptureApp: App {
                 // 状态栏图标在启动时就会创建：借它把「打开主窗口」的能力交给模型，并挂起顶部工具条。
                 .onAppear {
                     model.openMainWindow = {
-                        openWindow(id: "main")
+                        // 已有主窗口（哪怕被最小化或被 orderOut 收起）就唤回它，绝不另开一个。
+                        if let existing = MinimizeOnClose.mainWindow {
+                            if existing.isMiniaturized { existing.deminiaturize(nil) }
+                            existing.makeKeyAndOrderFront(nil)
+                        } else {
+                            openWindow(id: "main")
+                        }
                         NSApp.activate(ignoringOtherApps: true)
                     }
                     TopDockController.shared.attach(model: model)

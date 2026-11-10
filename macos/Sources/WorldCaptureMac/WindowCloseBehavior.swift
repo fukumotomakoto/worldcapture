@@ -28,12 +28,17 @@ final class MinimizeOnCloseDelegate: NSObject, NSWindowDelegate {
 
 /// 把它 `.background(...)` 到主窗口内容上，即可把关闭改为最小化。
 struct MinimizeOnClose: NSViewRepresentable {
+    /// 已创建的主窗口（弱引用）：`openMainWindow` 靠它找回已有窗口，而不是再开一个。
+    /// 不改写 `window.identifier`——那是 SwiftUI 认领场景窗口用的。
+    @MainActor static weak var mainWindow: NSWindow?
+
     func makeCoordinator() -> MinimizeOnCloseDelegate { MinimizeOnCloseDelegate() }
 
     func makeNSView(context: Context) -> NSView {
         let view = NSView()
         DispatchQueue.main.async {
             guard let window = view.window else { return }
+            Self.mainWindow = window
             // 已安装则不重复包裹（避免自引用循环）。
             if window.delegate is MinimizeOnCloseDelegate { return }
             context.coordinator.previous = window.delegate
