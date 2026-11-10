@@ -16,8 +16,8 @@ settings:
     PROVISIONING_PROFILE_SPECIFIER: ""
     # 版本号单一来源：工程级，App 与 Safari 扩展共用（扩展的 CFBundleVersion 必须等于宿主 App）。
     # Safari 扩展的 manifest.json 里的 "version" 不能引用构建变量，须手动保持一致——release.sh 会校验。
-    MARKETING_VERSION: 0.1.3
-    CURRENT_PROJECT_VERSION: 4
+    MARKETING_VERSION: 0.1.4
+    CURRENT_PROJECT_VERSION: 5
   configs:
     # Debug：Apple Development 本地开发签名（TCC 授权跨重建稳定）
     Debug:
