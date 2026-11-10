@@ -3,6 +3,22 @@
     <channel>
         <title>WorldCapture</title>
         <item>
+            <title>0.1.4</title>
+            <pubDate>Wed, 11 Nov 2026 03:07:57 +0900</pubDate>
+            <link>https://worldcapture.fukumoto.jp/</link>
+            <sparkle:version>5</sparkle:version>
+            <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://worldcapture.fukumoto.jp/WorldCapture-0.1.4.html</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.4/WorldCapture-0.1.4.dmg" length="14493059" type="application/octet-stream" sparkle:edSignature="Ioiy9ltpMRYFLWEgT6BevHzdNZrBr4AfOcIocGYZcK8Zmz/yUC3V+2C6zAvHcXOSgU80E3wQdqR1f19datT8DQ=="/>
+            <sparkle:deltas>
+                <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.4/WorldCapture5-4.delta" sparkle:deltaFrom="4" length="340186" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Cv3kUiSGgPuk87UCMIaMaUHhi/BlkGb2oBzWVJM8Pea8SBNj6jp2KVl1iUtZadM0UWN1h/rlzoPJoAcdzzl0Cw=="/>
+                <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.4/WorldCapture5-3.delta" sparkle:deltaFrom="3" length="380186" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="MfsXg6q+5xhS9Xi84eIFrwaRY7pt4wG0RWygG4eGmNEdO3IQpN7UlCR4b4M0cNztUKWYba98SI3uAdz9FLLOCg=="/>
+                <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.4/WorldCapture5-2.delta" sparkle:deltaFrom="2" length="448210" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="bv/bWVM7rFBB6wYU1EZgQBmzGyPvs9jcZi8OgzSjamfnNfa7FQiGEJlh42v/UxugWt81WYq16JSqKsyxRu/1Aw=="/>
+                <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.4/WorldCapture5-1.delta" sparkle:deltaFrom="1" length="950334" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="G0zVo09k6PauG+Ty3jZIWcRTPaZv2cVs7eNxFl22xg4KvA3IwsJJRgTP3M2yCvtnCGq1ab1EEuDw7bOD7dCxDw=="/>
+            </sparkle:deltas>
+        </item>
+        <item>
             <title>0.1.3</title>
             <pubDate>Wed, 11 Nov 2026 00:37:42 +0900</pubDate>
             <link>https://worldcapture.fukumoto.jp/</link>
@@ -29,19 +45,6 @@
             <sparkle:deltas>
                 <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.2/WorldCapture3-2.delta" sparkle:deltaFrom="2" length="260722" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="McrQ1OrEGiW/tMF020A+XIp3gMVHCj1fb9h8NeQEVJOGHoUzF0Ti6g7tqQcuDnmfhoI1gJT/rR1uQ2cX1dHiCg=="/>
                 <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.2/WorldCapture3-1.delta" sparkle:deltaFrom="1" length="907194" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="hoTr1XT0CeeQam6mdxr/oMWEuTeSvynXg/gTQARA3WeXMSef5Ki0mCF1l/9gY0oIt18fUZqsqboNZRdM8z1LBA=="/>
-            </sparkle:deltas>
-        </item>
-        <item>
-            <title>0.1.1</title>
-            <pubDate>Wed, 07 Oct 2026 23:37:33 +0900</pubDate>
-            <link>https://worldcapture.fukumoto.jp/</link>
-            <sparkle:version>2</sparkle:version>
-            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>15.0</sparkle:minimumSystemVersion>
-            <sparkle:releaseNotesLink>https://worldcapture.fukumoto.jp/WorldCapture-0.1.1.html</sparkle:releaseNotesLink>
-            <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.1/WorldCapture-0.1.1.dmg" length="14430557" type="application/octet-stream" sparkle:edSignature="lL5L0uVvvvR3uYrVszDY5YSiqwoagUq3kLdknsVlACX3iI9Lr9T1wQAQKPF7x1HE2OuMd8Wkdpu4FwXvaD/AAA=="/>
-            <sparkle:deltas>
-                <enclosure url="https://github.com/fukumotomakoto/worldcapture/releases/download/v0.1.1/WorldCapture2-1.delta" sparkle:deltaFrom="1" length="885006" type="application/octet-stream" sparkle:deltaFromSparkleExecutableSize="977840" sparkle:deltaFromSparkleLocales="de,he,ar,el,ja,fa,uk" sparkle:edSignature="Tn59R2yZVATlCjsNrsOnYzRI8tgjw/t6CsYeszWsLQ9DPTENwe9vLbxdxqFI+6qmITFvR2sUdr3q9ouS7kpwBQ=="/>
             </sparkle:deltas>
         </item>
     </channel>
