@@ -14,6 +14,10 @@ settings:
     CODE_SIGN_STYLE: Manual
     DEVELOPMENT_TEAM: 43M5KN7MPD
     PROVISIONING_PROFILE_SPECIFIER: ""
+    # 版本号单一来源：工程级，App 与 Safari 扩展共用（扩展的 CFBundleVersion 必须等于宿主 App）。
+    # Safari 扩展的 manifest.json 里的 "version" 不能引用构建变量，须手动保持一致——release.sh 会校验。
+    MARKETING_VERSION: 0.1.3
+    CURRENT_PROJECT_VERSION: 4
   configs:
     # Debug：Apple Development 本地开发签名（TCC 授权跨重建稳定）
     Debug:
@@ -90,8 +94,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.worldcapture.app
         PRODUCT_NAME: WorldCapture
-        MARKETING_VERSION: 0.1.2
-        CURRENT_PROJECT_VERSION: 3
         ENABLE_HARDENED_RUNTIME: YES
         # 图标沿用 Safari 扩展的取景角标识，按 macOS 图标网格重绘（本体占画布 824/1024）。
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

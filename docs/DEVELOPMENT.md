@@ -2,7 +2,7 @@
 
 > 文档状态：与 `main` 分支同步
 >
-> 当前版本：`0.1.2` / build `3`
+> 当前版本：`0.1.3` / build `4`
 >
 > 当前平台：macOS 15+
 > Windows 状态：规划中，尚无可构建实现
@@ -695,14 +695,15 @@ xcodebuild -project WorldCapture.xcodeproj -scheme WorldCapture \
 当前版本配置在 `project.yml`：
 
 ```yaml
-MARKETING_VERSION: 0.1.2
-CURRENT_PROJECT_VERSION: 3
+MARKETING_VERSION: 0.1.3
+CURRENT_PROJECT_VERSION: 4
 ```
 
 发布时同时更新：
 
 - `MARKETING_VERSION`；
-- `CURRENT_PROJECT_VERSION`；
+- `CURRENT_PROJECT_VERSION`（两者在工程级 settings，App 与 Safari 扩展共用——扩展的 CFBundleVersion 必须等于宿主 App）；
+- `macos/SafariExtension/manifest.json` 的 `version`（不能引用构建变量，手动同步；`release.sh` 会校验）；
 - README 当前版本；
 - 本文档头部状态；
 - changelog（尚未建立）。

@@ -44,6 +44,13 @@ STAGING="$BUILD/dmg-staging"
 # 从 project.yml 读取 MARKETING_VERSION 给 DMG 命名（取不到则回退 dev）。
 VERSION="$(grep -m1 'MARKETING_VERSION:' "$ROOT/project.yml" | sed -E 's/.*MARKETING_VERSION:[[:space:]]*"?([^"[:space:]]+)"?.*/\1/' || true)"
 VERSION="${VERSION:-dev}"
+
+# Safari 扩展 manifest.json 的 version 不能引用构建变量，须手动与 App 版本同步；不一致就别发。
+MANIFEST_VERSION="$(sed -nE 's/.*"version":[[:space:]]*"([^"]+)".*/\1/p' "$ROOT/macos/SafariExtension/manifest.json" | head -1)"
+if [ "$MANIFEST_VERSION" != "$VERSION" ]; then
+  echo "✗ Safari 扩展 manifest.json version=${MANIFEST_VERSION}，与 project.yml MARKETING_VERSION=${VERSION} 不一致，先改齐再发。"
+  exit 1
+fi
 DMG="$BUILD/WorldCapture-$VERSION.dmg"
 
 # Sparkle 自动更新：appcast 输出目录（持久，跨版本累积发布记录）、
@@ -58,8 +65,8 @@ SITE_URL="${SITE_URL:-https://worldcapture.fukumoto.jp/}"
 #   · SUFeedURL 编译进二进制，几乎不可撤回 → 必须长寿（自有域名）。
 #   · 下载前缀只出现在每次重新生成的 appcast.xml 里，随时可改，且下载包的完整性由
 #     EdDSA 签名保证，不依赖来源可信 → 直接挂 GitHub Releases，省带宽和仓库体积。
-# generate_appcast 只对「新条目」套用这个前缀，已有条目原样保留（见其 --help），
-# 因此前缀里带版本 tag 是安全的：历史版本仍指向各自 tag 下的文件。
+# ⚠️ generate_appcast 会把「已有条目」的 enclosure URL 也改写成本次前缀（2026-10-07 实测），
+# 生成后必须 grep 'url=' 把旧版本条目改回各自 tag 的目录（见 docs/DEVELOPMENT.md §21）。
 GH_REPO="${GH_REPO:-fukumotomakoto/worldcapture}"
 DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-https://github.com/$GH_REPO/releases/download/v$VERSION/}"
 
