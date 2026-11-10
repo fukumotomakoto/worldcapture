@@ -1,6 +1,6 @@
 # WorldCapture
 
-[中文](README.md) · **English** · [日本語](README.ja.md)
+**English** · [日本語](README.ja.md) · [简体中文](README.zh-Hans.md)
 
 Screenshots, screen recording and **in-place image translation** for macOS. Capture a foreign-language UI and the translation is laid right over the original text; select a region of the screen and subtitles or chat keep translating as they change. Everything runs on your Mac: **free, MIT, no account, no telemetry, no watermark, 15 MB.**
 
@@ -16,7 +16,7 @@ Screenshots, screen recording and **in-place image translation** for macOS. Capt
 
 **Translation**
 - **Translate Image**: recognizes the text in a screenshot, translates it paragraph by paragraph and lays each translation back where the original was. Font size follows the original, the background is sampled from the surrounding pixels, and every block can be moved, resized or deleted and is exported with the image.
-- **Live Lens** (⌘⇧6): select a screen region; it is recognized continuously and the translation is overlaid in place, click-through. For subtitles, live chat and UIs that keep changing.
+- **Live Lens** (⌥T): select a screen region; it is recognized continuously and the translation is overlaid in place, click-through. For subtitles, live chat and UIs that keep changing.
 - **Extract Text**: translate inside the OCR panel, original and translation side by side, with a target-language picker and a separate copy button.
 - **Engines and glossary**: Apple Intelligence (on-device model) or the system translator, neither goes online. A built-in glossary of common UI terms for Chinese and Japanese, plus your own entries in `~/Documents/WorldCapture/glossary.txt`.
 
@@ -27,7 +27,7 @@ Screenshots, screen recording and **in-place image translation** for macOS. Capt
 
 **Ways in**
 - Top toolbar: a small tab under the menu bar that slides out on hover. Can be turned off in Settings.
-- Menu bar icon and global shortcuts (⌘⇧2 for region capture, and more).
+- Menu bar icon and global shortcuts: ⌥ plus the first letter (⌥A region, ⌥W current window, ⌥F full screen, ⌥S scrolling, ⌥C copy text, ⌥T Live Lens, ⌥R record, ⌥G GIF, ⌥Z repeat last region). With several displays the top toolbar follows the pointer, and full-screen capture and recording use the display under it.
 - Assistant sidebar: Claude or ChatGPT web embedded in the main window with your own account; "Send to Assistant" puts the screenshot on the clipboard, paste and send.
 - Safari extension: full-page capture and in-browser OCR, with hand-off to the app.
 
