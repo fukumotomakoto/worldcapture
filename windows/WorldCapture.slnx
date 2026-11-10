@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/WorldCapture.Core/WorldCapture.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WorldCapture.Core.Tests/WorldCapture.Core.Tests.csproj" />
+  </Folder>
+</Solution>
