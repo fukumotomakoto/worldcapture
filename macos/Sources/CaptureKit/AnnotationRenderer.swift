@@ -115,20 +115,52 @@ public enum AnnotationRenderer {
         annotation: CaptureAnnotation,
         in context: CGContext
     ) {
-        let start = point(annotation.start, image: image)
-        let end = point(annotation.end, image: image)
-        let rect = CGRect(
-            x: min(start.x, end.x),
-            y: min(start.y, end.y),
-            width: abs(end.x - start.x),
-            height: abs(end.y - start.y)
-        ).integral.intersection(CGRect(x: 0, y: 0, width: image.width, height: image.height))
-        guard rect.width >= 2, rect.height >= 2,
-              let crop = image.cropping(to: rect) else { return }
+        guard let mosaic = mosaicTile(image: image, start: annotation.start, end: annotation.end) else { return }
+        // tile.rect 是左上角原点（CGImage 的裁切坐标）；画进 CGContext 要换成左下角原点。
+        let target = CGRect(
+            x: mosaic.rect.minX,
+            y: CGFloat(image.height) - mosaic.rect.maxY,
+            width: mosaic.rect.width,
+            height: mosaic.rect.height
+        )
+        context.saveGState()
+        context.interpolationQuality = .none
+        context.draw(mosaic.tile, in: target)
+        context.restoreGState()
+    }
 
-        let blockSize: CGFloat = 14
-        let lowWidth = max(1, Int((rect.width / blockSize).rounded(.up)))
-        let lowHeight = max(1, Int((rect.height / blockSize).rounded(.up)))
+    /// 马赛克块边长（图像像素）：随图片尺寸放大。
+    ///
+    /// 固定 14 px 在 Retina 截图上只有半个字高（正文字高约 28~32 px），大字号标题仍认得出。
+    /// 取短边的 1/45、至少 16 px：1280 高的截图约 28 px，4K 约 48 px —— 一块盖住约一个字。
+    public static func mosaicBlockSize(imageWidth: Int, imageHeight: Int) -> Int {
+        max(16, min(imageWidth, imageHeight) / 45)
+    }
+
+    /// 马赛克的像素化小图：编辑器预览与导出共用，保证所见即所得。
+    ///
+    /// - Returns: `tile` 是低分辨率小图（每个像素 = 一个马赛克块，按最近邻放大到 `rect` 即可）；
+    ///   `rect` 是马赛克在原图中的位置，**左上角原点**、图像像素。
+    ///
+    /// 之前的实现把左下角原点的矩形直接交给 `CGImage.cropping(to:)`（它是左上角原点），
+    /// 结果从上下镜像的另一块区域取样——框选区被盖上了别处的像素。
+    public static func mosaicTile(
+        image: CGImage,
+        start: NormalizedPoint,
+        end: NormalizedPoint
+    ) -> (tile: CGImage, rect: CGRect)? {
+        let w = CGFloat(image.width), h = CGFloat(image.height)
+        let rect = CGRect(
+            x: CGFloat(min(start.x, end.x)) * w,
+            y: CGFloat(min(start.y, end.y)) * h,
+            width: CGFloat(abs(end.x - start.x)) * w,
+            height: CGFloat(abs(end.y - start.y)) * h
+        ).integral.intersection(CGRect(x: 0, y: 0, width: w, height: h))
+        guard rect.width >= 2, rect.height >= 2, let crop = image.cropping(to: rect) else { return nil }
+
+        let block = CGFloat(mosaicBlockSize(imageWidth: image.width, imageHeight: image.height))
+        let lowWidth = max(1, Int((rect.width / block).rounded(.up)))
+        let lowHeight = max(1, Int((rect.height / block).rounded(.up)))
         guard let lowContext = CGContext(
             data: nil,
             width: lowWidth,
@@ -137,14 +169,12 @@ public enum AnnotationRenderer {
             bytesPerRow: 0,
             space: CGColorSpace(name: CGColorSpace.sRGB)!,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else { return }
-        lowContext.interpolationQuality = .low
+        ) else { return nil }
+        // 高质量缩小 = 每块取整块的平均色，不会因为采样点恰好落在笔画上而留下可辨认的痕迹。
+        lowContext.interpolationQuality = .high
         lowContext.draw(crop, in: CGRect(x: 0, y: 0, width: lowWidth, height: lowHeight))
-        guard let pixelated = lowContext.makeImage() else { return }
-        context.saveGState()
-        context.interpolationQuality = .none
-        context.draw(pixelated, in: rect)
-        context.restoreGState()
+        guard let tile = lowContext.makeImage() else { return nil }
+        return (tile, rect)
     }
 
     /// 译文块：圆角矩形盖底色，译文按预先算好的字号排在矩形内、垂直居中。

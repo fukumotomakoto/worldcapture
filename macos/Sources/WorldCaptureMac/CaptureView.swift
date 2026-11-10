@@ -48,7 +48,11 @@ private func stackVertically(_ images: [CGImage]) -> CGImage? {
 
 @MainActor
 final class CaptureViewModel: ObservableObject {
-    @Published var image: NSImage?
+    @Published var image: NSImage? {
+        didSet { sourceCGImage = image?.cgImage(forProposedRect: nil, context: nil, hints: nil) }
+    }
+    /// `image` 的像素版，缓存起来给马赛克预览逐帧取样（每次重绘都从 NSImage 解一次太贵）。
+    private(set) var sourceCGImage: CGImage?
     @Published var isCapturing = false
     @Published var errorMessage: String?
     @Published var windows: [CaptureWindow] = []
@@ -1891,7 +1895,8 @@ struct CaptureView: View {
                     nextNumber: model.nextAnnotationNumber,
                     colorHex: model.annotationColorHex,
                     lineWidth: model.annotationLineWidth,
-                    hiddenKinds: model.showTranslationOverlay ? [] : [.translation]
+                    hiddenKinds: model.showTranslationOverlay ? [] : [.translation],
+                    sourceImage: model.sourceCGImage
                 )
                 .allowsHitTesting(!preview.isSpaceDown)
             }

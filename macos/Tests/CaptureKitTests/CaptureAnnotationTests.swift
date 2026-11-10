@@ -272,3 +272,35 @@ import Testing
     #expect(rendered.height == image.height)
     #expect(!CFEqual(originalData, renderedData))
 }
+
+/// 回归：马赛克必须从「框住的那块」取样。旧实现把左下角原点的矩形交给左上角原点的
+/// `CGImage.cropping`，从上下镜像的区域取样——上半白、下半黑的图，给上半打码会变黑。
+@Test func mosaicSamplesTheRegionItCovers() throws {
+    let width = 200, height = 200
+    let context = try #require(CGContext(
+        data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+        space: CGColorSpace(name: CGColorSpace.sRGB)!,
+        bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+    ))
+    context.setFillColor(gray: 0, alpha: 1)          // CG 左下角原点：下半黑
+    context.fill(CGRect(x: 0, y: 0, width: width, height: height / 2))
+    context.setFillColor(gray: 1, alpha: 1)          // 上半白
+    context.fill(CGRect(x: 0, y: height / 2, width: width, height: height / 2))
+    let image = try #require(context.makeImage())
+
+    // 归一化坐标是左上角原点：y 0.05~0.35 = 图的上半部分（白）。
+    let rendered = try #require(AnnotationRenderer.render(image: image, annotations: [CaptureAnnotation(
+        kind: .mosaic, start: NormalizedPoint(x: 0.1, y: 0.05), end: NormalizedPoint(x: 0.9, y: 0.35)
+    )]))
+    let data = try #require(rendered.dataProvider?.data) as Data
+    func gray(_ x: Int, _ yTop: Int) -> UInt8 { data[yTop * rendered.bytesPerRow + x * 4] }
+    #expect(gray(100, 40) > 200)   // 框里仍是白色（没被换成镜像区域的黑）
+    #expect(gray(100, 150) < 50)   // 框外下半部分不受影响
+}
+
+/// 马赛克块随图片放大：Retina 截图上固定 14 px 只有半个字高，挡不住大字。
+@Test func mosaicBlockScalesWithImage() {
+    #expect(AnnotationRenderer.mosaicBlockSize(imageWidth: 300, imageHeight: 200) == 16)
+    #expect(AnnotationRenderer.mosaicBlockSize(imageWidth: 1920, imageHeight: 1280) == 28)
+    #expect(AnnotationRenderer.mosaicBlockSize(imageWidth: 3840, imageHeight: 2160) == 48)
+}

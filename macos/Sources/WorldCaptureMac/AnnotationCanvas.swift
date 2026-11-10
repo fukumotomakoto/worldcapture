@@ -13,6 +13,8 @@ struct AnnotationCanvas: View {
     let lineWidth: Double
     /// 暂不显示、也不参与点选的标注类型（如「显示译文」关掉时的译文块）。
     var hiddenKinds: Set<AnnotationKind> = []
+    /// 原图像素：马赛克预览要从它取样，画出和导出一模一样的像素块（所见即所得）。
+    var sourceImage: CGImage?
 
     /// 拖拽会话：新建、（组）移动、缩放或无操作（Shift 加选）。
     private enum Session {
@@ -272,7 +274,22 @@ struct AnnotationCanvas: View {
                 width: abs(end.x - start.x),
                 height: abs(end.y - start.y)
             )
-            context.fill(Path(rect), with: .color(.gray.opacity(0.55)))
+            // 真马赛克：和导出同一个函数取样（AnnotationRenderer.mosaicTile），不再画半透明灰块——
+            // 之前那层 55% 的灰底下文字清清楚楚，用户以为打了码，其实没有。
+            if let sourceImage,
+               let mosaic = AnnotationRenderer.mosaicTile(image: sourceImage, start: annotation.start, end: annotation.end) {
+                let scale = imageRect.width / CGFloat(sourceImage.width)
+                let target = CGRect(
+                    x: imageRect.minX + mosaic.rect.minX * scale,
+                    y: imageRect.minY + mosaic.rect.minY * scale,
+                    width: mosaic.rect.width * scale,
+                    height: mosaic.rect.height * scale
+                )
+                context.draw(Image(decorative: mosaic.tile, scale: 1).interpolation(.none), in: target)
+            } else {
+                // 取不到原图（或框太小）时宁可整块盖死，也不要透明。
+                context.fill(Path(rect), with: .color(.gray))
+            }
         case .translation:
             // 与导出渲染同一套字号（图像像素），按预览缩放比换算到屏幕。
             let rect = CGRect(
