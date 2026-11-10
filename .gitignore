@@ -7,3 +7,4 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 captures/
+metrics/

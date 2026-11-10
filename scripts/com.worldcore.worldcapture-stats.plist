@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WorldCapture · GitHub 仓库数据每日存档 · 每天 09:30
+
+  为什么（2026-11-10）：GitHub 的访问/克隆统计只保留 14 天，不每天抓就永久丢失。
+  脚本：scripts/github-stats.py（数据落 metrics/github/，已 gitignore）。
+  有新 Star/Fork/Issue/评论/下载 → 桌面精灵顶气泡；没动静不响。
+
+  安装：
+    cp scripts/com.worldcore.worldcapture-stats.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.worldcore.worldcapture-stats.plist
+  手动跑一次：
+    launchctl kickstart -k gui/$(id -u)/com.worldcore.worldcapture-stats
+  ⚠️ 改了本文件必须 unload + load —— kickstart -k 不重读 plist。
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.worldcore.worldcapture-stats</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/makoto/.pyenv/versions/3.12.12/bin/python3</string>
+        <string>-I</string>
+        <string>/Users/makoto/Projects/worldcapture/scripts/github-stats.py</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- gh 在 Homebrew 下；launchd 默认 PATH 找不到它 -->
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+    <key>WorkingDirectory</key>
+    <string>/Users/makoto/Projects/worldcapture</string>
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>9</integer>
+        <key>Minute</key>
+        <integer>30</integer>
+    </dict>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>StandardOutPath</key>
+    <string>/Users/makoto/Projects/infra/logs/worldcapture-stats.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/makoto/Projects/infra/logs/worldcapture-stats.err.log</string>
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>
