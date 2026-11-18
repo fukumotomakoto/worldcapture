@@ -34,4 +34,26 @@ public readonly record struct RgbaColor(double Red, double Green, double Blue, d
             _ => DefaultRed,
         };
     }
+
+    /// <summary><c>#RRGGBB</c>（alpha 为 1 时）或 <c>#RRGGBBAA</c>。</summary>
+    public string HexString
+    {
+        get
+        {
+            static string Hex(double v) =>
+                ((int)Math.Round(Math.Clamp(v, 0, 1) * 255, MidpointRounding.AwayFromZero)).ToString("X2", CultureInfo.InvariantCulture);
+            var rgb = Hex(Red) + Hex(Green) + Hex(Blue);
+            return "#" + (Alpha >= 0.999 ? rgb : rgb + Hex(Alpha));
+        }
+    }
+
+    /// <summary>WCAG 相对明度（0 黑 ～ 1 白）。</summary>
+    public double RelativeLuminance
+    {
+        get
+        {
+            static double Linear(double c) => c <= 0.03928 ? c / 12.92 : Math.Pow((c + 0.055) / 1.055, 2.4);
+            return 0.2126 * Linear(Red) + 0.7152 * Linear(Green) + 0.0722 * Linear(Blue);
+        }
+    }
 }
