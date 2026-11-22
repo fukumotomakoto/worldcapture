@@ -300,3 +300,5 @@
 "library.error.corrupt" = "The history index is damaged and couldn't be read. The original file was backed up as %@.";
 "library.error.persist" = "The history couldn't be saved to disk (%@); the change was not applied.";
 "library.error.trash" = "Couldn't move “%@” to the Trash: %@ The entry was kept.";
+"error.windowScroll.undetermined" = "Couldn't reliably find the scrolling content in this window (nothing moved, it's already at the end, or the scroll landed outside a scrollable area). To avoid stitching the title bar and sidebar into the image, nothing was created. Use Scrolling capture and select just the content area.";
+"error.windowScroll.independent" = "Several areas in this window scroll independently, so it's unclear which one you want. Use Scrolling capture and select the column to capture.";

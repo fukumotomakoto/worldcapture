@@ -300,3 +300,5 @@
 "library.error.corrupt" = "历史索引已损坏，无法读取。原文件已备份为 %@。";
 "library.error.persist" = "历史记录没能写入磁盘（%@），本次更改未生效。";
 "library.error.trash" = "无法把「%@」移到废纸篓：%@ 记录已保留。";
+"error.windowScroll.undetermined" = "没能可靠找出这个窗口里正在滚动的正文（内容没动、已到底，或滚轮没落在可滚动区域）。为避免把标题栏、侧栏拼进长图，这次没有生成。请改用「滚动截屏」，只框选正文部分。";
+"error.windowScroll.independent" = "这个窗口里有几块区域各自独立滚动，不确定你要截哪一块。请改用「滚动截屏」，框选要截的那一栏。";
