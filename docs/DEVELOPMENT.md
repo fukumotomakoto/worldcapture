@@ -5,7 +5,8 @@
 > 当前版本：`0.1.4` / build `5`
 >
 > 当前平台：macOS 15+
-> Windows 状态：规划中，尚无可构建实现
+> Windows 状态：**Windows Core**（共享算法库：标注模型、图像处理、翻译排版与词表）可用 .NET 10 构建，104 项测试通过；
+> **Windows 应用**（WinUI 3 界面、截图/录屏后端、安装包）尚未开始，不得标记为可用。方案见 `docs/WINDOWS-PLAN.md`。
 
 ## 1. 项目目标
 
@@ -21,6 +22,9 @@ WorldCapture 是一款本地优先的截屏、标注与录屏工具，目标平�
 - 任何分享或 AI 能力若未来引入，必须本地优先、完全可选，绝不成为基础捕获流程的依赖。
 
 ## 2. 当前功能范围
+
+> 「Windows」列指 **Windows 应用**（尚未开始）。已移植到 Windows Core 的算法另在 §2.2 列出。
+> 每项功能的验证方法与验收状态见 §2.1——「已实现」只表示代码在，不等于已通过验收。
 
 | 能力 | macOS | Windows | 备注 |
 |---|---:|---:|---|
@@ -51,17 +55,51 @@ WorldCapture 是一款本地优先的截屏、标注与录屏工具，目标平�
 | 录制完成高亮提示 | 已实现 | 未开始 | 绿色高亮条 + 醒目“在 Finder 中显示” |
 | 最近保存快捷打开 | 已实现 | 未开始 | “保存”旁下拉列最近 5 条，点开文件 / 悬停定位 Finder |
 | 复位回到初始界面 | 已实现 | 未开始 | 清空当前截图、标注与提示 |
-| 界面国际化 | 已实现 | 未开始 | 中/英/日，默认跟随系统，设置内可切换（重启生效）|
+| 界面国际化 | 已实现 | 未开始 | 中/英/日/韩，默认跟随系统，设置内可切换（重启生效）|
 | 设置页 | 已实现 | 未开始 | `Settings` 场景（⌘,）：语言、默认保存位置、快捷键说明 |
 | 系统音频 | 已实现 | 未开始 | 48 kHz、双声道配置 |
 | MP4 导出 | 已实现 | 未开始 | H.264/AAC |
 | 录制计时 | 已实现 | 未开始 | 0.25 秒刷新 |
-| 麦克风 | 未实现 | 未开始 | 已预留权限说明与 entitlement |
+| 麦克风 | 已实现 | 未开始 | 设置里开关；与系统音频混入同一条音轨 |
+| 区域 / 窗口录制 | 已实现 | 未开始 | 区域框选或选窗口录制 |
+| 录制暂停 / 继续 | 已实现 | 未开始 | 分段录制，停止时无损拼接；时长不含暂停 |
+| 录像收尾失败恢复 | 已实现 | 未开始 | 分段落在恢复目录；校验通过才无覆盖提交；失败可重试合并 / 逐段导出 |
 | 摄像头画中画 | 未实现 | 未开始 | 后续阶段 |
-| GIF 导出 | 未实现 | 未开始 | 后续阶段 |
-| OCR | 未实现 | 未开始 | 后续阶段 |
-| 滚动截屏 | 已实现 | 未开始 | 选区→程序化滚动→逐屏拼接长图；需辅助功能权限 |
-| 截图历史库 | 未实现 | 未开始 | 后续阶段 |
+| GIF 导出 | 已实现 | 未开始 | 区域 GIF（12 fps、30 秒上限），末帧显示到停止时刻 |
+| OCR | 已实现 | 未开始 | macOS Vision，纯本地 |
+| 图上翻译 / 翻译镜 | 已实现 | 未开始 | 端上翻译（系统翻译或 Apple 智能）；放不下的段落保留原文并给出全文 |
+| 滚动截屏 | 已实现 | 未开始 | 选区→程序化滚动→逐屏拼接长图；需辅助功能权限；拼不完整时如实提示 |
+| 截图历史库 | 已实现 | 未开始 | 截图/录像统一历史；移入废纸篓成功才删记录 |
+| 同秒保存不覆盖 | 已实现 | 未开始 | 撞名自动加 `-2`、`-3` 后缀，无覆盖语义提交 |
+| Safari 整页长图扩展 | 已实现 | —— | 绑定发起的标签页；结果按 ID 保存 24 小时；离线 OCR；交给 App 编辑 |
+| 自动更新 | 已实现 | 未开始 | Sparkle 2（EdDSA 签名，增量包） |
+
+### 2.1 验证方法与验收状态（2026-11-22，main 之后的候选版）
+
+| 功能 | 验证方法 | 状态 |
+|---|---|---|
+| 同秒保存不覆盖 | `AuditRegressionTests` 固定时钟两次保存 + 24 路并发写入 | ✅ 自动测试通过 |
+| 译文完整性（04） | `AuditRegressionTests` / `TranslationBlockLayoutTests`（C#）窄框限高样例 | ✅ 自动测试通过；预览「未贴回」面板待人工验收 |
+| 译文配对（05） | 共同前缀、重复行、乱序、缺失、错误 ID 固定响应 | ✅ 自动测试通过 |
+| 旧译文不写回新图（06） | 代码审查：图片 / 翻译镜会话版本号 | ⏳ 待人工验收（翻译中切图、停用后重开翻译镜） |
+| 滚动拼接结束原因（07） | 黑帧 + 白帧样例、帧数上限不多滚 | ✅ 自动测试通过；真机长图待人工验收 |
+| 框选会话互斥（09） | 代码审查 | ⏳ 待人工验收（快速交替触发区域截图 / GIF / 翻译镜 + Esc） |
+| 录像收尾恢复（10） | 真实 MP4 分段：合并提交不覆盖旧文件、坏分段失败后保留并可逐段导出、缺音轨校验 | ✅ 自动测试通过；真实录屏回调超时待人工验收 |
+| GIF 时长（11） | 0 s / 0.5 s 两帧静止到 10 s，编码后读回总时长 | ✅ 自动测试通过 |
+| 词表 Unicode 规范化（15） | 预组合 / 分解形式双向命中（Swift + C#） | ✅ 自动测试通过 |
+| Safari 标签页隔离（02） | 浏览器 API 模拟：抓帧间、抓帧中切换标签页 | ✅ 模拟通过；Safari 实机待验收 |
+| Safari OCR（03） | 无头 Chrome + 扩展同款 CSP、断网：四组语言初始化与识别 | ✅ 模拟通过；Safari 实机待验收 |
+| Safari 页脚与吸附（08） | 无头 Chrome 真实布局：固定页眉页脚 + scroll-snap，逐行核对 | ✅ 模拟通过；Safari 实机待验收 |
+| Safari 交接状态（12） | 代码审查：编辑器接收后才删收件箱文件，扩展回报「已打开 / 已排队」 | ⏳ 待人工验收（App 退出、仅菜单栏、主窗口打开、正在录屏四种情况） |
+| Safari 结果页按 ID（13） | 无头 Chrome + IndexedDB：倒序打开、刷新、过期、清理上限 | ✅ 模拟通过 |
+| 历史库删除一致性（14） | 代码审查：文件操作成功、索引写成功才改记录 | ⏳ 待人工验收 |
+| 发布脚本（16） | `verify-appcast.py` 对真实 appcast 的通过 / 篡改 / 修复三种情况 | ✅ 脚本测试通过；整条 release.sh 待下次发版实跑 |
+| 统计（17） | 同名附件样例汇总 120；真实 API 跑通 | ✅ |
+
+### 2.2 Windows Core（共享算法库）
+
+`windows/WorldCapture.slnx` 目前只有 `WorldCapture.Core` 与其测试工程，**没有桌面界面与捕获后端**。
+已移植：标注模型与颜色、内容区域检测、GIF 编码、马赛克、滚动拼接、文本分块 / 段落合并、译文排版（含完整性标志）、术语表（含 Unicode 规范化）。
 
 ## 3. 已验证开发环境
 
@@ -185,11 +223,20 @@ worldcapture/
         └── CaptureKitTests/
 ```
 
+Windows 目录（当前只有共享算法库，没有应用）：
+
+```text
+windows/
+├── WorldCapture.slnx
+├── src/WorldCapture.Core/          # 从 CaptureKit 移植的纯算法（.NET 10）
+└── tests/WorldCapture.Core.Tests/  # xUnit，与 Swift 测试逐条对应
+```
+
 计划中的目录：
 
 ```text
-core/       # 跨平台工程文件与时间线语义，尚未建立
-windows/    # Windows Graphics Capture/WASAPI 后端，尚未建立
+core/                    # 跨平台工程文件与时间线语义，尚未建立
+windows/src/WorldCapture.App/   # WinUI 3 应用 + Windows Graphics Capture/WASAPI 后端，尚未建立
 ```
 
 ## 7. 架构总览
@@ -521,7 +568,8 @@ Swift Package 可执行文件不能替代 `.app` 权限验证。
 
 ## 17. 自动化测试
 
-当前共有 11 项 Swift Testing 测试。
+当前共有 107 项 Swift Testing 测试（`cd macos && swift test`），Windows Core 另有 104 项 xUnit 测试（`cd windows && dotnet test`）。
+以下各小节只列最早的几组；`AuditRegressionTests.swift` 收录 2026-11-22 审查报告各条问题的回归测试。
 
 ### 17.1 CaptureRegionTests
 
@@ -776,7 +824,8 @@ scripts/release.sh <profile> [signing-identity]
 
 - `build/appcast/` **持久保留**（跨版本累积发布记录，Sparkle 据此判断可升级项）。
 - enclosure 下载前缀默认指向 GitHub Releases 的当前 tag：`https://github.com/fukumotomakoto/worldcapture/releases/download/v<version>/`。它与 `SUFeedURL` **性质不同**——只写进每次重新生成的 `appcast.xml`，随时可改，且下载包的完整性由 EdDSA 签名保证、不依赖来源可信，所以直接挂 GitHub Releases，省带宽也省仓库体积。可用环境变量覆盖：`DOWNLOAD_URL_PREFIX=... GH_REPO=... SITE_URL=... scripts/release.sh <profile>`。
-- ⚠️ 实测（2026-10-07 发 0.1.1）：`generate_appcast` **会把已有条目的 enclosure URL 也改写成本次前缀**，历史版本因此指向不存在的目录。生成后必须 `grep 'url='` 检查，把旧版本条目改回各自 tag 的目录（EdDSA 签名只覆盖文件内容，改 URL 不影响验签）。
+- ⚠️ 实测（2026-10-07 发 0.1.1）：`generate_appcast` **会把已有条目的 enclosure URL 也改写成本次前缀**，历史版本因此指向不存在的目录。release.sh 第 10 步用 `scripts/verify-appcast.py --fix` 自动把各条目改回各自 tag 的目录（EdDSA 签名只覆盖文件内容，改 URL 不影响验签），并校验本次附件长度与本地文件一致；任何一项不符即非零退出。
+- release.sh 的失败语义（2026-11-22 起）：Gatekeeper 拒绝 DMG、缺 `generate_appcast`、appcast 校验不过、App 包里缺 Safari 扩展的 OCR 资源，都会**中止并非零退出**，不再打印「完成」。
 - 它还会生成 **delta 包**（`WorldCapture<新build>-<旧build>.delta`，Sparkle 优先走增量、失败再回退全量）和 `<sparkle:releaseNotesLink>`（指向 `SITE_URL/WorldCapture-<version>.html`，源文件放在 `build/appcast/` 同名 `.html`）。发布时 **delta 要和 DMG 一起传 GitHub Release，HTML 要和 appcast.xml 一起推 gh-pages**。
 - 发版前先跑 `xcrun notarytool history --keychain-profile <profile>`：返回 403「A required agreement is missing or has expired」= Apple 开发者协议需在 developer.apple.com 重新接受（接受后约 1 分钟生效），别等归档完才在公证一步失败。
 - `gh release create --target` 不接受短 SHA，用 `main` 或完整 SHA。
@@ -801,17 +850,16 @@ scripts/release.sh <profile> [signing-identity]
 
 - 录屏可选择单块显示器（多屏菜单选择），暂不支持多屏同时录制。
 - 区域截屏与滚动截屏支持多显示器：选择遮罩铺设到所有屏幕，按选区所在显示器截图；但「截取主屏幕」全屏仍只取主显示器（暂无显示器选择器）。
-- 录屏不含麦克风和摄像头。
-- 录屏没有暂停/继续。
+- 录屏不含摄像头画中画。
 - 未捕获鼠标点击特效、按键显示和独立鼠标轨迹。
 - 标注颜色可从预设色板选择、线宽可选细/中/粗（均每标注独立、可改选中项）；暂无自定义取色器与无级线宽。
 - 文字标注创建后可选中并在工具栏就地改写文案；尚不支持多行、字体与字号。
 - 标注支持单选/Shift 多选、移动（含多选组移动）、缩放、批量改色改线宽与删除；尚不支持框选、对齐与图层顺序调整。
-- 没有截图历史、项目保存和崩溃恢复。
+- 没有项目（工程文件）保存；录像有收尾失败恢复，但应用崩溃时正在录的那一段可能无法封口。
 - 全局快捷键固定，未提供冲突检测。
-- 没有 OCR、GIF 和云分享。
+- 没有云分享（产品方向：纯本地）。
 - 滚动截屏依赖程序化滚轮与图像拼接，对自定义滚动容器或惯性滚动较强的应用可能对齐不稳。
-- Windows 后端尚未建立。
+- Windows 应用（界面与捕获后端）尚未建立；只有共享算法库 Windows Core。
 
 ## 24. Windows 实现计划
 
@@ -844,12 +892,12 @@ Windows 开始前必须先形成跨平台 schema 文档，避免直接复制 Swi
 
 ### Phase 1：macOS 录屏完善
 
-- [ ] 麦克风混音
+- [x] 麦克风混音
 - [ ] 摄像头画中画
-- [ ] 录制区域/窗口选择
-- [ ] 暂停与继续
+- [x] 录制区域/窗口选择
+- [x] 暂停与继续
 - [ ] 鼠标点击和按键显示
-- [ ] 异常退出时安全收尾
+- [x] 收尾失败时保留分段并可恢复（应用崩溃时的安全收尾仍待做）
 - [ ] 长时间录制测试
 
 ### Phase 2：编辑与项目格式
@@ -862,7 +910,8 @@ Windows 开始前必须先形成跨平台 schema 文档，避免直接复制 Swi
 
 ### Phase 3：Windows
 
-- [ ] Windows 项目骨架
+- [x] Windows Core 共享算法库（.NET 10，104 项测试）
+- [ ] Windows 应用项目骨架（WinUI 3）
 - [ ] Windows Graphics Capture
 - [ ] WASAPI
 - [ ] Media Foundation 导出
@@ -871,10 +920,10 @@ Windows 开始前必须先形成跨平台 schema 文档，避免直接复制 Swi
 
 ### Phase 4：高级能力
 
-- [ ] OCR 文字识别（macOS Vision，完全本地）
+- [x] OCR 文字识别（macOS Vision，完全本地）
 - [x] 滚动截屏（选区滚动拼接，需辅助功能权限）
-- [ ] 历史记录库（截图/录屏统一历史，支持搜索、收藏、快速定位）
-- [ ] 设置页（界面语言、快捷键、默认保存路径）
+- [x] 历史记录库（截图/录屏统一历史；搜索、收藏尚未做）
+- [x] 设置页（界面语言、快捷键、默认保存路径）
 - [ ] 录制 GIF 与多格式导出（PNG/JPG/MP4/GIF/PDF）
 - [ ] 钉屏「点击穿透」开关
 - [ ] 编辑器布局升级（浮动标注栏 + 右侧样式面板，参照 Snagit/CleanShot）

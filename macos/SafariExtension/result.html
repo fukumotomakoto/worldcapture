@@ -101,6 +101,13 @@
         background: #fff;
       }
       .empty { padding: 80px 24px; text-align: center; opacity: 0.5; }
+      .warn {
+        padding: 8px 16px;
+        font-size: 12px;
+        background: rgba(255,159,10,0.16);
+        border-bottom: 1px solid rgba(255,159,10,0.4);
+      }
+      .warn[hidden] { display: none; }
     </style>
   </head>
   <body>
@@ -124,6 +131,7 @@
       <button id="download" disabled>Download PNG</button>
       <button id="open" class="secondary" disabled>Open in WorldCapture</button>
     </div>
+    <div class="warn" id="warn" hidden></div>
     <div class="stage"><img id="shot" alt="Full-page capture" /></div>
     <div class="ocr" id="ocrPanel" hidden>
       <div class="ocr-head">

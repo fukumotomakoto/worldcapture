@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace WorldCapture.Core.Translation;
 
 /// <summary>
@@ -65,7 +67,7 @@ public sealed partial class TranslationGlossary
     public IReadOnlyList<(string Source, string Target)> EntriesRelevantTo(IEnumerable<string> texts, string target)
     {
         if (TableFor(target) is not { } table) return [];
-        var haystack = texts.Select(t => t.ToLowerInvariant()).ToList();
+        var haystack = texts.Select(Fold).ToList();
         return table
             .Where(entry => haystack.Any(t => t.Contains(entry.Key, StringComparison.Ordinal)))
             .Select(entry => (Source: entry.Key, Target: entry.Value))
@@ -132,10 +134,17 @@ public sealed partial class TranslationGlossary
         return new TranslationGlossary(tables);
     }
 
-    /// <summary>查表用的键：去首尾空白、转小写、去掉末尾的冒号/省略号。</summary>
+    /// <summary>
+    /// 统一的文本折叠：Unicode NFC 规范化 + 小写。键生成与查询都走它，预组合的「é」与
+    /// 「e + 组合重音」才会落到同一个键（Swift 的 String 比较天生按规范等价，C# 的 Ordinal 不是）。
+    /// </summary>
+    internal static string Fold(string text) =>
+        text.Normalize(NormalizationForm.FormC).ToLowerInvariant().Normalize(NormalizationForm.FormC);
+
+    /// <summary>查表用的键：NFC 规范化、去首尾空白、转小写、去掉末尾的冒号/省略号。</summary>
     internal static string Key(string text)
     {
-        var s = SwiftText.TrimWhitespacesAndNewlines(text).ToLowerInvariant();
+        var s = Fold(SwiftText.TrimWhitespacesAndNewlines(text));
         return s.TrimEnd(':', '：', '…');
     }
 

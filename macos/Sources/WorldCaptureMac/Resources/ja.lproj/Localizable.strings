@@ -283,3 +283,20 @@
 "settings.language.relaunch.message" = "新しい言語を使うには WorldCapture を再起動する必要があります。録画中の場合は停止します。";
 "settings.language.relaunch.now" = "今すぐ再起動";
 "settings.language.relaunch.later" = "後で";
+
+/* 2026-11-22 审查修正 */
+"imageTranslate.overflow.title" = "一部の訳文を元の位置に貼れませんでした";
+"imageTranslate.overflow.message" = "%d 件の訳文が元の位置に収まらないため（最小の文字サイズでも切れてしまう）、画像上は原文のままにしました。訳文の全文：";
+"imageTranslate.overflow.copy" = "訳文をすべてコピー";
+"error.scrollIncomplete.lostOverlap" = "長尺キャプチャが不完全です：スクロールが進みすぎて続きを合わせられませんでした。つなげた部分は残しています。範囲を小さくするか位置を変えて再試行してください。";
+"error.scrollIncomplete.invalid" = "長尺キャプチャが不完全です：無効なフレームが続きました（ウインドウのサイズ変更や重なり）。つなげた部分は残しています。";
+"error.scrollIncomplete.frameLimit" = "長尺キャプチャが不完全です：フレーム数の上限に達しました。つなげた部分は残しています。";
+"recovery.title" = "録画「%@」の仕上げに失敗しました";
+"recovery.desc" = "録画済みの %d 個のセグメントは残っています。結合を再試行するか、セグメントごとに書き出せます。";
+"recovery.retry" = "結合を再試行";
+"recovery.exportSegments" = "セグメントごとに書き出す";
+"recovery.discard" = "破棄（ゴミ箱へ）";
+"recovery.retryFailed" = "再試行しても結合できませんでした：%@ セグメントは残っています。「セグメントごとに書き出す」をお試しください。";
+"library.error.corrupt" = "履歴インデックスが壊れていて読み込めません。元のファイルを %@ としてバックアップしました。";
+"library.error.persist" = "履歴をディスクに保存できませんでした（%@）。変更は反映されていません。";
+"library.error.trash" = "「%@」をゴミ箱に移動できませんでした：%@ 記録はそのまま残しています。";

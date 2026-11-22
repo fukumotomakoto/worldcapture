@@ -15,13 +15,23 @@ final class RegionSelector {
     private var keyMonitor: Any?
     private var continuation: CheckedContinuation<RegionSelection?, Never>?
 
+    /// 是否有一次框选正在进行。
+    var isActive: Bool { continuation != nil }
+
     /// 每块显示器各一个选择遮罩（兼容“显示器使用单独空间”），支持跨屏：在任意屏框选，按该屏截图。
+    ///
+    /// 同一时刻只有一个框选会话：区域截图、区域录制、GIF、翻译镜共用本选择器，
+    /// 框选进行中再次触发（快捷键连按、菜单与工具条交替点）时**保持当前会话**，新的调用立即返回 nil——
+    /// 绝不覆盖前一次的等待（否则前一调用永远挂起，遮罩/监听也会泄漏）。
+    /// 确认、取消、无可用显示器都经由 `finish` 这一条清理路径结束，且只结束一次。
     func selectRegion() async -> RegionSelection? {
+        guard continuation == nil else { return nil }
         let screens = NSScreen.screens
         guard !screens.isEmpty else { return nil }
 
         return await withCheckedContinuation { continuation in
             self.continuation = continuation
+            NSCursor.crosshair.push()
 
             for screen in screens {
                 guard let displayID = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? CGDirectDisplayID else {
@@ -71,9 +81,14 @@ final class RegionSelector {
                 return event
             }
 
+            // 一块可用显示器都没建出遮罩：直接按取消结束，别让调用方空等。
+            guard !panels.isEmpty else {
+                finish(with: nil)
+                return
+            }
+
             NSApp.activate(ignoringOtherApps: true)
             (panels.first { $0.screen == NSScreen.main } ?? panels.first)?.makeKeyAndOrderFront(nil)
-            NSCursor.crosshair.push()
         }
     }
 

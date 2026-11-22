@@ -80,4 +80,22 @@ public class TranslationGlossaryTests
         Assert.False(g.IsEmpty);
         Assert.True(new TranslationGlossary().IsEmpty);
     }
+
+    /// <summary>审查报告 15：预组合「é」与「e + 组合重音」必须双向命中（与 Swift 版一致）。</summary>
+    [Fact]
+    public void GlossaryMatchesPrecomposedAndDecomposedForms()
+    {
+        const string precomposed = "Caf\u00E9";
+        const string decomposed = "Cafe\u0301";
+        Assert.Equal("咖啡馆", TranslationGlossary.Parse($"[zh-Hans]\n{precomposed} = 咖啡馆").Lookup(decomposed, "zh-Hans"));
+        Assert.Equal("咖啡馆", TranslationGlossary.Parse($"[zh-Hans]\n{decomposed} = 咖啡馆").Lookup(precomposed, "zh-Hans"));
+        Assert.Equal(TranslationGlossary.Key(precomposed), TranslationGlossary.Key(decomposed), StringComparer.Ordinal);
+
+        // 用户词表覆盖内置 + 语言标识回退。
+        var merged = TranslationGlossary.Combined($"[zh-Hans]\nBilling = 计费\n{decomposed} = 咖啡馆");
+        Assert.Equal("计费", merged.Lookup("billing", "zh-Hans-CN"));
+        Assert.Equal("咖啡馆", merged.Lookup(precomposed, "zh-Hans-CN"));
+        var relevant = merged.EntriesRelevantTo([$"Visit the {precomposed} today"], "zh-Hans");
+        Assert.Contains(relevant, e => e.Target == "咖啡馆");
+    }
 }

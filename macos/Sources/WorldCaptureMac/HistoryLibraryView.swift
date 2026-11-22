@@ -47,6 +47,14 @@ struct HistoryLibraryView: View {
         }
         .frame(minWidth: 640, minHeight: 460)
         .onAppear { store.pruneMissing() }
+        .alert(Loc.s("error.title"), isPresented: Binding(
+            get: { store.lastError != nil },
+            set: { if !$0 { store.lastError = nil } }
+        )) {
+            Button(Loc.s("error.ok"), role: .cancel) {}
+        } message: {
+            Text(store.lastError ?? "")
+        }
     }
 
     private var toolbar: some View {

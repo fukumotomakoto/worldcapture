@@ -43,7 +43,7 @@ public struct TranslationGlossary: Sendable {
     /// 与这批文本相关的条目（原文出现在任一文本里），供放进大模型提示。
     public func entries(relevantTo texts: [String], target: String) -> [(source: String, target: String)] {
         guard let table = table(for: target) else { return [] }
-        let haystack = texts.map { $0.lowercased() }
+        let haystack = texts.map { Self.fold($0) }
         return table
             .filter { entry in haystack.contains { $0.contains(entry.key) } }
             .map { (source: $0.key, target: $0.value) }
@@ -99,8 +99,14 @@ public struct TranslationGlossary: Sendable {
         return TranslationGlossary(tables: tables)
     }
 
+    /// 统一的文本折叠：Unicode NFC 规范化 + 小写。键生成与查询都走它，
+    /// 预组合的「é」与「e + 组合重音」才会落到同一个键（与 Windows 版完全一致）。
+    static func fold(_ text: String) -> String {
+        text.precomposedStringWithCanonicalMapping.lowercased().precomposedStringWithCanonicalMapping
+    }
+
     static func key(_ text: String) -> String {
-        var s = text.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        var s = fold(text.trimmingCharacters(in: .whitespacesAndNewlines))
         while let last = s.last, ":：…".contains(last) { s.removeLast() }
         return s
     }

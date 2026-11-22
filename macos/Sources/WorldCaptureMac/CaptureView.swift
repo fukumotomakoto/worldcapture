@@ -49,8 +49,17 @@ private func stackVertically(_ images: [CGImage]) -> CGImage? {
 @MainActor
 final class CaptureViewModel: ObservableObject {
     @Published var image: NSImage? {
-        didSet { sourceCGImage = image?.cgImage(forProposedRect: nil, context: nil, hints: nil) }
+        didSet {
+            sourceCGImage = image?.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            // 换图（新截图、裁切、导入、复位）= 新版本：进行中的 OCR/翻译回来时核对版本，旧结果一律丢弃。
+            imageGeneration &+= 1
+            pendingImageTranslation = nil
+            isTranslatingImage = false
+            translationProgress = nil
+        }
     }
+    /// 当前图片的版本号；每次换图递增。异步操作开始时记下，返回时不一致就作废。
+    private(set) var imageGeneration = 0
     /// `image` 的像素版，缓存起来给马赛克预览逐帧取样（每次重绘都从 NSImage 解一次太贵）。
     private(set) var sourceCGImage: CGImage?
     @Published var isCapturing = false
@@ -103,11 +112,24 @@ final class CaptureViewModel: ObservableObject {
     /// 打开主窗口（编辑器）。由 App 在启动时注入 openWindow；注入前退化为只激活应用。
     var openMainWindow: () -> Void = { NSApp.activate(ignoringOtherApps: true) }
 
-    /// 图上翻译：待翻译的段落 + 触发 translationTask 的配置；译文以 `.translation` 标注落回图上。
-    var pendingTranslationBlocks: [TextBlock] = []
-    /// 术语表整段命中的段落，不送引擎，直接落块。
-    var pendingGlossaryPairs: [(block: TextBlock, text: String)] = []
+    /// 一次图上翻译请求的完整输入：发起时的图片版本与像素、待翻段落、术语表直接命中的段落。
+    /// 回填只用这里保存的输入，不再读「当前图片」——中途换图/裁切时旧译文不会落到新图上。
+    struct PendingImageTranslation {
+        let generation: Int
+        let cgImage: CGImage
+        let blocks: [TextBlock]
+        let glossaryPairs: [(block: TextBlock, text: String)]
+    }
+    /// 系统翻译路径等待 translationTask 消费的请求；换图时清空。
+    var pendingImageTranslation: PendingImageTranslation?
     @Published var imageTranslationConfiguration: TranslationSession.Configuration?
+    /// 空间不足、没能完整贴回原位的段落（保留原文未覆盖），在面板里给出完整译文。
+    @Published var translationOverflow: TranslationOverflow?
+
+    struct TranslationOverflow: Identifiable {
+        let id = UUID()
+        let items: [(source: String, translation: String)]
+    }
     @Published var isTranslatingImage = false
     /// Apple 智能路径的进度（已完成批数 / 总批数），供按钮显示。
     @Published var translationProgress: (done: Int, total: Int)?
@@ -263,8 +285,9 @@ final class CaptureViewModel: ObservableObject {
         do {
             let result = try await engine.run(
                 capture: { try await capturer.captureDisplay(id: displayID, region: region) },
-                scroll: {
-                    ScrollEventSender.scrollDown(at: scrollPoint, pixels: scrollPixels)
+                scroll: { fraction in
+                    // fraction < 0：失去重叠时回退半步重采；步长随之减半。
+                    ScrollEventSender.scroll(at: scrollPoint, pixels: Int((Double(scrollPixels) * fraction).rounded()))
                     // 自适应等待滚动/懒加载稳定，取代固定 500ms 死等（引擎随后会正式采帧）。
                     _ = await waitUntilStable { try await capturer.captureDisplay(id: displayID, region: region) }
                 }
@@ -279,7 +302,11 @@ final class CaptureViewModel: ObservableObject {
             annotations = []
             selectedAnnotationIDs = []
             presentCapturePreview()
-            if result.frameCount <= 1 { errorMessage = Loc.s("error.scrollNoProgress") }
+            if result.frameCount <= 1 {
+                errorMessage = Loc.s("error.scrollNoProgress")
+            } else if let warning = Self.scrollIncompleteMessage(result.endReason) {
+                errorMessage = warning
+            }
         } catch {
             restoreWindows()
             isCapturing = false
@@ -362,11 +389,18 @@ final class CaptureViewModel: ObservableObject {
             // 2) 只拼接滚动行带（全宽）。先塞入已采的前两帧，再继续滚动。
             var stitcher = ScrollStitcher(options: .init(alignColumns: alignColumns))
             _ = stitcher.append(cropBody(first))
+            // 只有「连续重复」才算到底；对不上（noOverlap）和无效帧要单独记下，结束时如实标为不完整。
             var nonProgress = 0
-            switch stitcher.append(cropBody(second)) {
-            case .first, .appended: nonProgress = 0
-            case .duplicate, .noOverlap, .invalid: nonProgress = 1
+            var lastFailure: ScrollCaptureEngine.EndReason?
+            func note(_ result: ScrollStitcher.AppendResult) {
+                switch result {
+                case .first, .appended: nonProgress = 0; lastFailure = nil
+                case .duplicate: nonProgress += 1; lastFailure = nil
+                case .noOverlap: nonProgress += 1; lastFailure = .lostOverlap
+                case .invalid: nonProgress += 1; lastFailure = .invalidFrames
+                }
             }
+            note(stitcher.append(cropBody(second)))
 
             let maxFrames = 60
             var framesUsed = 2
@@ -381,11 +415,11 @@ final class CaptureViewModel: ObservableObject {
                 }
                 framesUsed += 1
                 lastFrame = frame
-                switch stitcher.append(cropBody(frame)) {
-                case .first, .appended: nonProgress = 0
-                case .duplicate, .noOverlap, .invalid: nonProgress += 1
-                }
+                note(stitcher.append(cropBody(frame)))
             }
+            let endReason: ScrollCaptureEngine.EndReason = nonProgress >= 2
+                ? (lastFailure ?? .reachedEnd)
+                : .frameLimit
 
             restoreWindows()
             isCapturing = false
@@ -416,11 +450,25 @@ final class CaptureViewModel: ObservableObject {
             annotations = []
             selectedAnnotationIDs = []
             presentCapturePreview()
-            if stitcher.frameCount <= 1 { errorMessage = Loc.s("error.scrollNoProgress") }
+            if stitcher.frameCount <= 1 {
+                errorMessage = Loc.s("error.scrollNoProgress")
+            } else if let warning = Self.scrollIncompleteMessage(endReason) {
+                errorMessage = warning
+            }
         } catch {
             restoreWindows()
             isCapturing = false
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// 长图没能完整拼到底时的提示（已拼部分照常保留）；正常到底返回 nil。
+    private static func scrollIncompleteMessage(_ reason: ScrollCaptureEngine.EndReason) -> String? {
+        switch reason {
+        case .reachedEnd: return nil
+        case .lostOverlap: return Loc.s("error.scrollIncomplete.lostOverlap")
+        case .invalidFrames: return Loc.s("error.scrollIncomplete.invalid")
+        case .frameLimit: return Loc.s("error.scrollIncomplete.frameLimit")
         }
     }
 
@@ -573,13 +621,16 @@ final class CaptureViewModel: ObservableObject {
 
     /// 图上翻译第一步：OCR 取行 + 位置 → 合并段落 → 设置翻译配置，交给视图上的 translationTask 去翻。
     /// 用原图（不含标注）识别，免得译文块/马赛克把文字盖住。
+    /// 发起时记下图片版本与像素；每个 await 之后核对版本，中途换图/裁切就整体作废。
     func translateImage() async {
         guard !isTranslatingImage, let image,
               let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+        let generation = imageGeneration
         isTranslatingImage = true
         errorMessage = nil
         do {
             let result = try await TextRecognizer.recognize(cgImage: cgImage)
+            guard generation == imageGeneration else { return }
             let blocks = TextBlockGrouper.group(result.textLines)
             guard !blocks.isEmpty else {
                 isTranslatingImage = false
@@ -600,11 +651,12 @@ final class CaptureViewModel: ObservableObject {
                     remaining.append(block)
                 }
             }
-            pendingGlossaryPairs = matched
-            pendingTranslationBlocks = remaining
+            let request = PendingImageTranslation(
+                generation: generation, cgImage: cgImage, blocks: remaining, glossaryPairs: matched
+            )
 
             if remaining.isEmpty {
-                applyImageTranslation([])
+                applyImageTranslation([], for: request)
                 isTranslatingImage = false
                 return
             }
@@ -615,12 +667,16 @@ final class CaptureViewModel: ObservableObject {
                 translationProgress = (0, 0)
                 let translated = try await AppleIntelligenceTranslator.translate(
                     remaining.map(\.text), to: target, glossary: terms,
-                    progress: { done, total in
-                        Task { @MainActor [weak self] in self?.translationProgress = (done, total) }
+                    progress: { [weak self] done, total in
+                        Task { @MainActor in
+                            guard let self, self.imageGeneration == generation, self.isTranslatingImage else { return }
+                            self.translationProgress = (done, total)
+                        }
                     }
                 )
+                guard generation == imageGeneration else { return }
                 let pairs = zip(remaining, translated).compactMap { block, text in text.map { (block: block, text: $0) } }
-                applyImageTranslation(pairs)
+                applyImageTranslation(pairs, for: request)
                 translationProgress = nil
                 isTranslatingImage = false
                 if pairs.count < remaining.count {
@@ -629,6 +685,7 @@ final class CaptureViewModel: ObservableObject {
                 return
             }
 
+            pendingImageTranslation = request
             if var existing = imageTranslationConfiguration, existing.target == target {
                 existing.invalidate()
                 imageTranslationConfiguration = existing
@@ -637,21 +694,48 @@ final class CaptureViewModel: ObservableObject {
             }
             // isTranslatingImage 由 translationTask 完成后清除。
         } catch {
+            guard generation == imageGeneration else { return }
             isTranslatingImage = false
+            translationProgress = nil
             errorMessage = error.localizedDescription
         }
     }
 
-    /// 图上翻译第二步：把译文按段落位置做成「译文块」标注。底色取周边像素平均色，字色按明度选黑白，字号装满矩形。
-    func applyImageTranslation(_ translated: [(block: TextBlock, text: String)]) {
-        guard let image, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+    /// 系统翻译路径（translationTask 里调用）：取走待翻请求，翻完按请求自己的输入回填。
+    func runSystemImageTranslation(with session: TranslationSession) async {
+        guard let request = pendingImageTranslation, request.generation == imageGeneration else { return }
+        pendingImageTranslation = nil
+        do {
+            let translated = try await ImageTranslation.translate(request.blocks.map(\.text), with: session)
+            guard request.generation == imageGeneration else { return }
+            let pairs = request.blocks.enumerated().compactMap { index, block in
+                translated[index].map { (block: block, text: $0) }
+            }
+            applyImageTranslation(pairs, for: request)
+            if pairs.count < request.blocks.count {
+                errorMessage = Loc.s("imageTranslate.partial", request.blocks.count - pairs.count)
+            }
+        } catch {
+            guard request.generation == imageGeneration else { return }
+            errorMessage = error.localizedDescription
+        }
+        isTranslatingImage = false
+    }
+
+    /// 图上翻译第二步：把译文按段落位置做成「译文块」标注。底色取周边像素平均色，字色按明度选黑白。
+    ///
+    /// 只用请求里保存的原图与坐标；版本对不上（期间换过图）直接丢弃。
+    /// 排版装不下（缩到字号下限仍截断）的段落**不盖上去**——保留原文，并把完整译文放进「未能贴回」面板。
+    func applyImageTranslation(_ translated: [(block: TextBlock, text: String)], for request: PendingImageTranslation) {
+        guard request.generation == imageGeneration else { return }
+        let cgImage = request.cgImage
         let width = Double(cgImage.width), height = Double(cgImage.height)
         guard width > 0, height > 0 else { return }
         var next = annotations.filter { $0.kind != .translation }
-        let all = (pendingGlossaryPairs + translated).sorted { $0.block.rect.minY < $1.block.rect.minY }
-        pendingGlossaryPairs = []
+        let all = (request.glossaryPairs + translated).sorted { $0.block.rect.minY < $1.block.rect.minY }
         let allRects = all.map(\.block.rect)
         let imageSize = CGSize(width: width, height: height)
+        var overflow: [(source: String, translation: String)] = []
         for item in all {
             let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { continue }
@@ -663,6 +747,10 @@ final class CaptureViewModel: ObservableObject {
                 text: text, in: item.block.rect, lineHeight: item.block.lineHeight,
                 imageSize: imageSize, maxWidth: space.maxWidth, maxHeight: space.maxHeight
             )
+            guard layout.isComplete else {
+                overflow.append((source: item.block.text, translation: text))
+                continue
+            }
             let rect = layout.rect
             next.append(CaptureAnnotation(
                 kind: .translation,
@@ -677,6 +765,7 @@ final class CaptureViewModel: ObservableObject {
         annotations = next
         showTranslationOverlay = true
         selectedAnnotationIDs = []
+        translationOverflow = overflow.isEmpty ? nil : TranslationOverflow(items: overflow)
     }
 
     func clearImageTranslation() {
@@ -864,7 +953,7 @@ final class CaptureViewModel: ObservableObject {
         guard !isRecording, !isGIFRecording else { return }
         sourcePicker = nil
         // 自动存入默认目录 ~/Documents/WorldCapture/Videos。
-        let url = OutputLocation.file(for: .video, name: "WorldCapture-\(Self.timestamp())", ext: "mp4")
+        let url = Self.preferredVideoURL()
 
         do {
             try await screenRecorder.startWindowRecording(
@@ -885,7 +974,7 @@ final class CaptureViewModel: ObservableObject {
         guard !isRecording else { return }
         sourcePicker = nil
         // 自动存入默认目录 ~/Documents/WorldCapture/Videos。
-        let url = OutputLocation.file(for: .video, name: "WorldCapture-\(Self.timestamp())", ext: "mp4")
+        let url = Self.preferredVideoURL()
 
         do {
             try await screenRecorder.startRecording(
@@ -904,17 +993,66 @@ final class CaptureViewModel: ObservableObject {
 
     private func stopRecording() async {
         do {
-            try await screenRecorder.stopRecording()
+            let url = try await screenRecorder.stopRecording()
             isRecording = false
+            isRecordingPaused = false
             stopRecordingTimer()
-            if let lastRecordingURL {
-                HistoryStore.shared.record(lastRecordingURL, kind: .video)
-            }
+            lastRecordingURL = url
+            HistoryStore.shared.record(url, kind: .video)
+            ExtensionInbox.shared.drain() // 录屏期间排队的 Safari 截图
         } catch {
             isRecording = screenRecorder.isRecording
+            isRecordingPaused = screenRecorder.isPaused
             if !isRecording { stopRecordingTimer() }
+            // 收尾失败时成品不存在：别留一个指向不存在文件的「在 Finder 中显示」。
+            if !isRecording { lastRecordingURL = nil }
+            errorMessage = error.localizedDescription
+            refreshRecordingRecoveries()
+            if !isRecording { ExtensionInbox.shared.drain() }
+        }
+    }
+
+    // MARK: - 录像恢复
+
+    /// 上次（或更早）收尾失败、分段仍保留着的录像会话。非空时主界面显示恢复横幅。
+    @Published var recordingRecoveries: [RecordingRecovery] = []
+
+    func refreshRecordingRecoveries() {
+        guard !isRecording else { return }
+        recordingRecoveries = RecordingRecovery.pending()
+    }
+
+    /// 重试合并：成功则登记历史并在 Finder 中定位。
+    func retryRecordingRecovery(_ recovery: RecordingRecovery) async {
+        do {
+            let url = try await recovery.finalize()
+            lastRecordingURL = url
+            HistoryStore.shared.record(url, kind: .video)
+        } catch {
+            errorMessage = Loc.s("recovery.retryFailed", error.localizedDescription)
+        }
+        refreshRecordingRecoveries()
+    }
+
+    /// 不合并，逐段导出为独立 MP4。
+    func exportRecordingSegments(_ recovery: RecordingRecovery) {
+        do {
+            let urls = try recovery.exportSegments()
+            urls.forEach { HistoryStore.shared.record($0, kind: .video) }
+            if !urls.isEmpty { NSWorkspace.shared.activateFileViewerSelecting(urls) }
+        } catch {
             errorMessage = error.localizedDescription
         }
+        refreshRecordingRecoveries()
+    }
+
+    func revealRecordingRecovery(_ recovery: RecordingRecovery) {
+        NSWorkspace.shared.activateFileViewerSelecting(recovery.segments)
+    }
+
+    func discardRecordingRecovery(_ recovery: RecordingRecovery) {
+        recovery.discard()
+        refreshRecordingRecoveries()
     }
 
     var gifRecordingDurationText: String {
@@ -957,18 +1095,24 @@ final class CaptureViewModel: ObservableObject {
         stopGIFTimer()
 
         do {
-            let captured = try await gifRecorder.stop()
-            guard !captured.isEmpty else {
+            let recording = try await gifRecorder.stop()
+            guard !recording.frames.isEmpty else {
                 errorMessage = Loc.s("error.gifEmpty")
                 return
             }
 
-            // 自动存入默认目录 ~/Documents/WorldCapture/Videos（GIF 属录制产物）。
-            let url = OutputLocation.file(for: .video, name: "WorldCapture-\(Self.timestamp())", ext: "gif")
-
-            let frames = GIFEncoder.frames(from: captured, fallbackFPS: Self.gifFPS)
+            // 末帧显示到停止时刻（画面静止时系统不再出帧，不能按帧率猜末帧时长）。
+            let frames = GIFEncoder.frames(
+                from: recording.frames, endTimestamp: recording.endTimestamp, fallbackFPS: Self.gifFPS
+            )
             let data = try GIFEncoder.encode(frames: frames)
-            try data.write(to: url, options: .atomic)
+            // 自动存入默认目录 ~/Documents/WorldCapture/Videos（GIF 属录制产物），无覆盖写入。
+            let url = try UniqueFileWriter.write(
+                data,
+                directory: OutputLocation.directory(for: .video),
+                baseName: UniqueFileWriter.timestampedName(),
+                ext: "gif"
+            )
             lastRecordingURL = url
             HistoryStore.shared.record(url, kind: .image)
         } catch {
@@ -1034,10 +1178,15 @@ final class CaptureViewModel: ObservableObject {
         }
 
         // 自动存入默认目录 ~/Documents/WorldCapture/Images（不再逐次弹窗手选）。
+        // 无覆盖写入：同一秒保存多张会得到 -2、-3… 后缀，绝不覆盖已有文件；写成功后才登记历史。
         let format: ImageFormat = .png
-        let url = OutputLocation.file(for: .image, name: "WorldCapture-\(Self.timestamp())", ext: format.fileExtension)
         do {
-            try ImageEncoder.encode(cgImage, as: format).write(to: url, options: .atomic)
+            let url = try UniqueFileWriter.write(
+                ImageEncoder.encode(cgImage, as: format),
+                directory: OutputLocation.directory(for: .image),
+                baseName: UniqueFileWriter.timestampedName(),
+                ext: format.fileExtension
+            )
             HistoryStore.shared.record(url, kind: .image)
         } catch {
             errorMessage = error.localizedDescription
@@ -1068,9 +1217,11 @@ final class CaptureViewModel: ObservableObject {
         isCropping = false
     }
 
-    /// 载入外部传入的截图（如 Safari 扩展经 App Group 投递的整页截图），进入编辑。
-    func loadExternalImage(_ image: NSImage) {
-        guard !isRecording else { return }
+    /// 载入外部传入的截图（如 Safari 扩展投递的整页截图），进入编辑。
+    /// 返回是否已接收：录屏中不打断，返回 false，由收件箱保留文件、录屏结束后再投递。
+    @discardableResult
+    func loadExternalImage(_ image: NSImage) -> Bool {
+        guard !isRecording else { return false }
         sourcePicker = nil
         isCropping = false
         self.image = image
@@ -1078,6 +1229,7 @@ final class CaptureViewModel: ObservableObject {
         selectedAnnotationIDs = []
         errorMessage = nil
         presentCapturePreview()
+        return true
     }
 
     /// 进入裁切模式：默认裁切框为整图，取消当前选中。
@@ -1129,10 +1281,9 @@ final class CaptureViewModel: ObservableObject {
         return AnnotationRenderer.render(image: original, annotations: visible)
     }
 
-    private static func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyyMMdd-HHmmss"
-        return formatter.string(from: Date())
+    /// 录像的期望输出路径（只是名字建议：收尾时以无覆盖语义提交，撞名自动加后缀）。
+    private static func preferredVideoURL() -> URL {
+        OutputLocation.file(for: .video, name: UniqueFileWriter.timestampedName(), ext: "mp4")
     }
 
     /// 暂停/继续录制：分段实现在录制器内部，这里只切状态并累计暂停时长。
@@ -1269,6 +1420,31 @@ struct CaptureView: View {
                 .background(Color(nsColor: .controlBackgroundColor))
             }
 
+            // 收尾失败的录像：分段仍保留，给出重试合并 / 逐段导出 / 定位 / 丢弃。
+            ForEach(model.recordingRecoveries) { recovery in
+                HStack(spacing: 10) {
+                    Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Loc.s("recovery.title", recovery.preferredOutput.lastPathComponent))
+                            .font(.callout.weight(.semibold))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Text(Loc.s("recovery.desc", recovery.segments.count))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(Loc.s("recovery.retry")) { Task { await model.retryRecordingRecovery(recovery) } }
+                    Button(Loc.s("recovery.exportSegments")) { model.exportRecordingSegments(recovery) }
+                    Button(Loc.s("reveal.finder")) { model.revealRecordingRecovery(recovery) }
+                    Button(Loc.s("recovery.discard"), role: .destructive) { model.discardRecordingRecovery(recovery) }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.orange.opacity(0.10))
+            }
+
             if model.isGIFRecording {
                 HStack(spacing: 8) {
                     Circle().fill(.red).frame(width: 8, height: 8)
@@ -1362,24 +1538,15 @@ struct CaptureView: View {
         }
         // 图上翻译：整批段落一次送进端上翻译会话，回来后落成译文块标注。
         .translationTask(model.imageTranslationConfiguration) { session in
-            let blocks = model.pendingTranslationBlocks
-            guard !blocks.isEmpty else { return }
-            defer { model.isTranslatingImage = false }
-            do {
-                let translated = try await ImageTranslation.translate(blocks.map(\.text), with: session)
-                let pairs = blocks.enumerated().compactMap { index, block in
-                    translated[index].map { (block: block, text: $0) }
-                }
-                model.applyImageTranslation(pairs)
-            } catch {
-                model.errorMessage = error.localizedDescription
-            }
+            await model.runSystemImageTranslation(with: session)
+        }
+        .sheet(item: $model.translationOverflow) { overflow in
+            TranslationOverflowView(items: overflow.items) { model.copyText($0) }
         }
         .task {
             model.refreshScreenPermission(requestIfNeeded: true)
             model.loadDisplays()
-            ExtensionInbox.shared.onImage = { [weak model] image in model?.loadExternalImage(image) }
-            ExtensionInbox.shared.start()
+            model.refreshRecordingRecoveries()
             await model.loadWindows()
         }
         .onAppear { preview.start() }

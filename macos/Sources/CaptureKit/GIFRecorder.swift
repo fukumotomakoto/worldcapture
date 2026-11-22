@@ -99,14 +99,27 @@ public final class GIFRecorder: NSObject, SCStreamDelegate, SCStreamOutput, @unc
         }
     }
 
-    /// 停止并返回按时间戳排序的帧；调用方交给 `GIFEncoder`。
-    public func stop() async throws -> [(image: CGImage, timestamp: TimeInterval)] {
+    /// 一次录制的结果：按时间排序的帧 + 停止时刻（与帧时间戳同一时钟基准：主机时钟秒）。
+    public struct Recording {
+        public let frames: [(image: CGImage, timestamp: TimeInterval)]
+        public let endTimestamp: TimeInterval
+    }
+
+    /// 当前主机时钟（秒）。SCStream 样本的 PTS 就是这个时钟，停止时刻用它才能和帧时间戳相减。
+    public static func hostClockNow() -> TimeInterval {
+        CMClockGetTime(CMClockGetHostTimeClock()).seconds
+    }
+
+    /// 停止并返回帧与停止时刻；调用方交给 `GIFEncoder`。
+    /// 画面静止时 SCStream 不再出完整帧，所以末帧该显示多久只能靠停止时刻算，不能按帧率猜。
+    public func stop() async throws -> Recording {
         let activeStream = lock.withLock { stream }
         guard let activeStream else { throw CaptureError.recordingNotActive }
 
+        let end = Self.hostClockNow()
         try? await activeStream.stopCapture()
 
-        return lock.withLock {
+        let captured = lock.withLock {
             let captured = frames
             stream = nil
             frames = []
@@ -114,6 +127,7 @@ public final class GIFRecorder: NSObject, SCStreamDelegate, SCStreamOutput, @unc
             reachedCap = false
             return captured
         }
+        return Recording(frames: captured.sorted { $0.timestamp < $1.timestamp }, endTimestamp: end)
     }
 
     // MARK: - SCStreamOutput

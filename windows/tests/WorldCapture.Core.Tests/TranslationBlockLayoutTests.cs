@@ -182,4 +182,22 @@ public class TranslationBlockLayoutTests
         Assert.Equal(20 * 1.08, TranslationBlockLayout.LineHeight(Measurer, "设置", 20, 200), 6);
         Assert.Equal(20 * 1.3, TranslationBlockLayout.LineHeight(Measurer, "设置已成功保存到本机", 20, 100), 6);
     }
+
+    /// <summary>审查报告 04：窄框 + 下方邻块限高，长段落在字号下限也装不下时必须标为不完整（不得静默截断）。</summary>
+    [Fact]
+    public void LayoutReportsIncompleteWhenTextCannotFit()
+    {
+        var text = string.Concat(Enumerable.Repeat("这是一段很长的译文，用来模拟窄列里放不下的情况。", 14));
+        Assert.True(text.Length > 300);
+        var image = new SizeD(76, 400);
+        var box = new RectD(10, 10, 60, 20);
+        var below = new RectD(10, 36, 60, 20);
+        var space = TranslationBlockLayout.FreeSpace(box, [box, below], image);
+        var layout = TranslationBlockLayout.Layout(Measurer, text, box, 18, image, space.MaxWidth, space.MaxHeight);
+        Assert.False(layout.IsComplete);
+        Assert.True(layout.RequiredHeight > layout.Rect.Height);
+
+        var shortLayout = TranslationBlockLayout.Layout(Measurer, "设置", box, 18, Image900);
+        Assert.True(shortLayout.IsComplete);
+    }
 }

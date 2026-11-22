@@ -111,17 +111,25 @@ enum AppleIntelligenceTranslator {
         for (batchIndex, batch) in batches.enumerated() {
             let range = cursor..<(cursor + batch.count)
             cursor += batch.count
+            var matched: [String?] = Array(repeating: nil, count: batch.count)
             do {
                 let session = LanguageModelSession(instructions: instructions(target: target, glossary: glossary))
                 let numbered = batch.enumerated().map { "\($0.offset + 1). \($0.element)" }.joined(separator: "\n")
                 let response = try await session.respond(to: numbered, generating: TranslatedBatch.self)
-                // 回填：模型会把两条合并后重新编号（实测过），所以序号只是线索，以回显的原文为准匹配。
-                let matched = Self.match(batch, with: response.content.items.map { ($0.index, $0.source, $0.translation) })
-                for (offset, text) in matched.enumerated() {
-                    translatedChunks[range.lowerBound + offset] = text ?? batch[offset]
-                }
+                // 回填：以序号为主绑定、回显只作核验，每条响应最多用一次（见 TranslationResponseMatcher）。
+                matched = TranslationResponseMatcher.match(batch, with: response.content.items.map {
+                    TranslationResponseMatcher.Item(index: $0.index, source: $0.source, translation: $0.translation)
+                })
             } catch {
-                // 这一批放弃（保留 nil），不影响其他批。
+                // 整批失败：下面逐条单独重试。
+            }
+            // 没配上的条目（ID 缺失/重复、回显含糊、整批失败）逐条单独重试；仍失败就留 nil，
+            // 调用方保留原文并计入「未译」——绝不拿别条的译文顶上。
+            for offset in matched.indices where matched[offset] == nil {
+                matched[offset] = await translateSingle(batch[offset], target: target, glossary: glossary)
+            }
+            for (offset, text) in matched.enumerated() {
+                translatedChunks[range.lowerBound + offset] = text
             }
             progress?(batchIndex + 1, batches.count)
         }
@@ -142,27 +150,28 @@ enum AppleIntelligenceTranslator {
         #endif
     }
 
-    /// 把模型输出对回输入：先看序号指向的条目回显原文是否对得上，对不上就在所有条目里找原文最像的；
-    /// 都找不到返回 nil（调用方保留原文）。「像」= 规范化后的前 24 个字符相同，或一方是另一方的前缀。
-    nonisolated static func match(_ inputs: [String], with items: [(index: Int, source: String, translation: String)]) -> [String?] {
-        func norm(_ s: String) -> String {
-            String(s.lowercased().filter { $0.isLetter || $0.isNumber }.prefix(24))
-        }
-        let normalized = items.map { (index: $0.index, source: norm($0.source), translation: $0.translation) }
-        return inputs.enumerated().map { offset, input in
-            let key = norm(input)
-            guard !key.isEmpty else { return nil }
-            if let byIndex = normalized.first(where: { $0.index == offset + 1 }),
-               byIndex.source == key || (byIndex.source.count >= 8 && (key.hasPrefix(byIndex.source) || byIndex.source.hasPrefix(key))) {
-                return byIndex.translation
+    #if canImport(FoundationModels)
+    /// 单条重试：只有一条输入，不存在错配的可能，模型回一条就采用。失败返回 nil。
+    @available(macOS 26.0, *)
+    private nonisolated static func translateSingle(
+        _ text: String, target: Locale.Language, glossary: [(source: String, target: String)]
+    ) async -> String? {
+        do {
+            let session = LanguageModelSession(instructions: instructions(target: target, glossary: glossary))
+            let response = try await session.respond(to: "1. \(text)", generating: TranslatedBatch.self)
+            let items = response.content.items
+            guard items.count == 1 else {
+                return TranslationResponseMatcher.match([text], with: items.map {
+                    TranslationResponseMatcher.Item(index: $0.index, source: $0.source, translation: $0.translation)
+                }).first ?? nil
             }
-            if let best = normalized.first(where: { $0.source == key })
-                ?? normalized.first(where: { $0.source.count >= 8 && (key.hasPrefix($0.source) || $0.source.hasPrefix(key)) }) {
-                return best.translation
-            }
+            let translation = items[0].translation.trimmingCharacters(in: .whitespacesAndNewlines)
+            return translation.isEmpty ? nil : translation
+        } catch {
             return nil
         }
     }
+    #endif
 
     static func batches(of texts: [String]) -> [[String]] {
         var batches: [[String]] = []

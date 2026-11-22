@@ -20,6 +20,12 @@ enum AccessibilityPermission {
 enum ScrollEventSender {
     /// 在 `point` 处向下滚动约 `pixels` 像素（内容上移，露出下方内容）。
     static func scrollDown(at point: CGPoint, pixels: Int) {
+        scroll(at: point, pixels: max(1, pixels))
+    }
+
+    /// 按带符号像素滚动：正数向下、负数向上（滚动截屏失去重叠时回退用）。
+    static func scroll(at point: CGPoint, pixels: Int) {
+        guard pixels != 0 else { return }
         let source = CGEventSource(stateID: .combinedSessionState)
 
         // 先移动指针到目标位置，使滚轮事件路由到该处的窗口/视图。
@@ -35,7 +41,7 @@ enum ScrollEventSender {
             scrollWheelEvent2Source: source,
             units: .pixel,
             wheelCount: 1,
-            wheel1: Int32(-max(1, pixels)),
+            wheel1: Int32(-pixels),
             wheel2: 0,
             wheel3: 0
         ) {

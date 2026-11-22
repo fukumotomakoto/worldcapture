@@ -27,6 +27,11 @@ public enum TranslationBlockLayout {
     public struct Layout: Equatable, Sendable {
         public var rect: CGRect
         public var fontSize: CGFloat
+        /// 译文是否在 `rect` 里完整可见。缩到字号下限仍装不下时为 false——
+        /// 这时把块盖上去会截断译文、又把原文遮住，调用方应保留原文并提供完整译文的查看入口。
+        public var isComplete: Bool = true
+        /// 需要的高度（含留白）。`isComplete == false` 时大于 `rect.height`。
+        public var requiredHeight: CGFloat = 0
     }
 
     /// 一个块周围可用的空间：向右能扩到最近的「同一行高范围内、位于右侧」的块（或图像右边）；
@@ -79,7 +84,12 @@ public enum TranslationBlockLayout {
             needed = layoutHeight(for: text, fontSize: size, width: textWidth) + padding * 2
         }
         let height = min(maxHeight, max(rect.height, needed))
-        return Layout(rect: CGRect(x: rect.minX, y: rect.minY, width: boxWidth, height: height), fontSize: size)
+        return Layout(
+            rect: CGRect(x: rect.minX, y: rect.minY, width: boxWidth, height: height),
+            fontSize: size,
+            isComplete: needed <= maxHeight + 0.5,
+            requiredHeight: needed
+        )
     }
 
     /// 不换行时文字的宽度。

@@ -32,10 +32,18 @@ final class TranslationMirrorController: ObservableObject {
     private var lastSignature: [UInt8]?
     private var cache: [String: String] = [:]
     private var cacheTarget = ""
-    private var pendingBlocks: [TextBlock] = []
-    private var pendingTexts: [String] = []
-    private var pendingResolved: [Int: String] = [:]
-    private var lastImage: CGImage?
+    /// 一帧的翻译请求：发起时的会话代次、帧图像、段落、已直接解决的条目、待翻文本。
+    /// 回调只用请求自带的输入，并核对代次——停用/重新框选后，旧回调不会再改共享状态。
+    private struct FrameRequest {
+        let generation: Int
+        let image: CGImage
+        let blocks: [TextBlock]
+        let resolved: [Int: String]
+        let texts: [String]
+    }
+    private var pending: FrameRequest?
+    /// 会话代次：每次 start/stop 递增。
+    private var generation = 0
 
     private init() {}
 
@@ -43,6 +51,7 @@ final class TranslationMirrorController: ObservableObject {
 
     func start(selection: RegionSelection) {
         stop()
+        generation &+= 1
         self.selection = selection
         isActive = true
         isPaused = false
@@ -95,6 +104,7 @@ final class TranslationMirrorController: ObservableObject {
     }
 
     func stop() {
+        generation &+= 1
         loop?.cancel()
         loop = nil
         overlay?.orderOut(nil)
@@ -105,8 +115,8 @@ final class TranslationMirrorController: ObservableObject {
         isActive = false
         isTranslating = false
         blocks = []
-        pendingBlocks = []
-        pendingTexts = []
+        pending = nil
+        lastSignature = nil
         systemConfiguration = nil
     }
 
@@ -116,20 +126,23 @@ final class TranslationMirrorController: ObservableObject {
 
     private func tick() async {
         guard isActive, !isPaused, !isTranslating, let selection else { return }
-        guard let image = try? await capturer.captureDisplay(id: selection.displayID, region: selection.region) else { return }
+        let generation = self.generation
+        guard let image = try? await capturer.captureDisplay(id: selection.displayID, region: selection.region),
+              generation == self.generation else { return }
         let signature = Self.signature(of: image)
         // 画面没变：什么都不做，译文块留着。
         if let last = lastSignature, Self.isSimilar(last, signature) { return }
         lastSignature = signature
-        lastImage = image
-        await translateFrame(image)
+        await translateFrame(image, generation: generation)
     }
 
-    private func translateFrame(_ image: CGImage) async {
+    private func translateFrame(_ image: CGImage, generation: Int) async {
         isTranslating = true
-        defer { if pendingTexts.isEmpty { isTranslating = false } }
+        var handedOff = false
+        defer { if !handedOff, generation == self.generation { isTranslating = false } }
 
-        guard let result = try? await TextRecognizer.recognize(cgImage: image) else { return }
+        guard let result = try? await TextRecognizer.recognize(cgImage: image),
+              generation == self.generation else { return }
         let found = TextBlockGrouper.group(result.textLines)
         guard !found.isEmpty else {
             blocks = []
@@ -145,37 +158,33 @@ final class TranslationMirrorController: ObservableObject {
         let glossary = UserGlossary.load()
 
         var resolved: [Int: String] = [:]
-        var todo: [(index: Int, text: String)] = []
+        var todo: [String] = []
         for (index, block) in found.enumerated() {
             let text = block.text
             if let hit = cache[text] ?? glossary.lookup(text, target: target.minimalIdentifier) {
                 resolved[index] = hit
             } else {
-                todo.append((index, text))
+                todo.append(text)
             }
         }
-        pendingBlocks = found
-        pendingResolved = resolved
+        let request = FrameRequest(generation: generation, image: image, blocks: found, resolved: resolved, texts: todo)
 
         guard !todo.isEmpty else {
-            finish(with: [:])
+            finish(request, translated: [:])
             return
         }
-        pendingTexts = todo.map(\.text)
 
         if TranslationEngineChoice.current.usesAppleIntelligence {
-            let terms = glossary.entries(relevantTo: pendingTexts, target: target.minimalIdentifier)
-            do {
-                let translated = try await AppleIntelligenceTranslator.translate(pendingTexts, to: target, glossary: terms)
-                var byText: [String: String] = [:]
-                for (text, output) in zip(pendingTexts, translated) { if let output { byText[text] = output } }
-                finish(with: byText)
-            } catch {
-                pendingTexts = []
-                isTranslating = false
-            }
+            let terms = glossary.entries(relevantTo: todo, target: target.minimalIdentifier)
+            guard let translated = try? await AppleIntelligenceTranslator.translate(todo, to: target, glossary: terms),
+                  generation == self.generation else { return }
+            var byText: [String: String] = [:]
+            for (text, output) in zip(todo, translated) { if let output { byText[text] = output } }
+            finish(request, translated: byText)
         } else {
             // 系统翻译：交给覆盖层视图上的 translationTask，翻完回调 finish。
+            pending = request
+            handedOff = true
             if var existing = systemConfiguration, existing.target == target {
                 existing.invalidate()
                 systemConfiguration = existing
@@ -187,36 +196,33 @@ final class TranslationMirrorController: ObservableObject {
 
     /// 系统翻译路径的回调（在覆盖层视图的 translationTask 里调用）。
     func runSystemTranslation(with session: TranslationSession) async {
-        let texts = pendingTexts
-        guard !texts.isEmpty else { return }
-        do {
-            let translated = try await ImageTranslation.translate(texts, with: session)
-            var byText: [String: String] = [:]
-            for (index, text) in texts.enumerated() { if let output = translated[index] { byText[text] = output } }
-            finish(with: byText)
-        } catch {
-            pendingTexts = []
-            isTranslating = false
-        }
+        guard let request = pending, request.generation == generation else { return }
+        pending = nil
+        let translated = try? await ImageTranslation.translate(request.texts, with: session)
+        guard request.generation == generation else { return }
+        var byText: [String: String] = [:]
+        for (index, text) in request.texts.enumerated() { if let output = translated?[index] { byText[text] = output } }
+        finish(request, translated: byText)
     }
 
-    private func finish(with translated: [String: String]) {
+    private func finish(_ request: FrameRequest, translated: [String: String]) {
+        guard request.generation == generation, isActive else { return }
         for (text, output) in translated { cache[text] = output }
-        let image = lastImage
         let width = imagePixelSize.width, height = imagePixelSize.height
         var next: [CaptureAnnotation] = []
-        let allRects = pendingBlocks.map(\.rect)
-        for (index, block) in pendingBlocks.enumerated() {
-            guard let text = (pendingResolved[index] ?? translated[block.text])?
+        let allRects = request.blocks.map(\.rect)
+        for (index, block) in request.blocks.enumerated() {
+            guard let text = (request.resolved[index] ?? translated[block.text])?
                 .trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { continue }
-            let background = image.map { TranslationBlockLayout.backgroundColor(around: block.rect, in: $0) }
-                ?? RGBAColor(red: 1, green: 1, blue: 1)
+            let background = TranslationBlockLayout.backgroundColor(around: block.rect, in: request.image)
             let foreground = TranslationBlockLayout.textColor(on: background)
             let space = TranslationBlockLayout.freeSpace(for: block.rect, among: allRects, imageSize: imagePixelSize)
             let layout = TranslationBlockLayout.layout(
                 text: text, in: block.rect, lineHeight: block.lineHeight, imageSize: imagePixelSize,
                 maxWidth: space.maxWidth, maxHeight: space.maxHeight
             )
+            // 装不下就不盖：截断的译文 + 被遮住的原文，两头都看不到。
+            guard layout.isComplete else { continue }
             next.append(CaptureAnnotation(
                 kind: .translation,
                 start: NormalizedPoint(x: layout.rect.minX / width, y: layout.rect.minY / height),
@@ -228,9 +234,6 @@ final class TranslationMirrorController: ObservableObject {
             ))
         }
         blocks = next
-        pendingTexts = []
-        pendingBlocks = []
-        pendingResolved = [:]
         isTranslating = false
     }
 

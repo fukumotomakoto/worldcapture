@@ -12,7 +12,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
     private var recordingOutput: SCRecordingOutput?
     private var terminalError: Error?
     private var didFinish = false
-    private var finishContinuations: [CheckedContinuation<Void, Never>] = []
+    private var finishContinuations: [(id: UUID, continuation: CheckedContinuation<Void, Never>)] = []
 
     // 暂停/继续采用「分段录制」：每次暂停结束当前段（一个正常的 SCRecordingOutput MP4），
     // 继续时开新段，停止时把所有段无损拼接（AVMutableComposition + Passthrough 导出）。
@@ -21,6 +21,11 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
     private var currentSegmentURL: URL?
     private var segments: [URL] = []
     private var paused = false
+    /// 本次会话的恢复目录（分段 + 清单都落在这里，收尾失败也不会丢）。
+    private var sessionDirectory: URL?
+
+    /// 等待系统「录制结束」回调的上限。超时视为该段失败，但段文件保留在恢复目录里。
+    public var finishTimeout: TimeInterval = 15
 
     /// 录制会话进行中（含暂停态）。
     public var isRecording: Bool {
@@ -156,11 +161,13 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
     /// 开始一次录制会话：记录配方（过滤器+配置）与最终输出路径，然后开录第一段。
     private func beginSession(filter: SCContentFilter, configuration: SCStreamConfiguration, to outputURL: URL) async throws {
         guard !isRecording else { throw CaptureError.recordingAlreadyActive }
+        let session = try RecordingRecovery.createSession(preferredOutput: outputURL)
         stateLock.withLock {
             self.recipe = (filter, configuration)
             self.finalOutputURL = outputURL
             self.segments = []
             self.paused = false
+            self.sessionDirectory = session
         }
         do {
             try await startSegment()
@@ -168,18 +175,23 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
             stateLock.withLock {
                 self.recipe = nil
                 self.finalOutputURL = nil
+                self.sessionDirectory = nil
             }
+            try? FileManager.default.removeItem(at: session)
             throw error
         }
     }
 
     /// 录制一个新分段到临时文件（每段是一个独立、正常的 SCRecordingOutput MP4）。
     private func startSegment() async throws {
-        guard let recipe = stateLock.withLock({ self.recipe }) else {
+        guard let (recipe, session) = stateLock.withLock({ () -> ((filter: SCContentFilter, configuration: SCStreamConfiguration), URL)? in
+            guard let recipe = self.recipe, let session = self.sessionDirectory else { return nil }
+            return (recipe, session)
+        }) else {
             throw CaptureError.recordingNotActive
         }
-        let segmentURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("wc-segment-\(UUID().uuidString).mp4")
+        let index = stateLock.withLock { segments.count + 1 }
+        let segmentURL = session.appendingPathComponent(String(format: "segment-%03d-%@.mp4", index, UUID().uuidString.prefix(8) as CVarArg))
 
         let outputConfiguration = SCRecordingOutputConfiguration()
         outputConfiguration.outputURL = segmentURL
@@ -215,28 +227,39 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         }
     }
 
-    /// 结束当前分段：停止采集、等输出写完、把段文件收入 segments。
+    /// 结束当前分段：停止采集、等输出写完（有超时）、把段文件收入 segments 并更新恢复清单。
+    /// 即使停止或写出失败，只要段文件在磁盘上就收进来——留给恢复流程，而不是丢掉。
     private func finishCurrentSegment() async throws {
         let activeStream = stateLock.withLock { stream }
         guard let activeStream else { return }
 
+        var failure: String?
         do {
             try await activeStream.stopCapture()
         } catch {
-            throw CaptureError.recordingFailed(Self.errorDetails(error))
+            failure = Self.errorDetails(error)
         }
-        await waitForRecordingOutputToFinish()
+        let finished = await waitForRecordingOutputToFinish(timeout: finishTimeout)
+        if !finished, failure == nil {
+            failure = "timed out waiting for the recording output to finish"
+        }
 
-        let error = stateLock.withLock {
-            if let url = currentSegmentURL { segments.append(url) }
+        let (error, collected, session, output) = stateLock.withLock {
+            if let url = currentSegmentURL, FileManager.default.fileExists(atPath: url.path) { segments.append(url) }
             let e = terminalError
             stream = nil
             recordingOutput = nil
             currentSegmentURL = nil
-            return e
+            return (e, segments, sessionDirectory, finalOutputURL)
+        }
+        if let session, let output {
+            RecordingRecovery.writeManifest(in: session, preferredOutput: output, segments: collected)
         }
         if let error {
             throw CaptureError.recordingFailed(Self.errorDetails(error))
+        }
+        if let failure {
+            throw CaptureError.recordingFailed(failure)
         }
     }
 
@@ -244,7 +267,13 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
     public func pause() async throws {
         let canPause = stateLock.withLock { stream != nil && !paused }
         guard canPause else { return }
-        try await finishCurrentSegment()
+        do {
+            try await finishCurrentSegment()
+        } catch {
+            // 这一段收尾出错也进入暂停态：会话仍在，之后「继续」或「停止」都能处理已录分段，不会成孤儿。
+            stateLock.withLock { paused = true }
+            throw error
+        }
         stateLock.withLock { paused = true }
     }
 
@@ -261,32 +290,46 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         }
     }
 
-    public func stopRecording() async throws {
+    /// 停止并收尾，返回最终文件的实际路径（撞名时会自动追加后缀，绝不覆盖已有文件）。
+    ///
+    /// 收尾失败（合并失败、校验不通过、目标不可写……）时抛 `RecordingFinalizeError`：
+    /// 已录分段与清单保留在恢复目录，可用 `RecordingRecovery` 重试合并或逐段导出。
+    @discardableResult
+    public func stopRecording() async throws -> URL {
         let (active, wasPaused) = stateLock.withLock { (stream != nil, paused) }
         guard active || wasPaused else { throw CaptureError.recordingNotActive }
 
+        var segmentError: Error?
         if active {
-            try await finishCurrentSegment()
+            do {
+                try await finishCurrentSegment()
+            } catch {
+                segmentError = error
+            }
         }
 
-        let (collected, output) = stateLock.withLock { (segments, finalOutputURL) }
-        defer { resetState() }
+        let (session, output) = stateLock.withLock { (sessionDirectory, finalOutputURL) }
+        resetState()
 
-        guard let output, !collected.isEmpty else {
-            throw CaptureError.recordingFailed("no recorded segments")
+        guard let session, output != nil else {
+            throw CaptureError.recordingFailed("no recording session")
         }
-
-        try? FileManager.default.removeItem(at: output)
-        if collected.count == 1 {
-            try FileManager.default.moveItem(at: collected[0], to: output)
-        } else {
-            try await Self.mergeSegments(collected, to: output)
-            collected.forEach { try? FileManager.default.removeItem(at: $0) }
+        guard let recovery = RecordingRecovery(directory: session) else {
+            try? FileManager.default.removeItem(at: session)
+            throw segmentError ?? CaptureError.recordingFailed("no recorded segments")
+        }
+        do {
+            return try await recovery.finalize()
+        } catch {
+            let reason = [segmentError.map { ($0 as? LocalizedError)?.errorDescription ?? "\($0)" },
+                          (error as? LocalizedError)?.errorDescription ?? "\(error)"]
+                .compactMap { $0 }.joined(separator: "；")
+            throw RecordingFinalizeError(recovery: recovery, reason: reason)
         }
     }
 
     /// 把多个分段无损拼接为一个 MP4（编解码一致，用 Passthrough 不重编码）。
-    private static func mergeSegments(_ segments: [URL], to outputURL: URL) async throws {
+    static func mergeSegments(_ segments: [URL], to outputURL: URL) async throws {
         let composition = AVMutableComposition()
         let videoTrack = composition.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
         let audioTrack = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid)
@@ -321,29 +364,51 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         try await export.export(to: outputURL, as: .mp4)
     }
 
+    // 回调只认当前这一段的 stream / output：上一段（或上一次会话）迟到的回调不能把这一段标成已结束。
     public func stream(_ stream: SCStream, didStopWithError error: Error) {
+        guard stateLock.withLock({ stream === self.stream }) else { return }
         completeRecording(with: error)
     }
 
     public func recordingOutputDidStartRecording(_ recordingOutput: SCRecordingOutput) {}
 
     public func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
+        guard stateLock.withLock({ recordingOutput === self.recordingOutput }) else { return }
         completeRecording(with: nil)
     }
 
     public func recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {
+        guard stateLock.withLock({ recordingOutput === self.recordingOutput }) else { return }
         completeRecording(with: error)
     }
 
-    private func waitForRecordingOutputToFinish() async {
-        await withCheckedContinuation { continuation in
+    /// 等系统的「录制结束」回调；超时返回 false（不再无限挂起）。
+    private func waitForRecordingOutputToFinish(timeout: TimeInterval) async -> Bool {
+        let id = UUID()
+        let timedOut = Box(false)
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             let shouldResumeImmediately = stateLock.withLock {
                 if didFinish || terminalError != nil { return true }
-                finishContinuations.append(continuation)
+                finishContinuations.append((id, continuation))
                 return false
             }
-            if shouldResumeImmediately { continuation.resume() }
+            if shouldResumeImmediately {
+                continuation.resume()
+                return
+            }
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) { [weak self] in
+                guard let self else { return }
+                let pending = self.stateLock.withLock { () -> CheckedContinuation<Void, Never>? in
+                    guard let index = self.finishContinuations.firstIndex(where: { $0.id == id }) else { return nil }
+                    return self.finishContinuations.remove(at: index).continuation
+                }
+                if let pending {
+                    timedOut.value = true
+                    pending.resume()
+                }
+            }
         }
+        return !timedOut.value
     }
 
     private func completeRecording(with error: Error?) {
@@ -354,7 +419,7 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
             finishContinuations.removeAll()
             return pending
         }
-        continuations.forEach { $0.resume() }
+        continuations.forEach { $0.continuation.resume() }
     }
 
     private func resetState() {
@@ -369,10 +434,11 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
             currentSegmentURL = nil
             segments = []
             paused = false
+            sessionDirectory = nil
         }
     }
 
-    private static func errorDetails(_ error: Error) -> String {
+    static func errorDetails(_ error: Error) -> String {
         let nsError = error as NSError
         var parts = ["\(nsError.domain) (\(nsError.code)): \(nsError.localizedDescription)"]
         if let reason = nsError.localizedFailureReason, !reason.isEmpty {
@@ -383,4 +449,10 @@ public final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutput
         }
         return parts.joined(separator: " — ")
     }
+}
+
+/// 跨线程的小可变盒子（只在加锁或单次写入的场景里用）。
+private final class Box<T>: @unchecked Sendable {
+    var value: T
+    init(_ value: T) { self.value = value }
 }

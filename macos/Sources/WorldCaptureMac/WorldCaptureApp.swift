@@ -55,6 +55,9 @@ struct WorldCaptureApp: App {
                     }
                     TopDockController.shared.attach(model: model)
                     model.installGlobalHotKeys()
+                    // Safari 扩展收件箱在 App 级启动：主窗口从没打开过（顶部工具条/仅菜单栏）也能接图。
+                    ExtensionInbox.shared.onImage = { image in model.loadExternalImage(image) }
+                    ExtensionInbox.shared.start()
                 }
         }
     }

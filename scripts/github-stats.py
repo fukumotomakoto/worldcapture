@@ -19,6 +19,7 @@
 """
 import datetime as dt
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -48,12 +49,34 @@ def gql_discussions():
     return json.loads(out)["data"]["repository"]["discussions"]["totalCount"]
 
 
+def asset_downloads(releases):
+    """每个附件以**资产 ID** 为键（不同 release 里的同名 DMG 不会互相覆盖），文件名只用于展示。"""
+    out = {}
+    for r in releases:
+        for a in r.get("assets", []):
+            out[str(a["id"])] = {
+                "name": a["name"],
+                "release": r.get("tag_name") or r.get("name") or "",
+                "count": a["download_count"],
+            }
+    return out
+
+
+def downloads_by_name(assets):
+    """展示用：按文件名汇总（同名附件的下载数相加，而不是后者覆盖前者）。"""
+    out = {}
+    for a in assets.values():
+        out[a["name"]] = out.get(a["name"], 0) + a["count"]
+    return out
+
+
 def snapshot():
     repo = gh(f"repos/{REPO}")
-    releases = gh(f"repos/{REPO}/releases?per_page=100")
+    releases = gh(f"repos/{REPO}/releases?per_page=100", paginate=True)
     issues = gh(f"repos/{REPO}/issues?state=all&per_page=100", paginate=True)
     comments = gh(f"repos/{REPO}/issues/comments?per_page=100", paginate=True)
-    downloads = {a["name"]: a["download_count"] for r in releases for a in r["assets"]}
+    assets = asset_downloads(releases)
+    downloads = downloads_by_name(assets)
     return {
         "taken_at": dt.datetime.now().astimezone().isoformat(timespec="seconds"),
         "stars": repo["stargazers_count"],
@@ -63,15 +86,27 @@ def snapshot():
         "pulls": sum(1 for i in issues if "pull_request" in i),
         "comments": len(comments),
         "discussions": gql_discussions(),
+        "assets": assets,
         "downloads": downloads,
-        "downloads_total": sum(downloads.values()),
-        "dmg_downloads_total": sum(v for k, v in downloads.items() if k.endswith(".dmg")),
+        "downloads_total": sum(a["count"] for a in assets.values()),
+        "dmg_downloads_total": sum(a["count"] for a in assets.values() if a["name"].endswith(".dmg")),
         "views_14d": gh(f"repos/{REPO}/traffic/views"),
         "clones_14d": gh(f"repos/{REPO}/traffic/clones"),
         "referrers_14d": gh(f"repos/{REPO}/traffic/popular/referrers"),
         "paths_14d": gh(f"repos/{REPO}/traffic/popular/paths"),
         "issue_titles": [f"#{i['number']} {i['title']}" for i in issues],
     }
+
+
+def write_atomic(path, text):
+    """先写同目录临时文件再 os.replace：中途崩溃/断电也不会留下半截 JSON 把累计历史毁掉。"""
+    path = pathlib.Path(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
 
 
 def merge_traffic(snap):
@@ -81,7 +116,7 @@ def merge_traffic(snap):
     for kind, key in (("views", "views_14d"), ("clones", "clones_14d")):
         for day in snap[key].get(kind, []):
             hist[kind][day["timestamp"][:10]] = {"count": day["count"], "uniques": day["uniques"]}
-    path.write_text(json.dumps(hist, ensure_ascii=False, indent=1, sort_keys=True))
+    write_atomic(path, json.dumps(hist, ensure_ascii=False, indent=1, sort_keys=True))
     return hist
 
 
@@ -108,8 +143,8 @@ def main():
     hist = merge_traffic(snap)
     today = dt.date.today().isoformat()
     body = json.dumps(snap, ensure_ascii=False, indent=1)
-    (OUT / "snapshots" / f"{today}.json").write_text(body)
-    latest.write_text(body)
+    write_atomic(OUT / "snapshots" / f"{today}.json", body)
+    write_atomic(latest, body)
 
     diff = changes(prev, snap)
     views_all = sum(v["count"] for v in hist["views"].values())

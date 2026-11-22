@@ -43,7 +43,14 @@ public static class TranslationBlockLayout
     public const double ParagraphLineHeightMultiple = 1.3;
 
     /// <summary>排版结果：译文块最终的矩形和字号。</summary>
-    public readonly record struct BlockLayout(RectD Rect, double FontSize);
+    /// <param name="Rect">译文块矩形。</param>
+    /// <param name="FontSize">字号。</param>
+    /// <param name="IsComplete">
+    /// 译文是否在矩形里完整可见。缩到字号下限仍装不下时为 false——这时盖上去会截断译文、又遮住原文，
+    /// 调用方应保留原文并提供完整译文的查看入口（与 macOS 版语义一致）。
+    /// </param>
+    /// <param name="RequiredHeight">需要的高度（含留白）。</param>
+    public readonly record struct BlockLayout(RectD Rect, double FontSize, bool IsComplete = true, double RequiredHeight = 0);
 
     // —— 字号 ——
 
@@ -102,7 +109,7 @@ public static class TranslationBlockLayout
             needed = LayoutHeight(measurer, text, size, textWidth) + Padding * 2;
         }
         var height = Math.Min(heightLimit, Math.Max(rect.Height, needed));
-        return new BlockLayout(new RectD(rect.MinX, rect.MinY, boxWidth, height), size);
+        return new BlockLayout(new RectD(rect.MinX, rect.MinY, boxWidth, height), size, needed <= heightLimit + 0.5, needed);
     }
 
     /// <summary>能让文字换行后装进 <paramref name="rect"/> 的最大字号；上限为矩形高度（单行即整块高）或 <paramref name="maxFontSize"/>。</summary>

@@ -283,3 +283,20 @@
 "settings.language.relaunch.message" = "WorldCapture 需要重新启动才能使用新语言。正在进行的录制会被中断。";
 "settings.language.relaunch.now" = "立即重启";
 "settings.language.relaunch.later" = "稍后";
+
+/* 2026-11-22 审查修正 */
+"imageTranslate.overflow.title" = "部分译文未贴回原位";
+"imageTranslate.overflow.message" = "有 %d 段译文在原位放不下（缩到最小字号仍会被截断），图上保留了原文。完整译文如下：";
+"imageTranslate.overflow.copy" = "复制全部译文";
+"error.scrollIncomplete.lostOverlap" = "长图不完整：滚动跳得太远，后面的内容对不上，已保留拼好的部分。可以把选区框小一点或换个位置重试。";
+"error.scrollIncomplete.invalid" = "长图不完整：连续拿到无效画面（窗口尺寸变化或被遮挡），已保留拼好的部分。";
+"error.scrollIncomplete.frameLimit" = "长图不完整：已达到帧数上限，内容还没到底，已保留拼好的部分。";
+"recovery.title" = "录像「%@」收尾失败";
+"recovery.desc" = "已录制的 %d 段都还在，可以重试合并，或把各段单独导出。";
+"recovery.retry" = "重试合并";
+"recovery.exportSegments" = "逐段导出";
+"recovery.discard" = "丢弃（移到废纸篓）";
+"recovery.retryFailed" = "重试合并仍失败：%@ 分段仍保留，可改用「逐段导出」。";
+"library.error.corrupt" = "历史索引已损坏，无法读取。原文件已备份为 %@。";
+"library.error.persist" = "历史记录没能写入磁盘（%@），本次更改未生效。";
+"library.error.trash" = "无法把「%@」移到废纸篓：%@ 记录已保留。";

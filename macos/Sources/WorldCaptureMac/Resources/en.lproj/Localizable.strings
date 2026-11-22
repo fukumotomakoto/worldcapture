@@ -283,3 +283,20 @@
 "settings.language.relaunch.message" = "WorldCapture needs to relaunch to use the new language. Any recording in progress will stop.";
 "settings.language.relaunch.now" = "Relaunch Now";
 "settings.language.relaunch.later" = "Later";
+
+/* 2026-11-22 审查修正 */
+"imageTranslate.overflow.title" = "Some translations weren't placed on the image";
+"imageTranslate.overflow.message" = "%d translation(s) didn't fit in place (they would be cut off even at the smallest size), so the original text was kept on the image. Full translations:";
+"imageTranslate.overflow.copy" = "Copy All Translations";
+"error.scrollIncomplete.lostOverlap" = "Incomplete capture: the page scrolled too far and later content couldn't be aligned. The stitched part was kept — try a smaller selection or another spot.";
+"error.scrollIncomplete.invalid" = "Incomplete capture: repeated invalid frames (the window resized or was covered). The stitched part was kept.";
+"error.scrollIncomplete.frameLimit" = "Incomplete capture: the frame limit was reached before the end of the content. The stitched part was kept.";
+"recovery.title" = "Recording “%@” couldn't be finalized";
+"recovery.desc" = "All %d recorded segment(s) are still there. Retry the merge, or export each segment on its own.";
+"recovery.retry" = "Retry Merge";
+"recovery.exportSegments" = "Export Segments";
+"recovery.discard" = "Discard (Move to Trash)";
+"recovery.retryFailed" = "Retrying the merge failed again: %@ The segments are kept — try Export Segments.";
+"library.error.corrupt" = "The history index is damaged and couldn't be read. The original file was backed up as %@.";
+"library.error.persist" = "The history couldn't be saved to disk (%@); the change was not applied.";
+"library.error.trash" = "Couldn't move “%@” to the Trash: %@ The entry was kept.";

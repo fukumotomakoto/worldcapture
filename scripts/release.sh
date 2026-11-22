@@ -5,6 +5,9 @@
 #
 # 交付物：build/WorldCapture-<version>.dmg（已签名 + 已公证 + 已装订，可直接分发）。
 #
+# 任何一项校验失败都会**非零退出**、不打印「完成」：Gatekeeper 拒绝、缺 Sparkle 工具、
+# appcast 里地址/长度不对、App 包里缺 OCR 资源……都算失败（不再 `|| true` 放过）。
+#
 # 前置条件（一次性准备，均由发布负责人提供，不入库）：
 #   1) 钥匙串已安装 "Developer ID Application" 证书
 #      （Xcode → Settings → Accounts → Manage Certificates → + Developer ID Application；
@@ -72,10 +75,10 @@ DOWNLOAD_URL_PREFIX="${DOWNLOAD_URL_PREFIX:-https://github.com/$GH_REPO/releases
 
 mkdir -p "$BUILD"
 
-echo "▸ 1/9 生成 Xcode 工程"
+echo "▸ 1/11 生成 Xcode 工程"
 xcodegen generate
 
-echo "▸ 2/9 归档（Release / Developer ID 签名）"
+echo "▸ 2/11 归档（Release / Developer ID 签名）"
 rm -rf "$ARCHIVE"
 xcodebuild archive \
   -project WorldCapture.xcodeproj \
@@ -84,14 +87,35 @@ xcodebuild archive \
   -archivePath "$ARCHIVE" \
   -derivedDataPath "$BUILD/dd"
 
-echo "▸ 3/9 导出 .app"
+echo "▸ 3/11 导出 .app"
 rm -rf "$EXPORT"
 xcodebuild -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportPath "$EXPORT" \
   -exportOptionsPlist "$ROOT/scripts/ExportOptions.plist"
 
-echo "▸ 4/9 打包 DMG（含拖入 Applications 的符号链接）"
+echo "▸ 3b 校验 App 包内容（Safari 扩展的离线 OCR 资源必须随包）"
+APPEX="$APP/Contents/PlugIns/WorldCapture Web.appex/Contents/Resources"
+missing=0
+for f in manifest.json background.js content.js result.html result.js popup.html popup.js \
+         vendor/tesseract/tesseract.min.js vendor/tesseract/worker.min.js \
+         vendor/tesseract/tesseract-core-simd.wasm.js vendor/tesseract/tesseract-core-simd.wasm \
+         vendor/tesseract/lang/eng.traineddata.gz vendor/tesseract/lang/chi_sim.traineddata.gz \
+         vendor/tesseract/lang/chi_tra.traineddata.gz vendor/tesseract/lang/jpn.traineddata.gz; do
+  if [ ! -s "$APPEX/$f" ]; then
+    echo "   ✗ 缺少 ${f}"
+    missing=1
+  elif [ -f "$ROOT/macos/SafariExtension/$f" ] && ! cmp -s "$APPEX/$f" "$ROOT/macos/SafariExtension/$f"; then
+    echo "   ✗ ${f} 与仓库版本不一致"
+    missing=1
+  fi
+done
+if [ "$missing" -ne 0 ]; then
+  echo "✗ App 包里的 Safari 扩展资源不完整（检查 project.yml 的资源清单），中止发布。"
+  exit 1
+fi
+
+echo "▸ 4/11 打包 DMG（含拖入 Applications 的符号链接）"
 # 用临时挂载目录组织 DMG 内容：App + /Applications 快捷方式，方便用户拖拽安装。
 # 零依赖（hdiutil）。如需带背景图/窗口布局的精美 DMG，可改用 create-dmg。
 rm -rf "$STAGING" "$DMG"
@@ -107,39 +131,55 @@ hdiutil create \
   "$DMG"
 rm -rf "$STAGING"
 
-echo "▸ 5/9 给 DMG 签名（${SIGN_ID}）"
+echo "▸ 5/11 给 DMG 签名（${SIGN_ID}）"
 codesign --force --sign "$SIGN_ID" --timestamp "$DMG"
 
-echo "▸ 6/9 提交公证并等待（首次可能数分钟）"
+echo "▸ 6/11 提交公证并等待（首次可能数分钟）"
 xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait
 
-echo "▸ 7/9 装订（staple）到 DMG"
+echo "▸ 7/11 装订（staple）到 DMG"
 xcrun stapler staple "$DMG"
 
-echo "▸ 8/9 验证签名与 Gatekeeper"
+echo "▸ 8/11 验证签名与 Gatekeeper"
 # 校验内部 App 的签名与硬化运行时
 codesign --verify --deep --strict --verbose=2 "$APP"
 spctl -a -vvv --type execute "$APP"
 # 校验 DMG 的装订与安装放行
 xcrun stapler validate "$DMG"
-spctl -a -vvv --type open --context context:primary-signature "$DMG" || true
+# Gatekeeper 拒绝 DMG 就不能发——不再 `|| true` 吞掉退出码。
+if ! spctl -a -vvv --type open --context context:primary-signature "$DMG"; then
+  echo "✗ Gatekeeper 拒绝了 ${DMG}，中止发布。"
+  exit 1
+fi
 
-echo "▸ 9/9 生成 Sparkle appcast（EdDSA 签名）"
+echo "▸ 9/11 生成 Sparkle appcast（EdDSA 签名）"
 # generate_appcast 会扫描目录内所有归档、用钥匙串里的 EdDSA 私钥签名，
 # 生成/更新 appcast.xml（enclosure URL = 前缀 + 文件名）。
 # 私钥须先 generate_keys 生成（一次性）；缺工具或缺私钥时给出提示而非静默跳过。
-if [ -x "$SPARKLE_BIN/generate_appcast" ]; then
-  mkdir -p "$APPCAST_DIR"
-  /usr/bin/ditto "$DMG" "$APPCAST_DIR/$(basename "$DMG")"
-  "$SPARKLE_BIN/generate_appcast" \
-    --download-url-prefix "$DOWNLOAD_URL_PREFIX" \
-    --link "$SITE_URL" \
-    "$APPCAST_DIR"
-  echo "   appcast: $APPCAST_DIR/appcast.xml（enclosure 前缀 ${DOWNLOAD_URL_PREFIX}）"
-else
-  echo "   ⚠️ 未找到 $SPARKLE_BIN/generate_appcast，跳过 appcast 生成。"
-  echo "      （需先 archive 解析 Sparkle SPM artifact；私钥须用 generate_keys 生成。）"
+# 没有更新源 = 老用户收不到这一版，属于发布失败，不能「跳过」后照样报完成。
+if [ ! -x "$SPARKLE_BIN/generate_appcast" ]; then
+  echo "✗ 未找到 $SPARKLE_BIN/generate_appcast，无法生成更新源，中止。"
+  echo "  （需先 archive 解析 Sparkle SPM artifact；私钥须用 generate_keys 生成。）"
+  exit 1
 fi
+mkdir -p "$APPCAST_DIR"
+/usr/bin/ditto "$DMG" "$APPCAST_DIR/$(basename "$DMG")"
+"$SPARKLE_BIN/generate_appcast" \
+  --download-url-prefix "$DOWNLOAD_URL_PREFIX" \
+  --link "$SITE_URL" \
+  "$APPCAST_DIR"
+echo "   appcast: $APPCAST_DIR/appcast.xml（enclosure 前缀 ${DOWNLOAD_URL_PREFIX}）"
+
+echo "▸ 10/11 校验 appcast：旧条目地址改回各自 tag，长度与附件一致"
+# generate_appcast 会把旧条目的地址也改成本次前缀；--fix 把它们改回各自的 tag 目录，再整体校验。
+python3 -I "$ROOT/scripts/verify-appcast.py" "$APPCAST_DIR/appcast.xml" "$APPCAST_DIR" "$VERSION" "$GH_REPO" --fix
+
+echo "▸ 11/11 复核：附件就是刚公证过的那个 DMG"
+if ! cmp -s "$DMG" "$APPCAST_DIR/$(basename "$DMG")"; then
+  echo "✗ appcast 目录里的 DMG 与 build 产物不一致，中止。"
+  exit 1
+fi
+xcrun stapler validate "$APPCAST_DIR/$(basename "$DMG")"
 
 echo ""
 echo "✅ 完成"

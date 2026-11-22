@@ -38,6 +38,8 @@ final class HistoryStore: ObservableObject {
     static let shared = HistoryStore()
 
     @Published private(set) var entries: [HistoryEntry] = []
+    /// 最近一次失败（移入废纸篓失败、索引写不进磁盘……），供历史库界面提示；用户关闭提示后清空。
+    @Published var lastError: String?
 
     private let fileURL: URL
     private let thumbnails = NSCache<NSString, NSImage>()
@@ -57,53 +59,78 @@ final class HistoryStore: ObservableObject {
         guard let data = try? Data(contentsOf: fileURL) else { return }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
-        if let decoded = try? decoder.decode([HistoryEntry].self, from: data) {
-            entries = decoded.sorted { $0.date > $1.date }
+        do {
+            entries = try decoder.decode([HistoryEntry].self, from: data).sorted { $0.date > $1.date }
+        } catch {
+            // 索引损坏：先留一份副本再继续，别让下一次写入把唯一的旧记录覆盖掉。
+            let backup = fileURL.deletingLastPathComponent()
+                .appendingPathComponent("history.corrupt-\(Int(Date().timeIntervalSince1970)).json")
+            try? FileManager.default.copyItem(at: fileURL, to: backup)
+            lastError = Loc.s("library.error.corrupt", backup.lastPathComponent)
         }
     }
 
-    private func persist() {
+    /// 把一份新列表写入磁盘；**写成功才替换内存中的列表**，界面、磁盘、重启后的记录始终一致。
+    @discardableResult
+    private func commit(_ next: [HistoryEntry]) -> Bool {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted]
-        guard let data = try? encoder.encode(entries) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+        do {
+            let data = try encoder.encode(next)
+            try data.write(to: fileURL, options: .atomic)
+            entries = next
+            return true
+        } catch {
+            lastError = Loc.s("library.error.persist", error.localizedDescription)
+            return false
+        }
     }
 
     // MARK: - 变更
 
-    /// 记录一次新保存（按路径去重，仅保留最新一条并置顶）。
+    /// 记录一次新保存（按路径去重，仅保留最新一条并置顶）。调用方须在文件写入成功之后才调用。
     func record(_ url: URL, kind: HistoryKind) {
-        entries.removeAll { $0.path == url.path }
-        entries.insert(HistoryEntry(url: url, kind: kind), at: 0)
-        persist()
+        var next = entries
+        next.removeAll { $0.path == url.path }
+        next.insert(HistoryEntry(url: url, kind: kind), at: 0)
+        commit(next)
     }
 
     /// 从历史列表中移除一条（不动磁盘文件）。
     func remove(_ entry: HistoryEntry) {
-        entries.removeAll { $0.id == entry.id }
-        thumbnails.removeObject(forKey: entry.path as NSString)
-        persist()
+        var next = entries
+        next.removeAll { $0.id == entry.id }
+        if commit(next) {
+            thumbnails.removeObject(forKey: entry.path as NSString)
+        }
     }
 
-    /// 把文件移入废纸篓，并从历史移除。
+    /// 把文件移入废纸篓，**成功后**才从历史移除；失败则记录保持不变并提示原因。
+    /// 文件本来就不在了（已被移走/删除）视同成功，只清掉这条失效记录。
     func moveToTrash(_ entry: HistoryEntry) {
-        try? FileManager.default.trashItem(at: entry.url, resultingItemURL: nil)
+        if entry.exists {
+            do {
+                try FileManager.default.trashItem(at: entry.url, resultingItemURL: nil)
+            } catch {
+                lastError = Loc.s("library.error.trash", entry.fileName, error.localizedDescription)
+                return
+            }
+        }
         remove(entry)
     }
 
     /// 清空历史列表（仅清记录，不删除磁盘文件）。
     func clearAll() {
-        entries.removeAll()
-        thumbnails.removeAllObjects()
-        persist()
+        if commit([]) {
+            thumbnails.removeAllObjects()
+        }
     }
 
     /// 移除磁盘上已不存在的条目（打开历史库时调用）。
     func pruneMissing() {
-        let before = entries.count
-        entries.removeAll { !$0.exists }
-        if entries.count != before { persist() }
+        let next = entries.filter(\.exists)
+        if next.count != entries.count { commit(next) }
     }
 
     // MARK: - 缩略图
